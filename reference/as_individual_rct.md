@@ -26,8 +26,15 @@ for design `"rct"`.
 ## Examples
 
 ``` r
-sim <- sim_meta(n_studies = 3, seed = 1)
-#> Error in sim_meta(n_studies = 3, seed = 1): could not find function "sim_meta"
+sim <- simulate_meta_did(n_studies = 3, seed = 1)
 head(as_individual_rct(sim))
-#> Error: object 'sim' not found
+#> # A tibble: 6 × 5
+#>   study_id design group   time  value
+#>   <chr>    <chr>  <chr>   <chr> <dbl>
+#> 1 study_1  rct    control post  0.542
+#> 2 study_1  rct    control post  0.382
+#> 3 study_1  rct    control post  0.564
+#> 4 study_1  rct    control post  0.534
+#> 5 study_1  rct    control post  0.569
+#> 6 study_1  rct    control post  0.504
 ```

@@ -55,6 +55,8 @@ diagnosing problems before fitting.</p>
 <dl><dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
 <dd><p>A data frame in long format with one row per observation.
 Required columns: <code>study_id</code>, <code>design</code>, <code>group</code>, <code>time</code>, <code>value</code>.
+For repeated-measures designs (<code>"did"</code> and <code>"pp"</code>), a <code>subject_id</code>
+column is also required to correctly pair pre and post observations.
 Valid designs: <code>"did"</code>, <code>"rct"</code>, <code>"pp"</code>.</p></dd>
 
 </dl></div>

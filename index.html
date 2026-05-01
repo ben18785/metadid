@@ -55,6 +55,7 @@
 <h2 id="model-assumptions">Model assumptions<a class="anchor" aria-label="anchor" href="#model-assumptions"></a>
 </h2>
 <p><code>metadid</code> assumes that all studies arise from a common latent difference-in-differences (DiD) structure. Different study designs correspond to observing different parts of this latent structure.</p>
+<p>DiD studies are the only design in this framework that directly identify the treatment effect. Meta-analyses that do not include DiD studies are not identified from the data and depend entirely on modelling assumptions. We do not recommend using this approach in the absence of DiD evidence.</p>
 <div class="section level3">
 <h3 id="latent-did-model">Latent DiD model<a class="anchor" aria-label="anchor" href="#latent-did-model"></a>
 </h3>
@@ -200,6 +201,11 @@ Y_{i,t,\mathrm{post}}
 <p><code><a href="reference/simulate_meta_did.html">simulate_meta_did()</a></code> generates individual-level pre/post data for both arms across a set of studies from a known hierarchical model. <code><a href="reference/as_summary_did.html">as_summary_did()</a></code> then aggregates this to the four-cell summary statistics (pre/post × control/treatment) that represent what is typically reported in a published study.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ben18785.github.io/metadid/">metadid</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Attaching package: 'metadid'</span></span>
+<span><span class="co">#&gt; The following object is masked from 'package:base':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     gamma</span></span>
 <span></span>
 <span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/simulate_meta_did.html">simulate_meta_did</a></span><span class="op">(</span></span>
 <span>  n_studies     <span class="op">=</span> <span class="fl">20</span>,</span>
@@ -222,8 +228,8 @@ Y_{i,t,\mathrm{post}}
 <span><span class="co">#&gt; 5 study_13 did          100         100            0.447             0.435</span></span>
 <span><span class="co">#&gt; 6 study_14 did          100         100            0.461             0.416</span></span>
 <span><span class="co">#&gt; # ℹ 7 more variables: sd_pre_control &lt;dbl&gt;, sd_post_control &lt;dbl&gt;,</span></span>
-<span><span class="co">#&gt; #   mean_pre_treatment &lt;dbl&gt;, mean_post_treatment &lt;dbl&gt;, sd_pre_treatment &lt;dbl&gt;,</span></span>
-<span><span class="co">#&gt; #   sd_post_treatment &lt;dbl&gt;, rho &lt;dbl&gt;</span></span></code></pre></div>
+<span><span class="co">#&gt; #   mean_pre_treatment &lt;dbl&gt;, mean_post_treatment &lt;dbl&gt;,</span></span>
+<span><span class="co">#&gt; #   sd_pre_treatment &lt;dbl&gt;, sd_post_treatment &lt;dbl&gt;, rho &lt;dbl&gt;</span></span></code></pre></div>
 <p>The true population treatment effect is <code>-0.15</code> on the raw scale, or approximately -0.333 after normalising by the baseline mean of <code>0.45</code>.</p>
 </div>
 <div class="section level3">

@@ -27,8 +27,14 @@ for design `"pp"`.
 ## Examples
 
 ``` r
-sim <- sim_meta(n_studies = 3, seed = 1)
-#> Error in sim_meta(n_studies = 3, seed = 1): could not find function "sim_meta"
+sim <- simulate_meta_did(n_studies = 3, seed = 1)
 as_summary_pp(sim)
-#> Error: object 'sim' not found
+#> # A tibble: 3 × 8
+#>   study_id design n_treatment mean_pre_treatment sd_pre_treatment
+#>   <chr>    <chr>        <int>              <dbl>            <dbl>
+#> 1 study_1  pp             100              0.451            0.124
+#> 2 study_2  pp             100              0.425            0.131
+#> 3 study_3  pp             100              0.448            0.124
+#> # ℹ 3 more variables: mean_post_treatment <dbl>, sd_post_treatment <dbl>,
+#> #   rho <dbl>
 ```

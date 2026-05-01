@@ -27,8 +27,13 @@ for design `"rct"`.
 ## Examples
 
 ``` r
-sim <- sim_meta(n_studies = 3, seed = 1)
-#> Error in sim_meta(n_studies = 3, seed = 1): could not find function "sim_meta"
+sim <- simulate_meta_did(n_studies = 3, seed = 1)
 as_summary_rct(sim)
-#> Error: object 'sim' not found
+#> # A tibble: 3 × 8
+#>   study_id design n_control n_treatment mean_post_control sd_post_control
+#>   <chr>    <chr>      <int>       <int>             <dbl>           <dbl>
+#> 1 study_1  rct          100         100             0.438           0.113
+#> 2 study_2  rct          100         100             0.424           0.116
+#> 3 study_3  rct          100         100             0.434           0.137
+#> # ℹ 2 more variables: mean_post_treatment <dbl>, sd_post_treatment <dbl>
 ```

@@ -29,8 +29,15 @@ for design `"did"`.
 ## Examples
 
 ``` r
-sim <- sim_meta(n_studies = 3, seed = 1)
-#> Error in sim_meta(n_studies = 3, seed = 1): could not find function "sim_meta"
+sim <- simulate_meta_did(n_studies = 3, seed = 1)
 as_summary_did(sim)
-#> Error: object 'sim' not found
+#> # A tibble: 3 × 13
+#>   study_id design n_control n_treatment mean_pre_control mean_post_control
+#>   <chr>    <chr>      <int>       <int>            <dbl>             <dbl>
+#> 1 study_1  did          100         100            0.463             0.438
+#> 2 study_2  did          100         100            0.441             0.424
+#> 3 study_3  did          100         100            0.452             0.434
+#> # ℹ 7 more variables: sd_pre_control <dbl>, sd_post_control <dbl>,
+#> #   mean_pre_treatment <dbl>, mean_post_treatment <dbl>,
+#> #   sd_pre_treatment <dbl>, sd_post_treatment <dbl>, rho <dbl>
 ```

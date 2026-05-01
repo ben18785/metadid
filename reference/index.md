@@ -38,7 +38,7 @@ Diagnose model fit via posterior predictive comparisons.
 - [`pp_check_effects()`](https://ben18785.github.io/metadid/reference/pp_check_effects.md)
   : Posterior predictive check: study-level treatment effects
 - [`pp_check_cdf()`](https://ben18785.github.io/metadid/reference/pp_check_cdf.md)
-  : Posterior predictive check: individual-level CDF comparison
+  : Posterior predictive check: CDF comparison
 
 ## Simulation
 

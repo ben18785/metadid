@@ -18,6 +18,12 @@ scale.
 difference-in-differences (DiD) structure. Different study designs
 correspond to observing different parts of this latent structure.
 
+DiD studies are the only design in this framework that directly identify
+the treatment effect. Meta-analyses that do not include DiD studies are
+not identified from the data and depend entirely on modelling
+assumptions. We do not recommend using this approach in the absence of
+DiD evidence.
+
 ### Latent DiD model
 
 For study $`i`$, outcomes in the **control group** satisfy
@@ -177,6 +183,11 @@ published study.
 ``` r
 
 library(metadid)
+#> 
+#> Attaching package: 'metadid'
+#> The following object is masked from 'package:base':
+#> 
+#>     gamma
 
 sim <- simulate_meta_did(
   n_studies     = 20,
@@ -199,8 +210,8 @@ head(studies)
 #> 5 study_13 did          100         100            0.447             0.435
 #> 6 study_14 did          100         100            0.461             0.416
 #> # ℹ 7 more variables: sd_pre_control <dbl>, sd_post_control <dbl>,
-#> #   mean_pre_treatment <dbl>, mean_post_treatment <dbl>, sd_pre_treatment <dbl>,
-#> #   sd_post_treatment <dbl>, rho <dbl>
+#> #   mean_pre_treatment <dbl>, mean_post_treatment <dbl>,
+#> #   sd_pre_treatment <dbl>, sd_post_treatment <dbl>, rho <dbl>
 ```
 
 The true population treatment effect is `-0.15` on the raw scale, or

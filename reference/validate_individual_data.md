@@ -17,7 +17,9 @@ validate_individual_data(data)
 - data:
 
   A data frame in long format with one row per observation. Required
-  columns: `study_id`, `design`, `group`, `time`, `value`. Valid
+  columns: `study_id`, `design`, `group`, `time`, `value`. For
+  repeated-measures designs (`"did"` and `"pp"`), a `subject_id` column
+  is also required to correctly pair pre and post observations. Valid
   designs: `"did"`, `"rct"`, `"pp"`.
 
 ## Value
