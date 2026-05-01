@@ -1,11 +1,14 @@
+# .github/workflows/test-coverage.yaml
+
 on:
   push:
     branches: [main]
+  pull_request:
 
-name: tests
+name: test-coverage
 
 jobs:
-  tests:
+  test-coverage:
     runs-on: ubuntu-latest
 
     env:
@@ -24,7 +27,9 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::devtools
+          extra-packages: |
+            any::covr
+            any::devtools
 
       - name: Cache CmdStan
         uses: actions/cache@v4
@@ -43,6 +48,14 @@ jobs:
         run: devtools::install(upgrade = "never", quiet = FALSE)
         shell: Rscript {0}
 
-      - name: Run tests
-        run: devtools::test()
+      - name: Test coverage
+        run: covr::to_cobertura(covr::package_coverage(), filename = "coverage.xml")
         shell: Rscript {0}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
