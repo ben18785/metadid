@@ -3,6 +3,10 @@
 
 # metadid
 
+[![tests](https://github.com/ben18785/metadid/actions/workflows/tests.yaml/badge.svg)](https://github.com/ben18785/metadid/actions)
+[![Codecov test
+coverage](https://codecov.io/gh/ben18785/metadid/graph/badge.svg)](https://app.codecov.io/gh/ben18785/metadid)
+
 **metadid** is an R package for Bayesian meta-analysis that synthesises
 treatment effects across studies with different designs:
 difference-in-differences (DiD), randomised controlled trials (RCT), and
@@ -10,6 +14,147 @@ pre-post studies. It uses a hierarchical Stan model that accounts for
 design-specific information and heterogeneity across studies, with
 optional baseline normalisation to place outcomes on a common fractional
 scale.
+
+## Model assumptions
+
+`metadid` assumes that all studies arise from a common latent
+difference-in-differences (DiD) structure. Different study designs
+correspond to observing different parts of this latent structure.
+
+### Latent DiD model
+
+## Model assumptions
+
+`metadid` assumes that all studies arise from a common latent
+difference-in-differences (DiD) structure. Different study designs
+correspond to observing different parts of this latent structure.
+
+### Latent DiD model
+
+## Model assumptions
+
+`metadid` assumes that all studies arise from a common latent
+difference-in-differences (DiD) structure. Different study designs
+correspond to observing different parts of this latent structure.
+
+### Latent DiD model
+
+For study $i$, outcomes in the **control group** satisfy
+
+$$
+\begin{pmatrix}
+Y_{i,c,\mathrm{pre}} \\
+Y_{i,c,\mathrm{post}}
+\end{pmatrix}
+\sim
+\mathcal{N}
+\left[
+\begin{pmatrix}
+\alpha_i \\
+\alpha_i + \beta_i
+\end{pmatrix}
+\;,\;
+\begin{pmatrix}
+\sigma^2_{i,c,\mathrm{pre}} &
+\rho_{i,c}\sigma_{i,c,\mathrm{pre}}\sigma_{i,c,\mathrm{post}} \\
+\rho_{i,c}\sigma_{i,c,\mathrm{pre}}\sigma_{i,c,\mathrm{post}} &
+\sigma^2_{i,c,\mathrm{post}}
+\end{pmatrix}
+\right],
+$$
+
+and outcomes in the **treatment group** satisfy
+
+$$
+\begin{pmatrix}
+Y_{i,t,\mathrm{pre}} \\
+Y_{i,t,\mathrm{post}}
+\end{pmatrix}
+\sim
+\mathcal{N}
+\left[
+\begin{pmatrix}
+\alpha_i + \gamma_i \\
+\alpha_i + \gamma_i + \beta_i + \theta_i
+\end{pmatrix}
+\;,\;
+\begin{pmatrix}
+\sigma^2_{i,t,\mathrm{pre}} &
+\rho_{i,t}\sigma_{i,t,\mathrm{pre}}\sigma_{i,t,\mathrm{post}} \\
+\rho_{i,t}\sigma_{i,t,\mathrm{pre}}\sigma_{i,t,\mathrm{post}} &
+\sigma^2_{i,t,\mathrm{post}}
+\end{pmatrix}
+\right].
+$$
+
+Here: - $\alpha_i$: baseline mean in the control group  
+- $\beta_i$: time trend shared across groups  
+- $\gamma_i$: baseline difference between treatment and control  
+- $\theta_i$: study-specific treatment effect  
+- $\rho_{i,c}$, $\rho_{i,t}$: pre/post correlations  
+- $\sigma_{i,g,\mathrm{pre}}$, $\sigma_{i,g,\mathrm{post}}$: marginal
+standard deviations
+
+The key identifying assumption is that, in the absence of treatment, the
+treatment group would have followed the same time trend $\beta_i$ as the
+control group.
+
+------------------------------------------------------------------------
+
+### Study designs as partial observations
+
+Different study designs correspond to observing subsets of this latent
+structure:
+
+- **DiD / RCT**: both groups and both time points observed  
+- **Pre-post**: treatment group only  
+- **Post-only / change-score**: partial observations of levels or
+  differences
+
+Inference for incomplete designs relies on the shared latent structure
+across studies.
+
+------------------------------------------------------------------------
+
+### Hierarchical treatment effects
+
+Study-specific treatment effects are modelled hierarchically, for
+example as
+
+$$
+\theta_i \sim \mathcal{N}(\mu_\theta, \tau_\theta^2),
+$$
+
+where $\mu_\theta$ is the overall treatment effect and $\tau_\theta$
+captures between-study heterogeneity.
+
+For robustness to outlying study effects, the model can alternatively
+use a Student-$t$ distribution,
+
+$$
+\theta_i \sim t_\nu(\mu_\theta, \tau_\theta),
+$$
+
+where $\nu$ controls the tail-heaviness.
+
+------------------------------------------------------------------------
+
+### Individual-level and summary-level data
+
+The model supports both:
+
+- **individual-level data**, and  
+- **summary statistics** (means, variances, sample sizes)
+
+by deriving likelihoods from the same bivariate normal model.
+
+------------------------------------------------------------------------
+
+### Practical implication
+
+Designs with missing components (e.g. pre-post) become informative by
+borrowing structure from other studies, but this increases reliance on
+the modelling assumptions above.
 
 ## Installation
 
@@ -29,7 +174,7 @@ Then install metadid from GitHub:
 
 ``` r
 # install.packages("pak")
-pak::pak("bcl206/metadid")
+pak::pak("ben18785/metadid")
 ```
 
 ## Quick start
