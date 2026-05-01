@@ -17,6 +17,7 @@ meta_did(
   iter_warmup = 1000L,
   iter_sampling = 1000L,
   seed = NULL,
+  allow_no_did = FALSE,
   ...
 )
 }
@@ -71,6 +72,12 @@ Default \code{4}.}
 
 \item{seed}{Integer random seed for reproducibility. Default \code{NULL}.}
 
+\item{allow_no_did}{Logical. If \code{FALSE} (default), \code{meta_did()} will
+stop with an error when no DiD studies are present, because the
+treatment effect is not identified from the data without the
+double-difference structure. Set to \code{TRUE} to override this check
+if you understand the limitation (the posterior will be prior-driven).}
+
 \item{...}{Additional arguments passed to the underlying CmdStanModel
 method: \verb{$sample()} when \code{method = "sample"} (e.g., \code{parallel_chains},
 \code{adapt_delta}) or \verb{$optimize()} when \code{method = "optimize"} (e.g.,
@@ -87,6 +94,12 @@ Fits a hierarchical Bayesian model synthesising treatment effects from
 studies with different designs: difference-in-differences (DiD), randomised
 controlled trials (RCT), and pre-post studies. All designs contribute to a
 shared population treatment effect.
+}
+\details{
+DiD studies are required for identification of the treatment effect. Without
+them, the treatment effect is confounded with time trends (pre-post) or
+baseline group differences (RCT). See \code{vignette("model-details")} for a
+full discussion of the model, normalisation, and identification.
 }
 \examples{
 if (instantiate::stan_cmdstan_exists()) {
