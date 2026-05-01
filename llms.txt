@@ -20,22 +20,6 @@ correspond to observing different parts of this latent structure.
 
 ### Latent DiD model
 
-## Model assumptions
-
-`metadid` assumes that all studies arise from a common latent
-difference-in-differences (DiD) structure. Different study designs
-correspond to observing different parts of this latent structure.
-
-### Latent DiD model
-
-## Model assumptions
-
-`metadid` assumes that all studies arise from a common latent
-difference-in-differences (DiD) structure. Different study designs
-correspond to observing different parts of this latent structure.
-
-### Latent DiD model
-
 For study $`i`$, outcomes in the **control group** satisfy
 
 ``` math
