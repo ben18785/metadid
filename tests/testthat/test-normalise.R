@@ -65,16 +65,48 @@ test_that("normalise_summary() returns NULL factors for NULL data", {
   expect_equal(length(result$factors), 0)
 })
 
-test_that("normalise_summary() normalises individual data by pre control mean", {
+test_that("normalise_summary() normalises individual DiD by pre-control mean", {
   individual_df <- data.frame(
-    study_id = rep("S1", 4),
-    design   = "did",
-    group    = rep(c("control", "treatment"), each = 2),
-    time     = rep(c("pre", "post"), 2),
-    value    = c(100, 90, 110, 80)
+    study_id   = rep("S1", 4),
+    subject_id = rep(1, 4),
+    design     = "did",
+    group      = rep(c("control", "treatment"), each = 2),
+    time       = rep(c("pre", "post"), 2),
+    value      = c(100, 90, 110, 80)
   )
   result <- normalise_summary(NULL, individual_df)
 
   # Pre-control mean = 100; all values divided by 100
   expect_equal(result$individual_data$value, c(1.0, 0.9, 1.1, 0.8))
+})
+
+test_that("normalise_summary() normalises individual RCT by post-control mean", {
+  individual_df <- data.frame(
+    study_id = rep("R1", 4),
+    design   = "rct",
+    group    = rep(c("control", "treatment"), each = 2),
+    time     = "post",
+    value    = c(50, 60, 40, 35)
+  )
+  result <- normalise_summary(NULL, individual_df)
+
+  # Post-control mean = (50 + 60) / 2 = 55; all values divided by 55
+  expect_equal(result$individual_data$value, c(50, 60, 40, 35) / 55)
+  expect_false(any(is.nan(result$individual_data$value)))
+})
+
+test_that("normalise_summary() normalises individual PP by pre-treatment mean", {
+  individual_df <- data.frame(
+    study_id   = rep("P1", 4),
+    subject_id = rep(1:2, 2),
+    design     = "pp",
+    group      = "treatment",
+    time       = rep(c("pre", "post"), each = 2),
+    value      = c(200, 210, 180, 170)
+  )
+  result <- normalise_summary(NULL, individual_df)
+
+  # Pre-treatment mean = (200 + 210) / 2 = 205; all values divided by 205
+  expect_equal(result$individual_data$value, c(200, 210, 180, 170) / 205)
+  expect_false(any(is.nan(result$individual_data$value)))
 })

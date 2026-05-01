@@ -149,20 +149,25 @@ split_rho <- function(rho_vec) {
 
 adapt_individual <- function(data) {
   if (is.null(data) || nrow(data) == 0) return(data.frame())
-  # Generate a within-(study, group, time) row index so each subject gets its
-  # own row after pivoting. This pairs the i-th pre observation with the i-th
-  # post observation within each (study_id, group).
-  data |>
-    dplyr::group_by(.data$study_id, .data$group, .data$time) |>
-    dplyr::mutate(.subject = dplyr::row_number()) |>
-    dplyr::ungroup() |>
-    tidyr::pivot_wider(
-      id_cols     = c("study_id", "group", ".subject"),
-      names_from  = "time",
-      values_from = "value"
-    ) |>
-    dplyr::select(-".subject") |>
-    dplyr::rename(type = "group", before = "pre", after = "post")
+
+  design <- unique(data$design)
+
+  if (any(design %in% c("did", "pp"))) {
+    # Repeated-measures designs: pivot on subject_id for correct pairing
+    data |>
+      tidyr::pivot_wider(
+        id_cols     = c("study_id", "group", "subject_id"),
+        names_from  = "time",
+        values_from = "value"
+      ) |>
+      dplyr::select(-"subject_id") |>
+      dplyr::rename(type = "group", before = "pre", after = "post")
+  } else {
+    # RCT: post-only, no pairing needed
+    data |>
+      dplyr::rename(type = "group", after = "value") |>
+      dplyr::select("study_id", "type", "after")
+  }
 }
 
 # ---------------------------------------------------------------------------

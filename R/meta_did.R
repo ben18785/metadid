@@ -5,6 +5,11 @@
 #' controlled trials (RCT), and pre-post studies. All designs contribute to a
 #' shared population treatment effect.
 #'
+#' DiD studies are required for identification of the treatment effect. Without
+#' them, the treatment effect is confounded with time trends (pre-post) or
+#' baseline group differences (RCT). See `vignette("model-details")` for a
+#' full discussion of the model, normalisation, and identification.
+#'
 #' @param summary_data A data frame with one row per study containing
 #'   summary statistics. Must include columns `study_id` and `design`. See
 #'   [validate_summary_data()] for the full column specification per design.
@@ -43,6 +48,11 @@
 #' @param iter_sampling Number of sampling iterations per chain. Ignored when
 #'   `method = "optimize"`. Default `1000`.
 #' @param seed Integer random seed for reproducibility. Default `NULL`.
+#' @param allow_no_did Logical. If `FALSE` (default), `meta_did()` will
+#'   stop with an error when no DiD studies are present, because the
+#'   treatment effect is not identified from the data without the
+#'   double-difference structure. Set to `TRUE` to override this check
+#'   if you understand the limitation (the posterior will be prior-driven).
 #' @param ... Additional arguments passed to the underlying CmdStanModel
 #'   method: `$sample()` when `method = "sample"` (e.g., `parallel_chains`,
 #'   `adapt_delta`) or `$optimize()` when `method = "optimize"` (e.g.,
@@ -87,6 +97,7 @@ meta_did <- function(
     iter_warmup           = 1000L,
     iter_sampling         = 1000L,
     seed                  = NULL,
+    allow_no_did          = FALSE,
     ...
 ) {
   method <- match.arg(method)
@@ -96,6 +107,7 @@ meta_did <- function(
     stop("At least one of summary_data or individual_data must be provided.",
          call. = FALSE)
   }
+
   validate_summary_data(summary_data)
   validate_individual_data(individual_data)
 
@@ -109,6 +121,22 @@ meta_did <- function(
         call. = FALSE
       )
     }
+  }
+
+  # --- DiD identification check ---
+  n_did <- sum(c(
+    if (!is.null(summary_data))    sum(summary_data$design %in% c("did", "did_change")),
+    if (!is.null(individual_data)) sum(individual_data$design == "did")
+  ))
+  if (n_did == 0 && !allow_no_did) {
+    stop(
+      "No DiD studies found. Without DiD studies, the treatment effect is not ",
+      "identified from the data \u2014 it is confounded with time trends (pre-post) ",
+      "or baseline group differences (RCT), and the posterior will be driven by ",
+      "the priors rather than the data.\n",
+      "If you understand this limitation and wish to proceed, set allow_no_did = TRUE.",
+      call. = FALSE
+    )
   }
 
   # --- Normalisation ---
@@ -246,11 +274,25 @@ normalise_summary <- function(summary_data, individual_data) {
 
   if (!is.null(individual_data) && nrow(individual_data) > 0) {
     individual_data <- individual_data |>
-      dplyr::group_by(.data$study_id) |>
+      dplyr::group_by(.data$study_id, .data$design) |>
       dplyr::mutate(
-        value = .data$value / mean(.data$value[.data$group == "control" &
-                                                 .data$time == "pre"],
-                                   na.rm = TRUE)
+        value = .data$value / dplyr::case_when(
+          # DiD: normalise by pre-treatment control mean
+          .data$design == "did" ~ mean(
+            .data$value[.data$group == "control" & .data$time == "pre"],
+            na.rm = TRUE
+          ),
+          # RCT: normalise by post-treatment control mean (no pre data)
+          .data$design == "rct" ~ mean(
+            .data$value[.data$group == "control" & .data$time == "post"],
+            na.rm = TRUE
+          ),
+          # Pre-post: normalise by pre-treatment treatment mean (no control)
+          .data$design == "pp" ~ mean(
+            .data$value[.data$group == "treatment" & .data$time == "pre"],
+            na.rm = TRUE
+          )
+        )
       ) |>
       dplyr::ungroup()
   }
