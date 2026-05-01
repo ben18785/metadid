@@ -37,7 +37,7 @@ jobs:
         shell: bash
 
       - name: Install package
-        run: devtools::install(upgrade = "never", quiet = FALSE)
+        run: devtools::install(upgrade = FALSE, quiet = FALSE)
         shell: Rscript {0}
 
       - name: Run tests
