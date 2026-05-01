@@ -21,6 +21,7 @@ meta_did(
   iter_warmup = 1000L,
   iter_sampling = 1000L,
   seed = NULL,
+  allow_no_did = FALSE,
   ...
 )
 ```
@@ -102,6 +103,14 @@ meta_did(
 
   Integer random seed for reproducibility. Default `NULL`.
 
+- allow_no_did:
+
+  Logical. If `FALSE` (default), `meta_did()` will stop with an error
+  when no DiD studies are present, because the treatment effect is not
+  identified from the data without the double-difference structure. Set
+  to `TRUE` to override this check if you understand the limitation (the
+  posterior will be prior-driven).
+
 - ...:
 
   Additional arguments passed to the underlying CmdStanModel method:
@@ -117,6 +126,14 @@ and
 [`summary.meta_did_fit()`](https://ben18785.github.io/metadid/reference/summary.meta_did_fit.md)
 for extracting results. When `method = "optimize"`, the summary contains
 MAP point estimates only; `sd`, `lo`, and `hi` columns will be `NA`.
+
+## Details
+
+DiD studies are required for identification of the treatment effect.
+Without them, the treatment effect is confounded with time trends
+(pre-post) or baseline group differences (RCT). See
+[`vignette("model-details")`](https://ben18785.github.io/metadid/articles/model-details.md)
+for a full discussion of the model, normalisation, and identification.
 
 ## Examples
 

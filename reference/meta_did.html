@@ -61,6 +61,7 @@ shared population treatment effect.</p>
 <span>  iter_warmup <span class="op">=</span> <span class="fl">1000L</span>,</span>
 <span>  iter_sampling <span class="op">=</span> <span class="fl">1000L</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  allow_no_did <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -143,6 +144,14 @@ Default <code>4</code>.</p></dd>
 <dd><p>Integer random seed for reproducibility. Default <code>NULL</code>.</p></dd>
 
 
+<dt id="arg-allow-no-did">allow_no_did<a class="anchor" aria-label="anchor" href="#arg-allow-no-did"></a></dt>
+<dd><p>Logical. If <code>FALSE</code> (default), <code>meta_did()</code> will
+stop with an error when no DiD studies are present, because the
+treatment effect is not identified from the data without the
+double-difference structure. Set to <code>TRUE</code> to override this check
+if you understand the limitation (the posterior will be prior-driven).</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments passed to the underlying CmdStanModel
 method: <code>$sample()</code> when <code>method = "sample"</code> (e.g., <code>parallel_chains</code>,
@@ -156,6 +165,13 @@ method: <code>$sample()</code> when <code>method = "sample"</code> (e.g., <code>
 <code><a href="summary.meta_did_fit.html">summary.meta_did_fit()</a></code> for extracting results. When
 <code>method = "optimize"</code>, the summary contains MAP point estimates only;
 <code>sd</code>, <code>lo</code>, and <code>hi</code> columns will be <code>NA</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>DiD studies are required for identification of the treatment effect. Without
+them, the treatment effect is confounded with time trends (pre-post) or
+baseline group differences (RCT). See <code><a href="../articles/model-details.html">vignette("model-details")</a></code> for a
+full discussion of the model, normalisation, and identification.</p>
     </div>
 
     <div class="section level2">
