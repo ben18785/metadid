@@ -10,6 +10,8 @@ Description: A Bayesian meta-analysis framework for synthesizing treatment
     hierarchical models in Stan that account for design-specific biases, missing 
     correlation structures, and heterogeneity across studies.
 License: MIT + file LICENSE
+URL: https://ben18785.github.io/metadid/, https://github.com/ben18785/metadid
+BugReports: https://github.com/ben18785/metadid/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
@@ -27,6 +29,7 @@ Suggests:
     testthat (>= 3.0.0),
     covr,
     knitr,
+    pkgdown,
     rmarkdown
 VignetteBuilder: knitr
 Config/testthat/edition: 3

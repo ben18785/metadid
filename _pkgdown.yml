@@ -1,0 +1,62 @@
+url: https://ben18785.github.io/metadid/
+
+template:
+  bootstrap: 5
+
+navbar:
+  structure:
+    left: [intro, reference, articles]
+    right: [search, github]
+  components:
+    github:
+      icon: fa-github
+      href: https://github.com/ben18785/metadid
+
+reference:
+  - title: Model fitting
+    desc: Fit the hierarchical Bayesian meta-analysis model.
+    contents:
+      - meta_did
+      - set_priors
+
+  - title: Prior distributions
+    desc: Specify prior distributions for model parameters.
+    contents:
+      - normal
+      - cauchy
+      - gamma
+
+  - title: Results
+    desc: Summarise and inspect fitted models.
+    contents:
+      - tidy.meta_did_fit
+
+  - title: Posterior predictive checks
+    desc: Diagnose model fit via posterior predictive comparisons.
+    contents:
+      - pp_check_effects
+      - pp_check_cdf
+
+  - title: Simulation
+    desc: Simulate data from the hierarchical DiD model.
+    contents:
+      - simulate_meta_did
+
+  - title: Design extractors
+    desc: >
+      Convert simulated individual-level data to the format expected by
+      different study designs, at either the individual or summary level.
+    contents:
+      - starts_with("as_individual")
+      - starts_with("as_summary")
+
+  - title: Validation
+    desc: Validate data inputs before fitting.
+    contents:
+      - validate_summary_data
+      - validate_individual_data
+
+articles:
+  - title: Vignettes
+    contents:
+      - mixed-designs
