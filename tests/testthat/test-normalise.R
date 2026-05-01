@@ -60,6 +60,79 @@ test_that("normalise_summary() divides PP by mean_pre_treatment", {
   expect_equal(result$factors$pp, c(P1 = 200))
 })
 
+test_that("normalise_summary() divides did_change by grand mean of DiD pre-control", {
+  # DiD study with mean_pre_control = 100, plus a did_change study
+  did_df <- data.frame(
+    study_id            = "S1",
+    design              = "did",
+    n_control           = 50L,
+    mean_pre_control    = 100,
+    mean_post_control   = 90,
+    sd_pre_control      = 20,
+    sd_post_control     = 18,
+    n_treatment         = 55L,
+    mean_pre_treatment  = 105,
+    mean_post_treatment = 80,
+    sd_pre_treatment    = 22,
+    sd_post_treatment   = 15
+  )
+  chg_df <- data.frame(
+    study_id              = "C1",
+    design                = "did_change",
+    n_control             = 40L,
+    n_treatment           = 45L,
+    mean_change_control   = -10,
+    sd_change_control     = 15,
+    mean_change_treatment = -30,
+    sd_change_treatment   = 18
+  )
+  df <- dplyr::bind_rows(did_df, chg_df)
+  result <- normalise_summary(df, NULL)
+
+  # Grand mean of DiD pre-control means = 100 (one DiD study)
+  chg_row <- result$summary_data[result$summary_data$design == "did_change", ]
+  expect_equal(chg_row$mean_change_control,   -10 / 100)
+  expect_equal(chg_row$mean_change_treatment, -30 / 100)
+  expect_equal(chg_row$sd_change_control,      15 / 100)
+  expect_equal(chg_row$sd_change_treatment,    18 / 100)
+  expect_equal(result$factors$did_change, 100)
+})
+
+test_that("normalise_summary() uses grand mean across multiple DiD studies for did_change", {
+  did_df <- data.frame(
+    study_id            = c("S1", "S2"),
+    design              = "did",
+    n_control           = c(50L, 60L),
+    mean_pre_control    = c(80, 120),
+    mean_post_control   = c(75, 110),
+    sd_pre_control      = c(20, 25),
+    sd_post_control     = c(18, 22),
+    n_treatment         = c(55L, 65L),
+    mean_pre_treatment  = c(82, 118),
+    mean_post_treatment = c(60, 90),
+    sd_pre_treatment    = c(22, 24),
+    sd_post_treatment   = c(15, 20)
+  )
+  chg_df <- data.frame(
+    study_id              = "C1",
+    design                = "did_change",
+    n_control             = 40L,
+    n_treatment           = 45L,
+    mean_change_control   = -5,
+    sd_change_control     = 10,
+    mean_change_treatment = -20,
+    sd_change_treatment   = 12
+  )
+  df <- dplyr::bind_rows(did_df, chg_df)
+  result <- normalise_summary(df, NULL)
+
+  # Grand mean = mean(80, 120) = 100
+  chg_row <- result$summary_data[result$summary_data$design == "did_change", ]
+  expect_equal(chg_row$mean_change_control,   -5 / 100)
+  expect_equal(chg_row$mean_change_treatment, -20 / 100)
+  expect_equal(result$factors$did_change, 100)
+})
+
 test_that("normalise_summary() returns NULL factors for NULL data", {
   result <- normalise_summary(NULL, NULL)
   expect_equal(length(result$factors), 0)
