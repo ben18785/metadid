@@ -34,7 +34,7 @@ Then install metadid from GitHub:
 
 ```r
 # install.packages("pak")
-pak::pak("bcl206/metadid")
+pak::pak("ben18785/metadid")
 ```
 
 ## Quick start
