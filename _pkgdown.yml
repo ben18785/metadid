@@ -29,6 +29,8 @@ reference:
   - title: Results
     desc: Summarise and inspect fitted models.
     contents:
+      - print.meta_did_fit
+      - summary.meta_did_fit
       - tidy.meta_did_fit
 
   - title: Posterior predictive checks
