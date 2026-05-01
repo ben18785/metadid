@@ -136,11 +136,11 @@ simulate_meta_did <- function(
 #'   for design `"did"`.
 #' @export
 #' @examples
-#' sim <- sim_meta(n_studies = 3, seed = 1)
+#' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' head(as_individual_did(sim))
 as_individual_did <- function(sim) {
   dplyr::mutate(sim, design = "did") |>
-    dplyr::select("study_id", "design", "group", "time", "value")
+    dplyr::select("study_id", "subject_id", "design", "group", "time", "value")
 }
 
 #' Extract post-only individual-level RCT data for use with meta_did()
@@ -154,7 +154,7 @@ as_individual_did <- function(sim) {
 #'   for design `"rct"`.
 #' @export
 #' @examples
-#' sim <- sim_meta(n_studies = 3, seed = 1)
+#' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' head(as_individual_rct(sim))
 as_individual_rct <- function(sim) {
   sim |>
@@ -173,13 +173,13 @@ as_individual_rct <- function(sim) {
 #'   for design `"pp"`.
 #' @export
 #' @examples
-#' sim <- sim_meta(n_studies = 3, seed = 1)
+#' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' head(as_individual_pp(sim))
 as_individual_pp <- function(sim) {
   sim |>
     dplyr::filter(.data$group == "treatment") |>
     dplyr::mutate(design = "pp") |>
-    dplyr::select("study_id", "design", "group", "time", "value")
+    dplyr::select("study_id", "subject_id", "design", "group", "time", "value")
 }
 
 # ---------------------------------------------------------------------------
@@ -198,7 +198,7 @@ as_individual_pp <- function(sim) {
 #'   [validate_summary_data()] for design `"did"`.
 #' @export
 #' @examples
-#' sim <- sim_meta(n_studies = 3, seed = 1)
+#' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' as_summary_did(sim)
 as_summary_did <- function(sim) {
   cell_stats <- sim |>
@@ -251,7 +251,7 @@ as_summary_did <- function(sim) {
 #'   [validate_summary_data()] for design `"rct"`.
 #' @export
 #' @examples
-#' sim <- sim_meta(n_studies = 3, seed = 1)
+#' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' as_summary_rct(sim)
 as_summary_rct <- function(sim) {
   sim |>
@@ -287,7 +287,7 @@ as_summary_rct <- function(sim) {
 #'   [validate_summary_data()] for design `"pp"`.
 #' @export
 #' @examples
-#' sim <- sim_meta(n_studies = 3, seed = 1)
+#' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' as_summary_pp(sim)
 as_summary_pp <- function(sim) {
   trt <- dplyr::filter(sim, .data$group == "treatment")
@@ -332,7 +332,7 @@ as_summary_pp <- function(sim) {
 #'   [validate_summary_data()] for design `"did_change"`.
 #' @export
 #' @examples
-#' sim <- sim_meta(n_studies = 3, seed = 1)
+#' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' as_summary_did_change(sim)
 as_summary_did_change <- function(sim) {
   sim |>

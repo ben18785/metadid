@@ -121,6 +121,8 @@ validate_summary_data <- function(data) {
 #'
 #' @param data A data frame in long format with one row per observation.
 #'   Required columns: `study_id`, `design`, `group`, `time`, `value`.
+#'   For repeated-measures designs (`"did"` and `"pp"`), a `subject_id`
+#'   column is also required to correctly pair pre and post observations.
 #'   Valid designs: `"did"`, `"rct"`, `"pp"`.
 #'
 #' @return `data` invisibly if valid; otherwise stops with an informative error.
@@ -130,6 +132,20 @@ validate_individual_data <- function(data) {
 
   .check_cols(data, c("study_id", "design", "group", "time", "value"),
               context = "individual_data")
+
+  # DiD and PP designs have repeated measures and require subject_id for
+
+  # correct pre/post pairing in the bivariate normal likelihood.
+  needs_subject_id <- unique(data$design) %in% c("did", "pp")
+  if (any(needs_subject_id) && !"subject_id" %in% names(data)) {
+    designs <- unique(data$design[data$design %in% c("did", "pp")])
+    stop(
+      "individual_data must include a 'subject_id' column for repeated-measures ",
+      "designs (", paste(designs, collapse = ", "), "). Each subject must have ",
+      "exactly one 'pre' and one 'post' observation.",
+      call. = FALSE
+    )
+  }
 
   # design values (individual data only supports full pre/post designs)
   bad_design <- setdiff(unique(data$design), c("did", "rct", "pp"))
@@ -178,6 +194,30 @@ validate_individual_data <- function(data) {
       stop("Study '", study, "' has design 'rct' but contains pre-treatment rows.",
            call. = FALSE)
     }
+    # Require complete group/time structure per design
+    groups <- unique(sub$group)
+    times  <- unique(sub$time)
+    if (design == "did") {
+      if (!all(c("control", "treatment") %in% groups))
+        stop("Study '", study, "' (did): must have both 'control' and 'treatment' groups.",
+             call. = FALSE)
+      if (!all(c("pre", "post") %in% times))
+        stop("Study '", study, "' (did): must have both 'pre' and 'post' time points.",
+             call. = FALSE)
+    }
+    if (design == "rct") {
+      if (!all(c("control", "treatment") %in% groups))
+        stop("Study '", study, "' (rct): must have both 'control' and 'treatment' groups.",
+             call. = FALSE)
+    }
+    if (design == "pp") {
+      if (!"treatment" %in% groups)
+        stop("Study '", study, "' (pp): must have a 'treatment' group.",
+             call. = FALSE)
+      if (!all(c("pre", "post") %in% times))
+        stop("Study '", study, "' (pp): must have both 'pre' and 'post' time points.",
+             call. = FALSE)
+    }
     # Each participant should have exactly one pre and one post value (DiD/PP)
     if (design %in% c("did", "pp")) {
       counts <- table(sub$group, sub$time)
@@ -185,6 +225,28 @@ validate_individual_data <- function(data) {
         stop(
           "Study '", study, "': unequal number of 'pre' and 'post' observations ",
           "per group. Each participant should have exactly one pre and one post value.",
+          call. = FALSE
+        )
+      }
+      # Check subject_id is unique within (study, group, time)
+      dupes <- sub[duplicated(sub[, c("group", "time", "subject_id")]), ]
+      if (nrow(dupes) > 0) {
+        stop(
+          "Study '", study, "': duplicate subject_id values within the same ",
+          "group/time combination. Each subject must have exactly one 'pre' ",
+          "and one 'post' observation per group.",
+          call. = FALSE
+        )
+      }
+      # Check every subject has both pre and post
+      subj_times <- table(sub$subject_id, sub$time)
+      incomplete <- rownames(subj_times)[apply(subj_times, 1, function(r) any(r == 0))]
+      if (length(incomplete) > 0) {
+        stop(
+          "Study '", study, "': subject_id(s) ",
+          paste(head(incomplete, 3), collapse = ", "),
+          if (length(incomplete) > 3) ", ..." else "",
+          " are missing a 'pre' or 'post' observation.",
           call. = FALSE
         )
       }

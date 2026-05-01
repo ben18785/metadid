@@ -19,6 +19,6 @@ SDs for both arms. Produces data in the format expected by \code{\link[=meta_did
 design \code{"rct"}.
 }
 \examples{
-sim <- sim_meta(n_studies = 3, seed = 1)
+sim <- simulate_meta_did(n_studies = 3, seed = 1)
 as_summary_rct(sim)
 }

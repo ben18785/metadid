@@ -9,7 +9,7 @@ vector[1 - is_baseline_normalised] baseline_treatment_mean;
 vector<lower=0>[1 - is_baseline_normalised] baseline_treatment_sd;
 
 real treatment_effect_mean;
-real treatment_effect_sd;
+real<lower=0> treatment_effect_sd;
 
 // Hierarchical rho parameters (always declared; unused when flag is 0)
 real mu_z;

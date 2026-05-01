@@ -23,6 +23,8 @@ knitr::opts_chunk$set(
 
 `metadid` assumes that all studies arise from a common latent difference-in-differences (DiD) structure. Different study designs correspond to observing different parts of this latent structure.
 
+DiD studies are the only design in this framework that directly identify the treatment effect. Meta-analyses that do not include DiD studies are not identified from the data and depend entirely on modelling assumptions. We do not recommend using this approach in the absence of DiD evidence.
+
 ### Latent DiD model
 
 ## Model assumptions
@@ -189,7 +191,7 @@ The true population treatment effect is `-0.15` on the raw scale, or approximate
 
 ### 2. Fit the model via optimisation
 
-`meta_did()` fits a hierarchical Bayesian model. Setting `method = "optimize"` finds the maximum a posteriori (MAP) estimate via L-BFGS — much faster than full MCMC and useful for quick iteration.
+`meta_did()` fits a hierarchical Bayesian model. Setting `method = "optimize"` finds the maximum a posteriori (MAP) estimate via L-BFGS — this is faster than MCMC but provides no uncertainty measures in estimates.
 
 ```{r fit, eval = FALSE}
 fit <- meta_did(

@@ -19,6 +19,6 @@ Computes within-individual change scores (post minus pre) matched on
 format expected by \code{\link[=meta_did]{meta_did()}} for design \code{"did_change"}.
 }
 \examples{
-sim <- sim_meta(n_studies = 3, seed = 1)
+sim <- simulate_meta_did(n_studies = 3, seed = 1)
 as_summary_did_change(sim)
 }
