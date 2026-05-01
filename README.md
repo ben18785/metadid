@@ -191,11 +191,6 @@ typically reported in a published study.
 
 ``` r
 library(metadid)
-#> 
-#> Attaching package: 'metadid'
-#> The following object is masked from 'package:base':
-#> 
-#>     gamma
 
 sim <- simulate_meta_did(
   n_studies     = 20,
@@ -218,8 +213,8 @@ head(studies)
 #> 5 study_13 did          100         100            0.447             0.435
 #> 6 study_14 did          100         100            0.461             0.416
 #> # ℹ 7 more variables: sd_pre_control <dbl>, sd_post_control <dbl>,
-#> #   mean_pre_treatment <dbl>, mean_post_treatment <dbl>,
-#> #   sd_pre_treatment <dbl>, sd_post_treatment <dbl>, rho <dbl>
+#> #   mean_pre_treatment <dbl>, mean_post_treatment <dbl>, sd_pre_treatment <dbl>,
+#> #   sd_post_treatment <dbl>, rho <dbl>
 ```
 
 The true population treatment effect is `-0.15` on the raw scale, or
@@ -297,3 +292,25 @@ summary(fit_mcmc)
     #> 4  treatment_effect_did_summary -0.35087501 0.02539211 -0.39315193 -0.3085825
     #> 5  treatment_effect_did_summary -0.22512112 0.02910410 -0.27397179 -0.1791810
     #> ...
+
+### 5. Posterior predictive checks
+
+`pp_check_cdf(type = "summary")` compares the empirical CDF of observed
+study-level treatment effects (step function) to the posterior
+predictive CDF (ribbon and dashed median). If the model is
+well-calibrated, the observed ECDF should track the predictive band.
+
+``` r
+pp_check_cdf(fit_mcmc, type = "summary")
+```
+
+![](man/figures/README-pp-check-cdf-1.png)
+
+For a more granular per-study view, `pp_check_effects()` shows each
+study’s observed naive effect against its posterior predictive density:
+
+``` r
+pp_check_effects(fit_mcmc)
+```
+
+![](man/figures/README-pp-check-effects-1.png)

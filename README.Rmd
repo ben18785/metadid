@@ -261,3 +261,21 @@ summary(fit_mcmc)
 #> 5  treatment_effect_did_summary -0.22512112 0.02910410 -0.27397179 -0.1791810
 #> ...
 ```
+
+### 5. Posterior predictive checks
+
+`pp_check_cdf(type = "summary")` compares the empirical CDF of observed study-level treatment effects (step function) to the posterior predictive CDF (ribbon and dashed median). If the model is well-calibrated, the observed ECDF should track the predictive band.
+
+```{r pp-check-cdf, eval = FALSE}
+pp_check_cdf(fit_mcmc, type = "summary")
+```
+
+![](man/figures/README-pp-check-cdf-1.png)
+
+For a more granular per-study view, `pp_check_effects()` shows each study's observed naive effect against its posterior predictive density:
+
+```{r pp-check-effects, eval = FALSE}
+pp_check_effects(fit_mcmc)
+```
+
+![](man/figures/README-pp-check-effects-1.png)
