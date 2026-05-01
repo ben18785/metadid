@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 
 # metadid
 
-**metadid** is an R package for Bayesian meta-analysis that synthesises treatment effects across studies with different designs: difference-in-differences (DiD), randomised controlled trials (RCT), and pre-post studies. It uses a hierarchical Stan model that places all designs on a common normalised scale, accounting for design-specific information and heterogeneity across studies.
+**metadid** is an R package for Bayesian meta-analysis that synthesises treatment effects across studies with different designs: difference-in-differences (DiD), randomised controlled trials (RCT), and pre-post studies. It uses a hierarchical Stan model that accounts for design-specific information and heterogeneity across studies, with optional baseline normalisation to place outcomes on a common fractional scale.
 
 ## Installation
 
