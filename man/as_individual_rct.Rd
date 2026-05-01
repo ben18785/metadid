@@ -19,6 +19,6 @@ for both arms. Mimics a study in which only post-treatment measurements were
 taken.
 }
 \examples{
-sim <- sim_meta(n_studies = 3, seed = 1)
+sim <- simulate_meta_did(n_studies = 3, seed = 1)
 head(as_individual_rct(sim))
 }

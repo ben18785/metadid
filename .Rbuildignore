@@ -8,3 +8,5 @@
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^README\.html$
+src/stan/meta_analysis_master$

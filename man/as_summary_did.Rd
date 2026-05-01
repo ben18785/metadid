@@ -20,6 +20,6 @@ correlation \eqn{\rho} is estimated empirically from matched pairs within
 each arm and then averaged.
 }
 \examples{
-sim <- sim_meta(n_studies = 3, seed = 1)
+sim <- simulate_meta_did(n_studies = 3, seed = 1)
 as_summary_did(sim)
 }

@@ -59,6 +59,9 @@ reference:
       - validate_individual_data
 
 articles:
-  - title: Vignettes
+  - title: Getting started
     contents:
       - mixed-designs
+  - title: Theory
+    contents:
+      - model-details

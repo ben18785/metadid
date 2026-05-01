@@ -148,11 +148,12 @@ test_that("validate_summary_data() checks columns per design type", {
 
 make_individual_did <- function(n_per_group = 3) {
   data.frame(
-    study_id = "study1",
-    design   = "did",
-    group    = rep(c("control", "treatment"), each = n_per_group * 2),
-    time     = rep(c("pre", "post"), times = n_per_group * 2),
-    value    = rnorm(n_per_group * 4, mean = 100, sd = 10)
+    study_id   = "study1",
+    subject_id = rep(rep(seq_len(n_per_group), each = 2), 2),
+    design     = "did",
+    group      = rep(c("control", "treatment"), each = n_per_group * 2),
+    time       = rep(c("pre", "post"), times = n_per_group * 2),
+    value      = rnorm(n_per_group * 4, mean = 100, sd = 10)
   )
 }
 
@@ -168,11 +169,12 @@ make_individual_rct <- function(n_per_group = 3) {
 
 make_individual_pp <- function(n = 3) {
   data.frame(
-    study_id = "study_pp",
-    design   = "pp",
-    group    = "treatment",
-    time     = rep(c("pre", "post"), each = n),
-    value    = rnorm(n * 2, mean = 50, sd = 5)
+    study_id   = "study_pp",
+    subject_id = rep(seq_len(n), 2),
+    design     = "pp",
+    group      = "treatment",
+    time       = rep(c("pre", "post"), each = n),
+    value      = rnorm(n * 2, mean = 50, sd = 5)
   )
 }
 
@@ -240,4 +242,53 @@ test_that("validate_individual_data() rejects unbalanced pre/post", {
   post_idx <- which(df$group == "control" & df$time == "post")
   df <- df[-post_idx[1], ]
   expect_error(validate_individual_data(df), "unequal number.*pre.*post")
+})
+
+test_that("validate_individual_data() rejects DiD missing a group", {
+  df <- make_individual_did()
+  df <- df[df$group == "control", ]
+  expect_error(validate_individual_data(df), "must have both.*control.*treatment")
+})
+
+test_that("validate_individual_data() rejects DiD missing a time point", {
+  df <- make_individual_did()
+  df <- df[df$time == "pre", ]
+  expect_error(validate_individual_data(df), "must have both.*pre.*post")
+})
+
+test_that("validate_individual_data() rejects RCT with only one arm", {
+  df <- make_individual_rct()
+  df <- df[df$group == "treatment", ]
+  expect_error(validate_individual_data(df), "must have both.*control.*treatment")
+})
+
+test_that("validate_individual_data() rejects PP missing a time point", {
+  df <- make_individual_pp()
+  df <- df[df$time == "pre", ]
+  expect_error(validate_individual_data(df), "must have both.*pre.*post")
+})
+
+test_that("validate_individual_data() rejects DiD without subject_id", {
+  df <- make_individual_did()
+  df$subject_id <- NULL
+  expect_error(validate_individual_data(df), "subject_id")
+})
+
+test_that("validate_individual_data() rejects PP without subject_id", {
+  df <- make_individual_pp()
+  df$subject_id <- NULL
+  expect_error(validate_individual_data(df), "subject_id")
+})
+
+test_that("validate_individual_data() accepts RCT without subject_id", {
+  df <- make_individual_rct()
+  expect_invisible(validate_individual_data(df))
+})
+
+test_that("validate_individual_data() rejects duplicate subject_id within group/time", {
+  df <- make_individual_did()
+  # Make two subjects share the same subject_id in the same group/time
+  df$subject_id[df$group == "control" & df$time == "pre"][2] <-
+    df$subject_id[df$group == "control" & df$time == "pre"][1]
+  expect_error(validate_individual_data(df), "duplicate subject_id")
 })
