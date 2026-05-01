@@ -88,6 +88,7 @@ test_that("compute_observed_effects handles RCT and PP", {
 test_that("compute_observed_effects handles individual DiD data", {
   ind <- data.frame(
     study_id = rep("i1", 8),
+    subject_id = rep(rep(1:2, each = 2), 2),
     design = "did",
     group = rep(c("control", "treatment"), each = 4),
     time = rep(c("pre", "post"), 4),

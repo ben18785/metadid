@@ -63,12 +63,14 @@ test_that("adapt_individual() returns empty for NULL input", {
   expect_equal(nrow(adapt_individual(NULL)), 0)
 })
 
-test_that("adapt_individual() pivots long to wide correctly", {
+test_that("adapt_individual() pivots DiD long to wide using subject_id", {
   df <- data.frame(
-    study_id = rep("S1", 4),
-    group    = rep(c("control", "treatment"), each = 2),
-    time     = rep(c("pre", "post"), 2),
-    value    = c(10, 12, 11, 8)
+    study_id   = rep("S1", 4),
+    subject_id = rep(1, 4),
+    design     = "did",
+    group      = rep(c("control", "treatment"), each = 2),
+    time       = rep(c("pre", "post"), 2),
+    value      = c(10, 12, 11, 8)
   )
   result <- adapt_individual(df)
   expect_true("type" %in% names(result))
@@ -79,6 +81,36 @@ test_that("adapt_individual() pivots long to wide correctly", {
   ctrl <- result[result$type == "control", ]
   expect_equal(ctrl$before, 10)
   expect_equal(ctrl$after, 12)
+})
+
+test_that("adapt_individual() pairs by subject_id, not row order", {
+  # Subject 1 has pre=10, post=15; Subject 2 has pre=20, post=25
+  # Rows are deliberately shuffled so row_number() would mismatch
+  df <- data.frame(
+    study_id   = "S1",
+    subject_id = c(2, 1, 1, 2),
+    design     = "did",
+    group      = "control",
+    time       = c("pre", "post", "pre", "post"),
+    value      = c(20, 15, 10, 25)
+  )
+  result <- adapt_individual(df)
+  # Sort by before value to get deterministic order
+  result <- result[order(result$before), ]
+  expect_equal(result$before, c(10, 20))
+  expect_equal(result$after,  c(15, 25))
+})
+
+test_that("adapt_individual() works for RCT without subject_id", {
+  df <- data.frame(
+    study_id = rep("S1", 4),
+    design   = "rct",
+    group    = rep(c("control", "treatment"), each = 2),
+    time     = "post",
+    value    = c(50, 60, 40, 35)
+  )
+  result <- adapt_individual(df)
+  expect_equal(nrow(result), 4)
 })
 
 # ---------------------------------------------------------------------------
@@ -323,11 +355,12 @@ test_that("prepare_stan_data() handles mixed summary and individual", {
     sd_post_treatment   = 0.11
   )
   individual_df <- data.frame(
-    study_id = rep("ind_did", 4),
-    design   = "did",
-    group    = rep(c("control", "treatment"), each = 2),
-    time     = rep(c("pre", "post"), 2),
-    value    = c(10, 12, 11, 8)
+    study_id   = rep("ind_did", 4),
+    subject_id = rep(1, 4),
+    design     = "did",
+    group      = rep(c("control", "treatment"), each = 2),
+    time       = rep(c("pre", "post"), 2),
+    value      = c(10, 12, 11, 8)
   )
   flags  <- list(
     is_baseline_normalised                  = 0L,

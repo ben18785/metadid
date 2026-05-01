@@ -1,0 +1,280 @@
+---
+title: "Model details and identification"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Model details and identification}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette describes the statistical model underlying `meta_did()`, how
+baseline normalisation works, and what each study design can and cannot
+identify.
+
+## The latent DiD model
+
+metadid assumes that every study — regardless of design — arises from a
+common latent difference-in-differences (DiD) data-generating process. For
+study $i$, outcomes in the **control group** follow
+
+$$
+\begin{pmatrix}
+Y_{i,c,\mathrm{pre}} \\
+Y_{i,c,\mathrm{post}}
+\end{pmatrix}
+\sim
+\mathcal{N}
+\left[
+\begin{pmatrix}
+\alpha_i \\
+\alpha_i + \beta_i
+\end{pmatrix}
+,
+\begin{pmatrix}
+\sigma^2_{i,c,\mathrm{pre}} &
+\rho_{i,c}\,\sigma_{i,c,\mathrm{pre}}\,\sigma_{i,c,\mathrm{post}} \\
+\rho_{i,c}\,\sigma_{i,c,\mathrm{pre}}\,\sigma_{i,c,\mathrm{post}} &
+\sigma^2_{i,c,\mathrm{post}}
+\end{pmatrix}
+\right],
+$$
+
+and outcomes in the **treatment group** follow
+
+$$
+\begin{pmatrix}
+Y_{i,t,\mathrm{pre}} \\
+Y_{i,t,\mathrm{post}}
+\end{pmatrix}
+\sim
+\mathcal{N}
+\left[
+\begin{pmatrix}
+\alpha_i + \gamma_i \\
+\alpha_i + \gamma_i + \beta_i + \theta_i
+\end{pmatrix}
+,
+\begin{pmatrix}
+\sigma^2_{i,t,\mathrm{pre}} &
+\rho_{i,t}\,\sigma_{i,t,\mathrm{pre}}\,\sigma_{i,t,\mathrm{post}} \\
+\rho_{i,t}\,\sigma_{i,t,\mathrm{pre}}\,\sigma_{i,t,\mathrm{post}} &
+\sigma^2_{i,t,\mathrm{post}}
+\end{pmatrix}
+\right].
+$$
+
+The parameters are:
+
+- $\alpha_i$: baseline mean in the control group
+- $\beta_i$: time trend shared across groups
+- $\gamma_i$: baseline difference between treatment and control groups
+- $\theta_i$: study-specific treatment effect (the DiD estimand)
+- $\rho_{i,c}$, $\rho_{i,t}$: pre/post correlations within each group
+- $\sigma_{i,g,t}$: marginal standard deviations
+
+The key identifying assumption is that, absent treatment, the treatment group
+would have followed the same time trend $\beta_i$ as the control group
+(i.e., the parallel trends assumption).
+
+## What each design observes
+
+Different study designs observe different subsets of this latent bivariate
+structure:
+
+| Design | Groups observed | Time points observed | Cells of the 2×2 table |
+|--------|----------------|---------------------|------------------------|
+| **DiD** | Control + Treatment | Pre + Post | All 4 |
+| **DiD (change only)** | Control + Treatment | Change scores only | Differences of 2 pairs |
+| **RCT** | Control + Treatment | Post only | 2 |
+| **Pre-post** | Treatment only | Pre + Post | 2 |
+
+Because each design sees fewer cells, it has less ability to separate the
+parameters $\alpha$, $\beta$, $\gamma$, and $\theta$.
+
+## Identification
+
+### DiD studies: fully identified
+
+DiD studies observe all four cells of the 2×2 table. From the mean
+structure above, the four expected cell means are:
+
+| | Pre | Post |
+|-----------|-----|------|
+| **Control** | $\alpha_i$ | $\alpha_i + \beta_i$ |
+| **Treatment** | $\alpha_i + \gamma_i$ | $\alpha_i + \gamma_i + \beta_i + \theta_i$ |
+
+Taking the double difference of these expected values gives
+
+$$
+(\mu_{i,t,\mathrm{post}} - \mu_{i,t,\mathrm{pre}}) -
+(\mu_{i,c,\mathrm{post}} - \mu_{i,c,\mathrm{pre}}) =
+(\beta_i + \theta_i) - \beta_i = \theta_i.
+$$
+
+The time trend $\beta_i$ cancels, and the baseline difference $\gamma_i$
+cancels, leaving $\theta_i$ cleanly identified. DiD studies are the anchor
+for the entire model.
+
+### DiD (change only) studies: identified but without levels
+
+Some studies report only the mean change over time (post minus pre) in each
+arm, without reporting the level means separately. The expected change
+scores are $\beta_i$ (control) and $\beta_i + \theta_i$ (treatment), so
+the difference in change scores still identifies $\theta_i$. However,
+because the pre-treatment levels are not observed, these studies cannot
+anchor their own normalisation baseline (see below).
+
+### RCT studies: treatment effect confounded with baseline differences
+
+RCT studies observe only post-treatment outcomes for both arms. The
+expected difference between arms is
+
+$$
+\mu_{i,t,\mathrm{post}} - \mu_{i,c,\mathrm{post}} =
+(\alpha_i + \gamma_i + \beta_i + \theta_i) -
+(\alpha_i + \beta_i) = \gamma_i + \theta_i.
+$$
+
+Without pre-treatment data, $\theta_i$ is confounded with the baseline
+difference $\gamma_i$. Randomisation makes $\gamma_i$ small in expectation,
+but the model cannot separate the two from the data of a single RCT alone.
+
+### Pre-post studies: treatment effect confounded with time trends
+
+Pre-post studies observe only the treatment arm at both time points. The
+expected change over time is
+
+$$
+\mu_{i,t,\mathrm{post}} - \mu_{i,t,\mathrm{pre}} =
+(\alpha_i + \gamma_i + \beta_i + \theta_i) -
+(\alpha_i + \gamma_i) = \beta_i + \theta_i.
+$$
+
+Without a control arm, $\theta_i$ is confounded with the time trend
+$\beta_i$.
+
+### Summary
+
+| Design | Identifies $\theta_i$? | Confound |
+|--------|----------------------|----------|
+| **DiD** | Yes | — |
+| **DiD (change only)** | Yes | — |
+| **RCT** | No | Baseline group difference $\gamma_i$ |
+| **Pre-post** | No | Time trend $\beta_i$ |
+
+**Without DiD studies, the treatment effect is not identified from the
+data.** `meta_did()` will stop with an error if no DiD studies are present.
+This check can be overridden with `allow_no_did = TRUE`, but the resulting
+posterior will be driven primarily by the priors rather than the data.
+
+When DiD studies are present alongside RCT or pre-post studies, the
+hierarchical model propagates information: the time trend distribution
+estimated from DiD studies informs the pre-post decomposition, and the
+baseline structure from DiD studies informs the RCT decomposition. This
+cross-design borrowing is the core value of the metadid approach.
+
+## Baseline normalisation
+
+By default (`normalise_by_baseline = TRUE`), `meta_did()` normalises all
+outcome data by a design-appropriate baseline mean before fitting. This
+places all studies on a common relative scale, making the treatment effect
+interpretable as a proportional change.
+
+### How normalisation works per design
+
+| Design | Normalisation denominator | Effect on parameters |
+|--------|--------------------------|----------------------|
+| **DiD** | Pre-treatment control mean | $\alpha_i = 1$ |
+| **DiD (change only)** | Grand mean of DiD pre-control means | Shared rescaling (see below) |
+| **Pre-post** | Pre-treatment treatment mean | $\alpha_i + \gamma_i = 1$ |
+| **RCT** | Post-treatment control mean | $\alpha_i + \beta_i = 1$ |
+
+For DiD and pre-post studies, normalisation divides by a pre-treatment
+quantity, so the relevant baseline parameter is known to be exactly 1 and is
+fixed rather than estimated. The time trend and treatment effect remain as
+free parameters.
+
+DiD change-only studies report change scores (post minus pre) rather than
+level means, so they lack a study-specific pre-treatment level to normalise
+by. Instead, normalisation divides the change scores by the grand mean of
+the pre-control means across the full DiD studies in the meta-analysis. This
+places the change scores on the same relative scale as the other designs,
+but requires that at least some full DiD studies are present.
+
+For RCT studies, there is no pre-treatment data, so normalisation divides
+by the post-treatment control mean. This fixes the *sum*
+$\alpha_i + \beta_i = 1$, but does not fix $\alpha_i$ and $\beta_i$
+individually. Since only their sum is determined, the model fixes
+$\alpha_i = 1$ and $\beta_i = 0$ — the simplest split consistent with the
+constraint. The treatment effect then simplifies to:
+
+$$
+\theta_i = \bar{y}_{i,t,\mathrm{post}} - 1
+$$
+
+This is a modelling choice, not a consequence of the data. It means that
+normalised RCT treatment effects are interpreted relative to the control
+post-treatment mean, with no time-trend adjustment. This is appropriate
+when the primary goal is cross-design synthesis anchored by DiD studies,
+which provide the time-trend information.
+
+### Interpreting normalised treatment effects
+
+After normalisation, the population treatment effect $\mu_\theta$ is
+expressed in units relative to the baseline. For example,
+$\mu_\theta = -0.33$ means a 33% reduction relative to the baseline level.
+
+## Hierarchical structure
+
+Study-specific treatment effects are drawn from a population distribution:
+
+$$
+\theta_i \sim \mathcal{N}(\mu_\theta, \tau_\theta^2),
+$$
+
+where $\mu_\theta$ is the overall treatment effect (the primary quantity of
+interest) and $\tau_\theta$ captures between-study heterogeneity.
+
+Other study-level parameters (time trends $\beta_i$, baseline differences
+$\gamma_i$) similarly share population-level priors. Pre-post correlations
+$\rho$ can be modelled hierarchically via a Fisher-$z$ transform when
+`hierarchical_rho = TRUE`.
+
+### Design effects
+
+When `design_effects = TRUE`, the model allows the population treatment
+effect mean to differ systematically by design:
+
+$$
+\mu_{\theta,\text{RCT}} = \mu_\theta + \delta_{\text{RCT}}, \quad
+\mu_{\theta,\text{PP}} = \mu_\theta + \delta_{\text{PP}}
+$$
+
+where $\delta_{\text{RCT}}$ and $\delta_{\text{PP}}$ are estimated offsets.
+This relaxes the assumption that all designs estimate exactly the same
+estimand, which may be appropriate when selection effects or time trends
+differ systematically across designs.
+
+### Robust heterogeneity
+
+When `robust_heterogeneity = TRUE`, the treatment effect distribution uses
+a Student-$t$ instead of a normal:
+
+$$
+\theta_i \sim t_\nu(\mu_\theta, \tau_\theta^2)
+$$
+
+where $\nu$ (the degrees of freedom) is estimated. This accommodates
+outlier studies that would otherwise inflate $\tau_\theta$.
+
+## Prior specification
+
+Priors can be customised via `set_priors()`. See `?set_priors` for the
+full list of parameters and their defaults.

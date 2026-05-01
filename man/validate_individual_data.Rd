@@ -9,6 +9,8 @@ validate_individual_data(data)
 \arguments{
 \item{data}{A data frame in long format with one row per observation.
 Required columns: \code{study_id}, \code{design}, \code{group}, \code{time}, \code{value}.
+For repeated-measures designs (\code{"did"} and \code{"pp"}), a \code{subject_id}
+column is also required to correctly pair pre and post observations.
 Valid designs: \code{"did"}, \code{"rct"}, \code{"pp"}.}
 }
 \value{

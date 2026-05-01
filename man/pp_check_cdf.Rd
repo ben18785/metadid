@@ -2,16 +2,24 @@
 % Please edit documentation in R/pp_check.R
 \name{pp_check_cdf}
 \alias{pp_check_cdf}
-\title{Posterior predictive check: individual-level CDF comparison}
+\title{Posterior predictive check: CDF comparison}
 \usage{
-pp_check_cdf(fit, study_id = NULL, prob = 0.9)
+pp_check_cdf(
+  fit,
+  type = c("individual", "summary"),
+  study_id = NULL,
+  prob = 0.9
+)
 }
 \arguments{
-\item{fit}{A \code{meta_did_fit} object with \code{method = "sample"} and
-individual-level data.}
+\item{fit}{A \code{meta_did_fit} object with \code{method = "sample"}.}
+
+\item{type}{Character string: \code{"individual"} (default) for within-study
+outcome distributions, or \code{"summary"} for the distribution of
+study-level treatment effects.}
 
 \item{study_id}{Character vector of study IDs to include. \code{NULL} (default)
-shows all individual-level studies.}
+includes all studies of the relevant type.}
 
 \item{prob}{Width of the credible ribbon. Default \code{0.9}.}
 }
@@ -19,7 +27,20 @@ shows all individual-level studies.}
 A ggplot2 object.
 }
 \description{
-For each individual-level study, compares the empirical CDF of observed
-outcomes to the posterior predictive CDF (with uncertainty ribbon),
-faceted by study and group/time cell.
+Compares observed data to the posterior predictive distribution using
+cumulative distribution functions.
+}
+\details{
+Two modes are available via the \code{type} argument:
+
+\describe{
+\item{\code{"individual"}}{For each individual-level study, compares the
+empirical CDF of observed outcomes to the posterior predictive CDF
+(with uncertainty ribbon), faceted by study and group/time cell.
+Requires individual-level data in the fit.}
+\item{\code{"summary"}}{Compares the empirical CDF of observed study-level
+treatment effects to the posterior predictive CDF of replicated
+study effects. A single-panel plot that provides an aggregate
+calibration check across all studies.}
+}
 }

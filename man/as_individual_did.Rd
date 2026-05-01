@@ -19,6 +19,6 @@ argument of \code{\link[=meta_did]{meta_did()}}: one row per observation with co
 \code{study_id}, \code{design}, \code{group}, \code{time}, \code{value}.
 }
 \examples{
-sim <- sim_meta(n_studies = 3, seed = 1)
+sim <- simulate_meta_did(n_studies = 3, seed = 1)
 head(as_individual_did(sim))
 }

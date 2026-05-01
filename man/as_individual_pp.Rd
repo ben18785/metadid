@@ -18,6 +18,6 @@ Discards all control-arm observations and returns treatment-arm rows (both
 pre and post). Mimics a study with no control group.
 }
 \examples{
-sim <- sim_meta(n_studies = 3, seed = 1)
+sim <- simulate_meta_did(n_studies = 3, seed = 1)
 head(as_individual_pp(sim))
 }

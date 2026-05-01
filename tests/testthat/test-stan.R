@@ -65,18 +65,41 @@ rct_summary <- function() {
 individual_did <- function(n_per_group = 5) {
   set.seed(8321)
   data.frame(
-    study_id = rep("ind_study", n_per_group * 4),
-    design   = "did",
-    group    = rep(c("control", "treatment"), each = n_per_group * 2),
-    time     = rep(rep(c("pre", "post"), each = n_per_group), 2),
-    value    = c(
-      rnorm(n_per_group, 0.45, 0.12),  # control pre
-      rnorm(n_per_group, 0.42, 0.11),  # control post
-      rnorm(n_per_group, 0.46, 0.13),  # treatment pre
-      rnorm(n_per_group, 0.30, 0.10)   # treatment post
+    study_id   = rep("ind_study", n_per_group * 4),
+    subject_id = rep(rep(seq_len(n_per_group), each = 2), 2),
+    design     = "did",
+    group      = rep(c("control", "treatment"), each = n_per_group * 2),
+    time       = rep(rep(c("pre", "post"), times = n_per_group), 2),
+    value      = c(
+      # control: interleaved pre, post, pre, post, ...
+      as.vector(rbind(
+        rnorm(n_per_group, 0.45, 0.12),
+        rnorm(n_per_group, 0.42, 0.11)
+      )),
+      # treatment: interleaved pre, post, pre, post, ...
+      as.vector(rbind(
+        rnorm(n_per_group, 0.46, 0.13),
+        rnorm(n_per_group, 0.30, 0.10)
+      ))
     )
   )
 }
+
+# ---------------------------------------------------------------------------
+# No-DiD identification guard
+# ---------------------------------------------------------------------------
+
+test_that("meta_did() errors when no DiD studies are present", {
+  expect_error(
+    meta_did(summary_data = rct_summary()),
+    "No DiD studies found"
+  )
+})
+
+test_that("meta_did() allows no-DiD with allow_no_did = TRUE", {
+  skip_if_no_stan()
+  expect_no_error(quick_fit(summary_data = rct_summary(), allow_no_did = TRUE))
+})
 
 # ---------------------------------------------------------------------------
 # Smoke tests: model runs without error
@@ -85,11 +108,6 @@ individual_did <- function(n_per_group = 5) {
 test_that("meta_did() runs on DiD summary data", {
   skip_if_no_stan()
   expect_no_error(quick_fit(summary_data = did_summary()))
-})
-
-test_that("meta_did() runs on RCT summary data", {
-  skip_if_no_stan()
-  expect_no_error(quick_fit(summary_data = rct_summary()))
 })
 
 test_that("meta_did() runs on mixed DiD + RCT summary data", {
