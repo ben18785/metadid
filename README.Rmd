@@ -14,6 +14,9 @@ knitr::opts_chunk$set(
 
 # metadid
 
+[![tests](https://github.com/ben18785/metadid/actions/workflows/tests.yaml/badge.svg)](https://github.com/ben18785/metadid/actions)
+[![Codecov test coverage](https://codecov.io/gh/ben18785/metadid/graph/badge.svg)](https://app.codecov.io/gh/ben18785/metadid)
+
 **metadid** is an R package for Bayesian meta-analysis that synthesises treatment effects across studies with different designs: difference-in-differences (DiD), randomised controlled trials (RCT), and pre-post studies. It uses a hierarchical Stan model that accounts for design-specific information and heterogeneity across studies, with optional baseline normalisation to place outcomes on a common fractional scale.
 
 ## Installation
