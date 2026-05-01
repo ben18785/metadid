@@ -6,9 +6,10 @@
 **metadid** is an R package for Bayesian meta-analysis that synthesises
 treatment effects across studies with different designs:
 difference-in-differences (DiD), randomised controlled trials (RCT), and
-pre-post studies. It uses a hierarchical Stan model that places all
-designs on a common normalised scale, accounting for design-specific
-information and heterogeneity across studies.
+pre-post studies. It uses a hierarchical Stan model that accounts for
+design-specific information and heterogeneity across studies, with
+optional baseline normalisation to place outcomes on a common fractional
+scale.
 
 ## Installation
 
@@ -77,7 +78,7 @@ head(studies)
 The true population treatment effect is `-0.15` on the raw scale, or
 approximately -0.333 after normalising by the baseline mean of `0.45`.
 
-### 2. Fit the model
+### 2. Fit the model via optimisation
 
 `meta_did()` fits a hierarchical Bayesian model. Setting
 `method = "optimize"` finds the maximum a posteriori (MAP) estimate via
@@ -114,4 +115,38 @@ summary(fit)
     #> 3  treatment_effect_did_summary -0.2626185 NA NA NA
     #> 4  treatment_effect_did_summary -0.4008142 NA NA NA
     #> 5  treatment_effect_did_summary -0.1788253 NA NA NA
+    #> ...
+
+### 4. Fit the model via MCMC
+
+For full posterior uncertainty, use the default `method = "sample"`:
+
+``` r
+fit_mcmc <- meta_did(
+  summary_data  = studies,
+  seed          = 42,
+  iter_warmup   = 200,
+  iter_sampling = 400
+)
+
+print(fit_mcmc)
+```
+
+    #> Bayesian meta-analysis (metadid)
+    #> Studies: DiD = 20 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0 
+    #> Population treatment effect: -0.307  90% CI [-0.341, -0.273]
+
+`summary()` now includes posterior standard deviations and credible
+intervals:
+
+``` r
+summary(fit_mcmc)
+```
+
+    #>                       parameter        mean         sd          lo         hi
+    #> 1         treatment_effect_mean -0.30734301 0.02053925 -0.34109011 -0.2731060
+    #> 2           treatment_effect_sd  0.08387904 0.01614552  0.06170731  0.1124974
+    #> 3  treatment_effect_did_summary -0.23482038 0.02605055 -0.27537815 -0.1916570
+    #> 4  treatment_effect_did_summary -0.35087501 0.02539211 -0.39315193 -0.3085825
+    #> 5  treatment_effect_did_summary -0.22512112 0.02910410 -0.27397179 -0.1791810
     #> ...
