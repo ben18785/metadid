@@ -38,3 +38,7 @@ jobs:
         shell: bash
 
       - uses: r-lib/actions/check-r-package@v2
+        with:
+          # CmdStan's Makefile injects non-portable compiler flags that
+          # trigger an R CMD check WARNING we cannot fix upstream.
+          error-on: '"error"'
