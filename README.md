@@ -53,7 +53,7 @@ Y_{i,c,\mathrm{post}}
 \alpha_i \\
 \alpha_i + \beta_i
 \end{pmatrix}
-\;,\;
+,
 \begin{pmatrix}
 \sigma^2_{i,c,\mathrm{pre}} &
 \rho_{i,c}\sigma_{i,c,\mathrm{pre}}\sigma_{i,c,\mathrm{post}} \\
@@ -77,7 +77,7 @@ Y_{i,t,\mathrm{post}}
 \alpha_i + \gamma_i \\
 \alpha_i + \gamma_i + \beta_i + \theta_i
 \end{pmatrix}
-\;,\;
+,
 \begin{pmatrix}
 \sigma^2_{i,t,\mathrm{pre}} &
 \rho_{i,t}\sigma_{i,t,\mathrm{pre}}\sigma_{i,t,\mathrm{post}} \\
@@ -87,13 +87,15 @@ Y_{i,t,\mathrm{post}}
 \right].
 $$
 
-Here: - $\alpha_i$: baseline mean in the control group  
+Here:
+
+- $\alpha_i$: baseline mean in the control group  
 - $\beta_i$: time trend shared across groups  
 - $\gamma_i$: baseline difference between treatment and control  
 - $\theta_i$: study-specific treatment effect  
 - $\rho_{i,c}$, $\rho_{i,t}$: pre/post correlations  
 - $\sigma_{i,g,\mathrm{pre}}$, $\sigma_{i,g,\mathrm{post}}$: marginal
-standard deviations
+  standard deviations
 
 The key identifying assumption is that, in the absence of treatment, the
 treatment group would have followed the same time trend $\beta_i$ as the
@@ -129,7 +131,7 @@ where $\mu_\theta$ is the overall treatment effect and $\tau_\theta$
 captures between-study heterogeneity.
 
 For robustness to outlying study effects, the model can alternatively
-use a Student-$t$ distribution,
+use a Student-t distribution,
 
 $$
 \theta_i \sim t_\nu(\mu_\theta, \tau_\theta),
