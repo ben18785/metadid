@@ -51,7 +51,7 @@ Y_{i,c,\mathrm{post}}
 \alpha_i \\
 \alpha_i + \beta_i
 \end{pmatrix}
-\;,\;
+,
 \begin{pmatrix}
 \sigma^2_{i,c,\mathrm{pre}} &
 \rho_{i,c}\sigma_{i,c,\mathrm{pre}}\sigma_{i,c,\mathrm{post}} \\
@@ -75,7 +75,7 @@ Y_{i,t,\mathrm{post}}
 \alpha_i + \gamma_i \\
 \alpha_i + \gamma_i + \beta_i + \theta_i
 \end{pmatrix}
-\;,\;
+,
 \begin{pmatrix}
 \sigma^2_{i,t,\mathrm{pre}} &
 \rho_{i,t}\sigma_{i,t,\mathrm{pre}}\sigma_{i,t,\mathrm{post}} \\
@@ -86,6 +86,7 @@ Y_{i,t,\mathrm{post}}
 \]
 
 Here:
+
 - \(\alpha_i\): baseline mean in the control group  
 - \(\beta_i\): time trend shared across groups  
 - \(\gamma_i\): baseline difference between treatment and control  
@@ -119,7 +120,7 @@ Study-specific treatment effects are modelled hierarchically, for example as
 
 where \(\mu_\theta\) is the overall treatment effect and \(\tau_\theta\) captures between-study heterogeneity.
 
-For robustness to outlying study effects, the model can alternatively use a Student-\(t\) distribution,
+For robustness to outlying study effects, the model can alternatively use a Student-t distribution,
 
 \[
 \theta_i \sim t_\nu(\mu_\theta, \tau_\theta),
