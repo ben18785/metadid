@@ -226,7 +226,7 @@ if (instantiate::stan_cmdstan_exists()) {
 #> Chain 3 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
 #> Chain 3 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
 #> Chain 3 Iteration: 2000 / 2000 [100%]  (Sampling) 
-#> Chain 3 finished in 0.4 seconds.
+#> Chain 3 finished in 0.5 seconds.
 #> Chain 4 Iteration:    1 / 2000 [  0%]  (Warmup) 
 #> Chain 4 Iteration:  100 / 2000 [  5%]  (Warmup) 
 #> Chain 4 Iteration:  200 / 2000 [ 10%]  (Warmup) 
@@ -252,8 +252,8 @@ if (instantiate::stan_cmdstan_exists()) {
 #> Chain 4 finished in 0.6 seconds.
 #> 
 #> All 4 chains finished successfully.
-#> Mean chain execution time: 0.4 seconds.
-#> Total execution time: 2.1 seconds.
+#> Mean chain execution time: 0.5 seconds.
+#> Total execution time: 2.2 seconds.
 #> 
 #> Warning: 1015 of 4000 (25.0%) transitions ended with a divergence.
 #> See https://mc-stan.org/misc/warnings for details.
