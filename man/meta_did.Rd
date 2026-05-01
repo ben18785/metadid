@@ -12,6 +12,7 @@ meta_did(
   design_effects = FALSE,
   hierarchical_rho = TRUE,
   priors = set_priors(),
+  method = c("sample", "optimize"),
   chains = 4L,
   iter_warmup = 1000L,
   iter_sampling = 1000L,
@@ -53,20 +54,33 @@ one have their correlation imputed.}
 \item{priors}{A \code{did_priors} object from \code{\link[=set_priors]{set_priors()}}. Controls the
 prior distributions on all population-level parameters.}
 
-\item{chains}{Number of MCMC chains. Default \code{4}.}
+\item{method}{Inference method. \code{"sample"} (default) runs full MCMC via
+Stan's HMC-NUTS sampler and returns a posterior distribution. \code{"optimize"}
+finds the maximum a posteriori (MAP) estimate via L-BFGS and is
+substantially faster, but returns only a point estimate with no
+uncertainty quantification.}
 
-\item{iter_warmup}{Number of warmup iterations per chain. Default \code{1000}.}
+\item{chains}{Number of MCMC chains. Ignored when \code{method = "optimize"}.
+Default \code{4}.}
 
-\item{iter_sampling}{Number of sampling iterations per chain. Default \code{1000}.}
+\item{iter_warmup}{Number of warmup iterations per chain. Ignored when
+\code{method = "optimize"}. Default \code{1000}.}
+
+\item{iter_sampling}{Number of sampling iterations per chain. Ignored when
+\code{method = "optimize"}. Default \code{1000}.}
 
 \item{seed}{Integer random seed for reproducibility. Default \code{NULL}.}
 
-\item{...}{Additional arguments passed to the \verb{$sample()} method of the
-CmdStanModel object (e.g., \code{parallel_chains}, \code{adapt_delta}).}
+\item{...}{Additional arguments passed to the underlying CmdStanModel
+method: \verb{$sample()} when \code{method = "sample"} (e.g., \code{parallel_chains},
+\code{adapt_delta}) or \verb{$optimize()} when \code{method = "optimize"} (e.g.,
+\code{algorithm}, \code{iter}).}
 }
 \value{
 A \code{meta_did_fit} object. See \code{\link[=print.meta_did_fit]{print.meta_did_fit()}} and
-\code{\link[=summary.meta_did_fit]{summary.meta_did_fit()}} for extracting results.
+\code{\link[=summary.meta_did_fit]{summary.meta_did_fit()}} for extracting results. When
+\code{method = "optimize"}, the summary contains MAP point estimates only;
+\code{sd}, \code{lo}, and \code{hi} columns will be \code{NA}.
 }
 \description{
 Fits a hierarchical Bayesian model synthesising treatment effects from

@@ -10,7 +10,8 @@ new_meta_did_fit <- function(
     individual_data,
     model_flags,
     priors,
-    normalisation_factors
+    normalisation_factors,
+    method = "sample"
 ) {
   structure(
     list(
@@ -19,7 +20,8 @@ new_meta_did_fit <- function(
       individual_data       = individual_data,
       model_flags           = model_flags,
       priors                = priors,
-      normalisation_factors = normalisation_factors
+      normalisation_factors = normalisation_factors,
+      method                = method
     ),
     class = "meta_did_fit"
   )
@@ -38,11 +40,6 @@ new_meta_did_fit <- function(
 #' @param ... Ignored.
 #' @export
 print.meta_did_fit <- function(x, prob = 0.9, ...) {
-  draws <- x$fit$draws("treatment_effect_mean", format = "matrix")
-  m     <- mean(draws)
-  lo    <- stats::quantile(draws, (1 - prob) / 2)
-  hi    <- stats::quantile(draws, 1 - (1 - prob) / 2)
-
   n_did    <- sum(x$summary_data$design == "did",        na.rm = TRUE) +
               sum(x$individual_data$design == "did",      na.rm = TRUE)
   n_rct    <- sum(x$summary_data$design == "rct",        na.rm = TRUE) +
@@ -54,20 +51,38 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
   cat("Bayesian meta-analysis (metadid)\n")
   cat("Studies: DiD =", n_did, "| RCT =", n_rct,
       "| Pre-Post =", n_pp, "| DiD (change only) =", n_change, "\n")
-  cat(sprintf(
-    "Population treatment effect: %.3f  %g%% CI [%.3f, %.3f]\n",
-    m, prob * 100, lo, hi
-  ))
 
-  if (x$model_flags$is_student_t_heterogeneity) {
-    nu <- mean(x$fit$draws("nu_treatment_vec", format = "matrix"))
-    cat(sprintf("  (Student-t heterogeneity; estimated df = %.1f)\n", nu))
-  }
-  if (x$model_flags$is_design_effect) {
-    delta_rct <- mean(x$fit$draws("treatment_effect_mean_rct", format = "matrix")) - m
-    delta_pp  <- mean(x$fit$draws("treatment_effect_mean_pp",  format = "matrix")) - m
-    cat(sprintf("  Design offsets: RCT = %.3f, Pre-Post = %.3f\n",
-                delta_rct, delta_pp))
+  if (x$method == "sample") {
+    draws <- x$fit$draws("treatment_effect_mean", format = "matrix")
+    m     <- mean(draws)
+    lo    <- stats::quantile(draws, (1 - prob) / 2)
+    hi    <- stats::quantile(draws, 1 - (1 - prob) / 2)
+    cat(sprintf(
+      "Population treatment effect: %.3f  %g%% CI [%.3f, %.3f]\n",
+      m, prob * 100, lo, hi
+    ))
+    if (x$model_flags$is_student_t_heterogeneity) {
+      nu <- mean(x$fit$draws("nu_treatment_vec", format = "matrix"))
+      cat(sprintf("  (Student-t heterogeneity; estimated df = %.1f)\n", nu))
+    }
+    if (x$model_flags$is_design_effect) {
+      delta_rct <- mean(x$fit$draws("treatment_effect_mean_rct", format = "matrix")) - m
+      delta_pp  <- mean(x$fit$draws("treatment_effect_mean_pp",  format = "matrix")) - m
+      cat(sprintf("  Design offsets: RCT = %.3f, Pre-Post = %.3f\n",
+                  delta_rct, delta_pp))
+    }
+  } else {
+    mle <- x$fit$mle()
+    m   <- mle[["treatment_effect_mean"]]
+    cat(sprintf(
+      "Population treatment effect: %.3f  (MAP estimate, no uncertainty)\n", m
+    ))
+    if (x$model_flags$is_design_effect) {
+      delta_rct <- mle[["treatment_effect_mean_rct"]] - m
+      delta_pp  <- mle[["treatment_effect_mean_pp"]]  - m
+      cat(sprintf("  Design offsets: RCT = %.3f, Pre-Post = %.3f\n",
+                  delta_rct, delta_pp))
+    }
   }
 
   invisible(x)
@@ -92,16 +107,34 @@ summary.meta_did_fit <- function(object, prob = 0.9, ...) {
   lo_q <- (1 - prob) / 2
   hi_q <- 1 - lo_q
 
-  summarise_draws <- function(name) {
-    d  <- object$fit$draws(name, format = "matrix")
-    data.frame(
-      parameter = name,
-      mean      = apply(d, 2, mean),
-      sd        = apply(d, 2, stats::sd),
-      lo        = apply(d, 2, stats::quantile, probs = lo_q),
-      hi        = apply(d, 2, stats::quantile, probs = hi_q),
-      row.names = NULL
-    )
+  if (object$method == "sample") {
+    summarise_draws <- function(name) {
+      d <- object$fit$draws(name, format = "matrix")
+      data.frame(
+        parameter = name,
+        mean      = apply(d, 2, mean),
+        sd        = apply(d, 2, stats::sd),
+        lo        = apply(d, 2, stats::quantile, probs = lo_q),
+        hi        = apply(d, 2, stats::quantile, probs = hi_q),
+        row.names = NULL
+      )
+    }
+  } else {
+    # MAP: mle() returns a named vector; match scalar and vector parameters
+    mle <- object$fit$mle()
+    summarise_draws <- function(name) {
+      # Match both scalar (exact) and vector (name[i]) parameters
+      matched <- mle[grepl(paste0("^", name, "(\\[|$)"), names(mle))]
+      if (length(matched) == 0L) return(NULL)
+      data.frame(
+        parameter = name,
+        mean      = unname(matched),
+        sd        = NA_real_,
+        lo        = NA_real_,
+        hi        = NA_real_,
+        row.names = NULL
+      )
+    }
   }
 
   # Population-level parameters

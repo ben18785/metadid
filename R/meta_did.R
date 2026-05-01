@@ -31,15 +31,27 @@
 #'   one have their correlation imputed.
 #' @param priors A `did_priors` object from [set_priors()]. Controls the
 #'   prior distributions on all population-level parameters.
-#' @param chains Number of MCMC chains. Default `4`.
-#' @param iter_warmup Number of warmup iterations per chain. Default `1000`.
-#' @param iter_sampling Number of sampling iterations per chain. Default `1000`.
+#' @param method Inference method. `"sample"` (default) runs full MCMC via
+#'   Stan's HMC-NUTS sampler and returns a posterior distribution. `"optimize"`
+#'   finds the maximum a posteriori (MAP) estimate via L-BFGS and is
+#'   substantially faster, but returns only a point estimate with no
+#'   uncertainty quantification.
+#' @param chains Number of MCMC chains. Ignored when `method = "optimize"`.
+#'   Default `4`.
+#' @param iter_warmup Number of warmup iterations per chain. Ignored when
+#'   `method = "optimize"`. Default `1000`.
+#' @param iter_sampling Number of sampling iterations per chain. Ignored when
+#'   `method = "optimize"`. Default `1000`.
 #' @param seed Integer random seed for reproducibility. Default `NULL`.
-#' @param ... Additional arguments passed to the `$sample()` method of the
-#'   CmdStanModel object (e.g., `parallel_chains`, `adapt_delta`).
+#' @param ... Additional arguments passed to the underlying CmdStanModel
+#'   method: `$sample()` when `method = "sample"` (e.g., `parallel_chains`,
+#'   `adapt_delta`) or `$optimize()` when `method = "optimize"` (e.g.,
+#'   `algorithm`, `iter`).
 #'
 #' @return A `meta_did_fit` object. See [print.meta_did_fit()] and
-#'   [summary.meta_did_fit()] for extracting results.
+#'   [summary.meta_did_fit()] for extracting results. When
+#'   `method = "optimize"`, the summary contains MAP point estimates only;
+#'   `sd`, `lo`, and `hi` columns will be `NA`.
 #'
 #' @export
 #'
@@ -70,12 +82,15 @@ meta_did <- function(
     design_effects        = FALSE,
     hierarchical_rho      = TRUE,
     priors                = set_priors(),
+    method                = c("sample", "optimize"),
     chains                = 4L,
     iter_warmup           = 1000L,
     iter_sampling         = 1000L,
     seed                  = NULL,
     ...
 ) {
+  method <- match.arg(method)
+
   # --- Input checks ---
   if (is.null(summary_data) && is.null(individual_data)) {
     stop("At least one of summary_data or individual_data must be provided.",
@@ -117,19 +132,43 @@ meta_did <- function(
   stan_data <- prepare_stan_data(summary_data, individual_data, model_flags, priors)
 
   # --- Fit ---
-  model <- instantiate::stan_package_model(
-    name    = "meta_analysis_master",
-    package = "metadid"
-  )
+  stan_dir <- system.file("bin/stan", package = "metadid")
+  if (nzchar(stan_dir)) {
+    # Installed package: load pre-compiled binary directly via cmdstanr.
+    # We bypass instantiate::stan_package_model() because it does not
+    # propagate include_paths to the CmdStanModel object, causing stanc
+    # to fail when the model uses #include directives.
+    model <- cmdstanr::cmdstan_model(
+      stan_file     = file.path(stan_dir, "meta_analysis_master.stan"),
+      exe_file      = file.path(stan_dir, "meta_analysis_master"),
+      include_paths = stan_dir
+    )
+  } else {
+    # Development (devtools::load_all()): compile directly from src/stan/
+    pkg_root <- dirname(system.file(package = "metadid"))
+    stan_dir <- file.path(pkg_root, "src", "stan")
+    model <- cmdstanr::cmdstan_model(
+      stan_file     = file.path(stan_dir, "meta_analysis_master.stan"),
+      include_paths = stan_dir
+    )
+  }
 
-  fit <- model$sample(
-    data          = stan_data,
-    chains        = chains,
-    iter_warmup   = iter_warmup,
-    iter_sampling = iter_sampling,
-    seed          = seed,
-    ...
-  )
+  fit <- if (method == "sample") {
+    model$sample(
+      data          = stan_data,
+      chains        = chains,
+      iter_warmup   = iter_warmup,
+      iter_sampling = iter_sampling,
+      seed          = seed,
+      ...
+    )
+  } else {
+    model$optimize(
+      data   = stan_data,
+      seed   = seed,
+      ...
+    )
+  }
 
   # --- Return ---
   new_meta_did_fit(
@@ -138,7 +177,8 @@ meta_did <- function(
     individual_data       = individual_data,
     model_flags           = model_flags,
     priors                = priors,
-    normalisation_factors = normalisation_factors
+    normalisation_factors = normalisation_factors,
+    method                = method
   )
 }
 

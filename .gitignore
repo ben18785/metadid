@@ -21,3 +21,4 @@ src/stan/**/*.EXE
 
 # macOS
 .DS_Store
+.positai

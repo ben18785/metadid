@@ -180,3 +180,60 @@ test_that("normalise_by_baseline = FALSE runs without error", {
     quick_fit(summary_data = did_summary(), normalise_by_baseline = FALSE)
   )
 })
+
+# ---------------------------------------------------------------------------
+# Optimization (MAP) tests
+# ---------------------------------------------------------------------------
+
+# Thin wrapper: optimization needs no warmup/sampling args.
+quick_optimize <- function(summary_data = NULL, individual_data = NULL, ...) {
+  model <- get_compiled_model()
+  skip_if(is.null(model), "Stan model could not be compiled")
+  local_mocked_bindings(
+    stan_package_model = function(...) model,
+    .package = "instantiate"
+  )
+  meta_did(
+    summary_data    = summary_data,
+    individual_data = individual_data,
+    method          = "optimize",
+    seed            = 4917L,
+    refresh         = 0,
+    ...
+  )
+}
+
+test_that("method = 'optimize' runs without error on DiD summary data", {
+  skip_if_no_stan()
+  expect_no_error(quick_optimize(summary_data = did_summary()))
+})
+
+test_that("method = 'optimize' runs without error on mixed data", {
+  skip_if_no_stan()
+  mixed <- dplyr::bind_rows(did_summary(), rct_summary())
+  expect_no_error(quick_optimize(summary_data = mixed))
+})
+
+test_that("method = 'optimize' returns a meta_did_fit with method 'optimize'", {
+  skip_if_no_stan()
+  fit <- quick_optimize(summary_data = did_summary())
+  expect_s3_class(fit, "meta_did_fit")
+  expect_equal(fit$method, "optimize")
+})
+
+test_that("summary() returns NA sd/lo/hi for optimize fit", {
+  skip_if_no_stan()
+  fit <- quick_optimize(summary_data = did_summary())
+  s   <- summary(fit)
+  expect_true(is.data.frame(s))
+  expect_true(all(is.na(s$sd)))
+  expect_true(all(is.na(s$lo)))
+  expect_true(all(is.na(s$hi)))
+})
+
+test_that("summary() MAP estimate is finite for optimize fit", {
+  skip_if_no_stan()
+  fit <- quick_optimize(summary_data = did_summary())
+  s   <- summary(fit)
+  expect_true(all(is.finite(s$mean)), label = "all MAP estimates are finite")
+})
