@@ -1,0 +1,28 @@
+Package: metadid
+Title: Bayesian Meta-Analysis Across Study Designs
+Version: 0.1.0
+Authors@R: 
+    person("First", "Last", email = "first.last@example.com",
+           role = c("aut", "cre"))
+Description: A Bayesian meta-analysis framework for synthesizing treatment 
+    effects across different study designs, including difference-in-differences 
+    (DiD), randomized controlled trials (RCT), and pre-post designs. Implements 
+    hierarchical models in Stan that account for design-specific biases, missing 
+    correlation structures, and heterogeneity across studies.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Additional_repositories: https://mc-stan.org/r-packages/
+Imports:
+    cmdstanr,
+    instantiate,
+    dplyr,
+    tidyr,
+    ggplot2,
+    purrr,
+    rlang,
+    tibble
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

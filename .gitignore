@@ -1,0 +1,23 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Compiled Stan executables (do not commit)
+src/stan/**
+!src/stan/**/*.*
+src/stan/**/*.exe
+src/stan/**/*.EXE
+
+# Stan model binaries installed by instantiate during R CMD INSTALL
+/bin/
+/inst/bin/
+
+# R package build outputs and check artefacts
+*.tar.gz
+/*.Rcheck/
+/doc/
+/Meta/
+
+# macOS
+.DS_Store
