@@ -292,3 +292,25 @@ test_that("validate_individual_data() rejects duplicate subject_id within group/
     df$subject_id[df$group == "control" & df$time == "pre"][1]
   expect_error(validate_individual_data(df), "duplicate subject_id")
 })
+
+# ---------------------------------------------------------------------------
+# meta_did() input checks (no Stan needed — errors fire before model fitting)
+# ---------------------------------------------------------------------------
+
+test_that("meta_did() errors when study_id overlaps between summary and individual data", {
+  sdata <- make_did_summary(1)
+  sdata$study_id <- "shared_id"
+  idata <- make_individual_did()
+  idata$study_id <- "shared_id"
+  expect_error(
+    meta_did(summary_data = sdata, individual_data = idata),
+    "same study_id appears in both"
+  )
+})
+
+test_that("meta_did() errors when both inputs are NULL", {
+  expect_error(
+    meta_did(summary_data = NULL, individual_data = NULL),
+    "At least one"
+  )
+})
