@@ -17,25 +17,13 @@ knitr::opts_chunk$set(
 [![tests](https://github.com/ben18785/metadid/actions/workflows/tests.yaml/badge.svg)](https://github.com/ben18785/metadid/actions)
 [![Codecov test coverage](https://codecov.io/gh/ben18785/metadid/graph/badge.svg)](https://app.codecov.io/gh/ben18785/metadid)
 
-**metadid** is an R package for Bayesian meta-analysis that synthesises treatment effects across studies with different designs: difference-in-differences (DiD), randomised controlled trials (RCT), and pre-post studies. It uses a hierarchical Stan model that accounts for design-specific information and heterogeneity across studies, with optional baseline normalisation to place outcomes on a common fractional scale.
+**metadid** is an R package for Bayesian meta-analysis that synthesises treatment effects across studies with different designs: difference-in-differences (DiD), post-only randomised controlled trials (RCT), and pre-post studies. It uses a hierarchical Stan model that accounts for design-specific information and heterogeneity across studies, with optional baseline normalisation to place outcomes on a common fractional scale.
 
 ## Model assumptions
 
 `metadid` assumes that all studies arise from a common latent difference-in-differences (DiD) structure. Different study designs correspond to observing different parts of this latent structure.
 
 DiD studies are the only design in this framework that directly identify the treatment effect. Meta-analyses that do not include DiD studies are not identified from the data and depend entirely on modelling assumptions. We do not recommend using this approach in the absence of DiD evidence.
-
-### Latent DiD model
-
-## Model assumptions
-
-`metadid` assumes that all studies arise from a common latent difference-in-differences (DiD) structure. Different study designs correspond to observing different parts of this latent structure.
-
-### Latent DiD model
-
-## Model assumptions
-
-`metadid` assumes that all studies arise from a common latent difference-in-differences (DiD) structure. Different study designs correspond to observing different parts of this latent structure.
 
 ### Latent DiD model
 
@@ -104,9 +92,10 @@ The key identifying assumption is that, in the absence of treatment, the treatme
 
 Different study designs correspond to observing subsets of this latent structure:
 
-- **DiD / RCT**: both groups and both time points observed  
-- **Pre-post**: treatment group only  
-- **Post-only / change-score**: partial observations of levels or differences  
+- **DiD**: both groups and both time points observed  
+- **RCT**: both groups, post-treatment only  
+- **Pre-post**: treatment group only, both time points  
+- **Change-score**: partial observations of differences  
 
 Inference for incomplete designs relies on the shared latent structure across studies.
 
@@ -139,13 +128,15 @@ The model supports both:
 - **individual-level data**, and  
 - **summary statistics** (means, variances, sample sizes)
 
-by deriving likelihoods from the same bivariate normal model.
+by deriving likelihoods from the same latent bivariate normal structure.
 
 ---
 
 ### Practical implication
 
 Designs with missing components (e.g. pre-post) become informative by borrowing structure from other studies, but this increases reliance on the modelling assumptions above.
+
+Post-only RCTs identify the sum of the treatment effect and any baseline imbalance, while pre-post studies identify the sum of the treatment effect and time trends. In the absence of DiD studies, separating these components relies on modelling assumptions. While RCTs may be less sensitive under randomisation assumptions, both designs provide only partial identification of the treatment effect in this framework.
 
 ## Installation
 

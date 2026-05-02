@@ -551,12 +551,20 @@ se_rct_individual <- function(idata, di, draws) {
 
 #' @noRd
 se_pp_individual <- function(idata, di, draws) {
-  stb <- as.numeric(draws[, paste0("sigma_treatment_before_pp[", di, "]")])
-  sta <- as.numeric(draws[, paste0("sigma_treatment_after_pp[", di, "]")])
-  rho <- as.numeric(draws[, paste0("rho_pp[", di, "]")])
-
-  ns <- individual_sample_sizes(idata, "pp", di)
-  sqrt((stb^2 + sta^2 - 2 * rho * stb * sta) / ns$n_t)
+  sd_param <- paste0("sigma_d_pp[", di, "]")
+  if (sd_param %in% colnames(draws)) {
+    # Differenced form
+    sd <- as.numeric(draws[, sd_param])
+    ns <- individual_sample_sizes(idata, "pp", di)
+    sd / sqrt(ns$n_t)
+  } else {
+    # Non-differenced (bivariate) form
+    stb <- as.numeric(draws[, paste0("sigma_treatment_before_pp[", di, "]")])
+    sta <- as.numeric(draws[, paste0("sigma_treatment_after_pp[", di, "]")])
+    rho <- as.numeric(draws[, paste0("rho_pp[", di, "]")])
+    ns <- individual_sample_sizes(idata, "pp", di)
+    sqrt((stb^2 + sta^2 - 2 * rho * stb * sta) / ns$n_t)
+  }
 }
 
 
@@ -620,8 +628,10 @@ get_cell_draws <- function(draws, design, design_idx, group, time, is_normalised
     }
 
   } else if (design == "rct") {
-    baseline_c <- as.numeric(draws[, paste0("baseline_control_rct[", idx, "]")])
-    # When normalised, baseline_treatment = baseline_control (randomisation)
+    bc_param <- paste0("baseline_control_rct[", idx, "]")
+    baseline_c <- if (bc_param %in% colnames(draws))
+      as.numeric(draws[, bc_param]) else rep(if (is_normalised) 1 else 0, nrow(draws))
+
     bt_param <- paste0("baseline_treatment_rct[", idx, "]")
     baseline_t <- if (bt_param %in% colnames(draws))
       as.numeric(draws[, bt_param]) else baseline_c
@@ -641,21 +651,28 @@ get_cell_draws <- function(draws, design, design_idx, group, time, is_normalised
     }
 
   } else { # pp
-    baseline_t <- if (is_normalised) rep(1, nrow(draws)) else
-      as.numeric(draws[, paste0("baseline_treatment_pp[", idx, "]")])
-
     tt_param <- paste0("time_trend_pp[", idx, "]")
     tt <- if (tt_param %in% colnames(draws))
       as.numeric(draws[, tt_param]) else rep(0, nrow(draws))
-
     te <- as.numeric(draws[, paste0("treatment_effect_pp[", idx, "]")])
 
-    if (time == "pre") {
-      list(mu = baseline_t,
-           sigma = as.numeric(draws[, paste0("sigma_treatment_before_pp[", idx, "]")]))
+    sd_param <- paste0("sigma_d_pp[", idx, "]")
+    if (sd_param %in% colnames(draws)) {
+      # Differenced form: only the difference is modelled
+      list(mu = tt + te,
+           sigma = as.numeric(draws[, sd_param]))
     } else {
-      list(mu = baseline_t + tt + te,
-           sigma = as.numeric(draws[, paste0("sigma_treatment_after_pp[", idx, "]")]))
+      # Non-differenced (bivariate) form
+      baseline_t <- if (is_normalised) rep(1, nrow(draws)) else
+        as.numeric(draws[, paste0("baseline_treatment_pp[", idx, "]")])
+
+      if (time == "pre") {
+        list(mu = baseline_t,
+             sigma = as.numeric(draws[, paste0("sigma_treatment_before_pp[", idx, "]")]))
+      } else {
+        list(mu = baseline_t + tt + te,
+             sigma = as.numeric(draws[, paste0("sigma_treatment_after_pp[", idx, "]")]))
+      }
     }
   }
 }

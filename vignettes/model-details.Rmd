@@ -180,6 +180,25 @@ estimated from DiD studies informs the pre-post decomposition, and the
 baseline structure from DiD studies informs the RCT decomposition. This
 cross-design borrowing is the core value of the metadid approach.
 
+### Differenced-form likelihoods
+
+For RCT and pre-post designs, the model uses differenced-form likelihoods
+that eliminate nuisance parameters algebraically:
+
+- **RCT**: the likelihood is based on the treatment–control difference in
+  post-treatment means, so the time trend $\beta_i$ cancels. The remaining
+  parameters are the treatment effect $\theta_i$ and the baseline
+  difference $\gamma_i$ (borrowed from DiD studies).
+- **Pre-post** (default): the likelihood is based on the within-subject
+  post–pre difference, so the baseline $\alpha_i + \gamma_i$ cancels.
+  The remaining parameters are the treatment effect $\theta_i$ and the
+  time trend $\beta_i$ (borrowed from DiD studies).
+
+For pre-post studies, a non-differenced (bivariate normal) form is
+available as an alternative. This retains the pre/post correlation
+$\rho_i$ as an estimable parameter, contributing to the hierarchical
+$\rho$ model, at the cost of estimating additional nuisance parameters.
+
 ## Baseline normalisation
 
 By default (`normalise_by_baseline = TRUE`), `meta_did()` normalises all
@@ -209,21 +228,19 @@ places the change scores on the same relative scale as the other designs,
 but requires that at least some full DiD studies are present.
 
 For RCT studies, there is no pre-treatment data, so normalisation divides
-by the post-treatment control mean. This fixes the *sum*
-$\alpha_i + \beta_i = 1$, but does not fix $\alpha_i$ and $\beta_i$
-individually. Since only their sum is determined, the model fixes
-$\alpha_i = 1$ and $\beta_i = 0$ — the simplest split consistent with the
-constraint. The treatment effect then simplifies to:
+by the post-treatment control mean. The RCT likelihood uses a differenced
+form — the difference between treatment and control post-treatment means —
+in which the time trend $\beta_i$ cancels algebraically and does not
+appear as a parameter. After normalisation, both baselines are fixed at 1,
+and the observed treatment–control difference directly estimates the
+treatment effect $\theta_i$.
 
-$$
-\theta_i = \bar{y}_{i,t,\mathrm{post}} - 1
-$$
-
-This is a modelling choice, not a consequence of the data. It means that
-normalised RCT treatment effects are interpreted relative to the control
-post-treatment mean, with no time-trend adjustment. This is appropriate
-when the primary goal is cross-design synthesis anchored by DiD studies,
-which provide the time-trend information.
+When data are not normalised, the RCT baselines $\alpha_i$ and
+$\alpha_i + \gamma_i$ are free parameters drawn from the same
+hierarchical distributions as in DiD studies, allowing the baseline
+difference $\gamma_i$ to be informed by DiD evidence. By default, the
+model allows $\gamma_i \neq 0$; this can be constrained to zero if
+randomisation is assumed to eliminate baseline imbalances.
 
 ### Interpreting normalised treatment effects
 
