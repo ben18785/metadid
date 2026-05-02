@@ -13,7 +13,8 @@ set_priors(
   rho_sd = normal(0, 0.5),
   nu = gamma(2, 0.1),
   delta_rct = normal(0, 10),
-  delta_pp = normal(0, 10)
+  delta_pp = normal(0, 10),
+  sigma = cauchy(5)
 )
 }
 \arguments{
@@ -40,6 +41,9 @@ correlation (only used when \code{hierarchical_rho = TRUE}). Default: \code{norm
 
 \item{delta_pp}{Prior on the Pre-Post design offset relative to DiD
 (only used when \code{design_effects = TRUE}). Default: \code{normal(0, 10)}.}
+
+\item{sigma}{Prior on the study-level observation standard deviations
+(shared across all designs). Default: \code{cauchy(5)}.}
 }
 \value{
 A \code{did_priors} object.

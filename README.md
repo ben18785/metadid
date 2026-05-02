@@ -9,11 +9,11 @@ coverage](https://codecov.io/gh/ben18785/metadid/graph/badge.svg)](https://app.c
 
 **metadid** is an R package for Bayesian meta-analysis that synthesises
 treatment effects across studies with different designs:
-difference-in-differences (DiD), randomised controlled trials (RCT), and
-pre-post studies. It uses a hierarchical Stan model that accounts for
-design-specific information and heterogeneity across studies, with
-optional baseline normalisation to place outcomes on a common fractional
-scale.
+difference-in-differences (DiD), post-only randomised controlled trials
+(RCT), and pre-post studies. It uses a hierarchical Stan model that
+accounts for design-specific information and heterogeneity across
+studies, with optional baseline normalisation to place outcomes on a
+common fractional scale.
 
 ## Model assumptions
 
@@ -148,6 +148,13 @@ Designs with missing components (e.g. pre-post) become informative by
 borrowing structure from other studies, but this increases reliance on
 the modelling assumptions above.
 
+Post-only RCTs identify the sum of the treatment effect and any baseline
+imbalance, while pre-post studies identify the sum of the treatment
+effect and time trends. In the absence of DiD studies, separating these
+components relies on modelling assumptions. While RCTs may be less
+sensitive under randomisation assumptions, both designs provide only
+partial identification of the treatment effect in this framework.
+
 ## Installation
 
 metadid depends on [cmdstanr](https://mc-stan.org/cmdstanr/) and
@@ -219,7 +226,8 @@ approximately -0.333 after normalising by the baseline mean of `0.45`.
 
 `meta_did()` fits a hierarchical Bayesian model. Setting
 `method = "optimize"` finds the maximum a posteriori (MAP) estimate via
-L-BFGS — much faster than full MCMC and useful for quick iteration.
+L-BFGS — this is faster than MCMC but provides no uncertainty measures
+in estimates.
 
 ``` r
 fit <- meta_did(

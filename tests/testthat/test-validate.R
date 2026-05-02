@@ -293,6 +293,53 @@ test_that("validate_individual_data() rejects duplicate subject_id within group/
   expect_error(validate_individual_data(df), "duplicate subject_id")
 })
 
+test_that("validate_individual_data() detects incomplete subject within one group (DiD)", {
+  # subject_id 1 exists in both control and treatment.
+  # Remove the post observation for subject 1 in control only.
+  # The old (group-unaware) check would see subject 1 with pre+post across
+  # groups and wrongly pass.
+  df <- make_individual_did()
+  drop <- which(df$group == "control" & df$time == "post" & df$subject_id == 1)
+  # Also drop a pre in control to keep pre/post counts balanced per group
+  drop2 <- which(df$group == "control" & df$time == "pre" & df$subject_id == 1)
+  df <- df[-c(drop, drop2), ]
+  # subject 1 is now gone from control entirely — this is fine (balanced).
+  # Instead, create the actual problematic case: subject present in pre but
+
+  # not post within one group.
+  df <- make_individual_did(n_per_group = 3)
+  # Add an extra control subject with only a pre observation
+  extra <- data.frame(
+    study_id = "study1", subject_id = 99L, design = "did",
+    group = "control", time = "pre", value = 50
+  )
+  # And a balancing post observation with a different subject_id
+  extra2 <- data.frame(
+    study_id = "study1", subject_id = 100L, design = "did",
+    group = "control", time = "post", value = 55
+  )
+  df <- rbind(df, extra, extra2)
+  # Subject 99 has pre but no post in control; subject 100 has post but no pre.
+  # If subject 99 also existed in treatment with both pre+post, the old check
+
+  # would not catch this.
+  expect_error(validate_individual_data(df), "missing a 'pre' or 'post'")
+})
+
+test_that("validate_individual_data() error message includes group name", {
+  df <- make_individual_did(n_per_group = 3)
+  extra <- data.frame(
+    study_id = "study1", subject_id = 99L, design = "did",
+    group = "control", time = "pre", value = 50
+  )
+  extra2 <- data.frame(
+    study_id = "study1", subject_id = 100L, design = "did",
+    group = "control", time = "post", value = 55
+  )
+  df <- rbind(df, extra, extra2)
+  expect_error(validate_individual_data(df), "group 'control'")
+})
+
 # ---------------------------------------------------------------------------
 # meta_did() input checks (no Stan needed — errors fire before model fitting)
 # ---------------------------------------------------------------------------
