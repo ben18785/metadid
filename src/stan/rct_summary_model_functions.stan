@@ -37,8 +37,19 @@ real rct_summary_study_lpdf_from_data_differenced_form(
   real mu_diff_treatment_control = treatment_effect + baseline_treatment - baseline_control;
   real x_diff = x_bar_treatment_after - x_bar_control_after;
   real sigma_diff = sqrt(sigma_ca_n^2 + sigma_ta_n^2);
-  
+
   return normal_lpdf(x_diff| mu_diff_treatment_control, sigma_diff);
 }
 
-
+// Normalised RCT summary likelihood (reparameterised).
+// apparent_effect = theta / (alpha + beta).  For summary data the control mean
+// is exactly 1 by construction, so only the treatment mean contributes.
+real rct_summary_study_normalised_lpdf_from_data(
+  real x_bar_treatment_after,
+  real apparent_effect,
+  real sigma_ta,
+  int n_treatment
+) {
+  real sigma_ta_n = sigma_ta / sqrt(n_treatment);
+  return normal_lpdf(x_bar_treatment_after | 1.0 + apparent_effect, sigma_ta_n);
+}

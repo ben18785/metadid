@@ -80,7 +80,7 @@ TRUE_SIGMA_TREND_NORMALISED <- TRUE_SIGMA_TREND_RAW  / MEAN_BASELINE
 
 # Primary simulation — heterogeneous trends so time_trend_sd is recoverable
 sim_data <- simulate_meta_did(
-  n_studies     = 25,
+  n_studies     = 40,
   true_effect   = TRUE_EFFECT_RAW,
   sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
   true_trend    = TRUE_TREND_RAW,
@@ -89,7 +89,7 @@ sim_data <- simulate_meta_did(
   baseline_sd   = TRUE_BASELINE_SD,
   n_control     = 100L,
   n_treatment   = 100L,
-  seed          = 6204L
+  seed          = 8471L
 )
 
 # ---------------------------------------------------------------------------
@@ -182,10 +182,14 @@ test_that("Fit 2: individual DiD recovers treatment effect and agrees with summa
 
 test_that("Fit 3: mixed DiD + RCT + PP recovers treatment effect", {
   skip_if_no_stan()
+  rct_df <- as_summary_rct(sim_data)
+  rct_df$study_id <- paste0("rct_", rct_df$study_id)
+  pp_df <- as_summary_pp(sim_data)
+  pp_df$study_id <- paste0("pp_", pp_df$study_id)
   mixed <- dplyr::bind_rows(
     as_summary_did(sim_data),
-    as_summary_rct(sim_data),
-    as_summary_pp(sim_data)
+    rct_df,
+    pp_df
   )
   fit <- recovery_fit(summary_data = mixed)
   te  <- summary(fit)
@@ -211,7 +215,7 @@ TRUE_RCT_NORMALISED <- TRUE_RCT_EFFECT_RAW / MEAN_BASELINE
 TRUE_PP_NORMALISED  <- TRUE_PP_EFFECT_RAW  / MEAN_BASELINE
 
 sim_did_de <- simulate_meta_did(
-  n_studies     = 15,
+  n_studies     = 25,
   true_effect   = TRUE_EFFECT_RAW,
   sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
   baseline_mean = MEAN_BASELINE,
@@ -220,7 +224,7 @@ sim_did_de <- simulate_meta_did(
   seed          = 3847L
 )
 sim_rct_de <- simulate_meta_did(
-  n_studies     = 15,
+  n_studies     = 25,
   true_effect   = TRUE_RCT_EFFECT_RAW,
   sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
   baseline_mean = MEAN_BASELINE,
@@ -229,7 +233,7 @@ sim_rct_de <- simulate_meta_did(
   seed          = 5921L
 )
 sim_pp_de <- simulate_meta_did(
-  n_studies     = 15,
+  n_studies     = 25,
   true_effect   = TRUE_PP_EFFECT_RAW,
   sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
   baseline_mean = MEAN_BASELINE,
@@ -286,10 +290,153 @@ test_that("Fit 4: design effects recover DiD, RCT, and PP treatment effect means
 # Fit 5: Unnormalised — recover baseline, effect, and trend on raw scale
 # ---------------------------------------------------------------------------
 
-test_that("Fit 5: unnormalised recovers baseline, treatment effect, and time trend", {
+# ---------------------------------------------------------------------------
+# Fit 5 (naive): meta_did_naive recovers treatment effect when assumptions hold
+# ---------------------------------------------------------------------------
+# Simulate data with zero time trend and equal baselines (the DGP always uses
+# the same baseline for both arms), so the naive assumptions are satisfied.
+
+sim_naive <- simulate_meta_did(
+  n_studies     = 25,
+  true_effect   = TRUE_EFFECT_RAW,
+  sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
+  true_trend    = 0,
+  sigma_trend   = 0,
+  baseline_mean = MEAN_BASELINE,
+  baseline_sd   = TRUE_BASELINE_SD,
+  n_control     = 100L,
+  n_treatment   = 100L,
+  seed          = 4529L
+)
+
+naive_recovery_fit <- function(summary_data = NULL, individual_data = NULL, ...) {
+  model <- get_compiled_model()
+  skip_if(is.null(model), "Stan model could not be compiled")
+  local_mocked_bindings(
+    stan_package_model = function(...) model,
+    .package = "instantiate"
+  )
+  meta_did_naive(
+    summary_data    = summary_data,
+    individual_data = individual_data,
+    chains          = 2L,
+    iter_warmup     = 500L,
+    iter_sampling   = 500L,
+    seed            = 8153L,
+    refresh         = 0,
+    ...
+  )
+}
+
+test_that("Fit 5a (naive): mixed designs recover treatment effect under naive assumptions", {
+  skip_if_no_stan()
+  rct_df <- as_summary_rct(sim_naive)
+  rct_df$study_id <- paste0("rct_", rct_df$study_id)
+  pp_df <- as_summary_pp(sim_naive)
+  pp_df$study_id <- paste0("pp_", pp_df$study_id)
+  mixed <- dplyr::bind_rows(
+    as_summary_did(sim_naive),
+    rct_df,
+    pp_df
+  )
+  fit <- naive_recovery_fit(summary_data = mixed)
+  te  <- summary(fit)
+  te_row <- te[te$parameter == "treatment_effect_mean", ]
+  expect_true(te_row$mean < 0, label = "estimated effect is negative")
+  expect_true(
+    te_row$lo < TRUE_EFFECT_NORMALISED && te_row$hi > TRUE_EFFECT_NORMALISED,
+    label = ci_label(te_row, TRUE_EFFECT_NORMALISED)
+  )
+})
+
+# ---------------------------------------------------------------------------
+# Fit 5b (naive vs full): full model outperforms naive when time trend is large
+# ---------------------------------------------------------------------------
+# With a substantial time trend, the naive model (which sets β = 0 for PP
+# studies) conflates the time trend with the treatment effect, biasing it.
+# The full model borrows the time trend from DiD studies and should be closer
+# to the truth.
+
+LARGE_TREND_RAW <- -0.10
+LARGE_TREND_TRUE_EFFECT_NORMALISED <- TRUE_EFFECT_RAW / MEAN_BASELINE
+
+sim_large_trend <- simulate_meta_did(
+  n_studies     = 5,
+  true_effect   = TRUE_EFFECT_RAW,
+  sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
+  true_trend    = LARGE_TREND_RAW,
+  sigma_trend   = 0.01,
+  baseline_mean = MEAN_BASELINE,
+  baseline_sd   = TRUE_BASELINE_SD,
+  n_control     = 100L,
+  n_treatment   = 100L,
+  seed          = 7318L
+)
+
+# Mostly PP studies with a few DiD to identify the trend
+sim_pp_heavy <- simulate_meta_did(
+  n_studies     = 20,
+  true_effect   = TRUE_EFFECT_RAW,
+  sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
+  true_trend    = LARGE_TREND_RAW,
+  sigma_trend   = 0.01,
+  baseline_mean = MEAN_BASELINE,
+  baseline_sd   = TRUE_BASELINE_SD,
+  n_control     = 100L,
+  n_treatment   = 100L,
+  seed          = 2491L
+)
+
+test_that("Fit 5b: full model is closer to truth than naive when PP studies have large time trend", {
+  skip_if_no_stan()
+
+  did_df <- as_summary_did(sim_large_trend)
+  pp_df  <- as_summary_pp(sim_pp_heavy)
+  pp_df$study_id <- paste0("pp_", pp_df$study_id)
+  mixed <- dplyr::bind_rows(did_df, pp_df)
+
+  fit_full  <- recovery_fit(summary_data = mixed)
+  fit_naive <- naive_recovery_fit(summary_data = mixed)
+
+  te_full  <- summary(fit_full)
+  te_naive <- summary(fit_naive)
+
+  mean_full  <- te_full$mean[te_full$parameter   == "treatment_effect_mean"]
+  mean_naive <- te_naive$mean[te_naive$parameter  == "treatment_effect_mean"]
+
+  err_full  <- abs(mean_full  - LARGE_TREND_TRUE_EFFECT_NORMALISED)
+  err_naive <- abs(mean_naive - LARGE_TREND_TRUE_EFFECT_NORMALISED)
+
+  expect_true(
+    err_full < err_naive,
+    label = sprintf(
+      "full model error (%.4f) < naive error (%.4f); true = %.4f, full = %.4f, naive = %.4f",
+      err_full, err_naive, LARGE_TREND_TRUE_EFFECT_NORMALISED, mean_full, mean_naive
+    )
+  )
+})
+
+# ---------------------------------------------------------------------------
+# Fit 6: Unnormalised — recover baseline, effect, and trend on raw scale
+# ---------------------------------------------------------------------------
+
+sim_unnorm <- simulate_meta_did(
+  n_studies     = 25,
+  true_effect   = TRUE_EFFECT_RAW,
+  sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
+  true_trend    = TRUE_TREND_RAW,
+  sigma_trend   = TRUE_SIGMA_TREND_RAW,
+  baseline_mean = MEAN_BASELINE,
+  baseline_sd   = 0,
+  n_control     = 100L,
+  n_treatment   = 100L,
+  seed          = 8471L
+)
+
+test_that("Fit 6: unnormalised recovers baseline, treatment effect, and time trend", {
   skip_if_no_stan()
   fit <- recovery_fit(
-    summary_data = as_summary_did(sim_data),
+    summary_data = as_summary_did(sim_unnorm),
     normalise_by_baseline = FALSE
   )
 

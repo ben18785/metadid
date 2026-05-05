@@ -1,9 +1,12 @@
-// Only needed for non-normalised case; when normalised, baselines are fixed at 1.
-vector[n_studies_rct_summary * (1 - is_baseline_normalised)] baseline_treatment_rct_summary_effective;
+// rct_summary_model_transformed_parameters.stan
+//
+// Same logic as individual RCT: derive true treatment effect from apparent
+// when normalised with time trends estimated.
 
-if (!is_baseline_normalised) {
-  if (is_baseline_control_equal_treatment_rct_summary)
-    baseline_treatment_rct_summary_effective = baseline_control_rct_summary;
-  else
-    baseline_treatment_rct_summary_effective = baseline_treatment_rct_summary;
+vector[n_studies_rct_summary] treatment_effect_rct_summary_derived;
+if (is_baseline_normalised && !is_time_trend_rct_summary_zero) {
+  for (i in 1:n_studies_rct_summary)
+    treatment_effect_rct_summary_derived[i] = apparent_effect_rct_summary[i] * (1 + time_trend_rct_summary[i]);
+} else {
+  treatment_effect_rct_summary_derived = treatment_effect_rct_summary;
 }

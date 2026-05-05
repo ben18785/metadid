@@ -71,7 +71,8 @@ print.did_prior <- function(x, ...) {
   rho_sd                = c("normal"),
   nu                    = c("gamma"),
   delta_rct             = c("normal"),
-  delta_pp              = c("normal")
+  delta_pp              = c("normal"),
+  sigma                 = c("cauchy")
 )
 
 # ---------------------------------------------------------------------------
@@ -98,6 +99,8 @@ print.did_prior <- function(x, ...) {
 #'   (only used when `design_effects = TRUE`). Default: `normal(0, 10)`.
 #' @param delta_pp Prior on the Pre-Post design offset relative to DiD
 #'   (only used when `design_effects = TRUE`). Default: `normal(0, 10)`.
+#' @param sigma Prior on the study-level observation standard deviations
+#'   (shared across all designs). Default: `cauchy(5)`.
 #'
 #' @return A `did_priors` object.
 #' @export
@@ -117,7 +120,8 @@ set_priors <- function(
     rho_sd                = normal(0, 0.5),
     nu                    = gamma(2, 0.1),
     delta_rct             = normal(0, 10),
-    delta_pp              = normal(0, 10)
+    delta_pp              = normal(0, 10),
+    sigma                 = cauchy(5)
 ) {
   priors <- list(
     treatment_effect_mean = treatment_effect_mean,
@@ -128,7 +132,8 @@ set_priors <- function(
     rho_sd                = rho_sd,
     nu                    = nu,
     delta_rct             = delta_rct,
-    delta_pp              = delta_pp
+    delta_pp              = delta_pp,
+    sigma                 = sigma
   )
   validate_priors(priors)
   structure(priors, class = "did_priors")
@@ -205,7 +210,9 @@ as_stan_data.did_priors <- function(priors) {
     nu_prior_rate                    = priors$nu$rate,
     # design offsets ~ normal(0, sd) — only active when design_effects = TRUE
     delta_rct_prior_sd               = priors$delta_rct$sd,
-    delta_pp_prior_sd                = priors$delta_pp$sd
+    delta_pp_prior_sd                = priors$delta_pp$sd,
+    # sigma ~ cauchy(0, scale) — study-level observation SDs
+    sigma_prior_scale                = priors$sigma$scale
   )
 }
 
