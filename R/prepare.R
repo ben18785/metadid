@@ -42,9 +42,8 @@ null_stan_data_rct <- function() {
     study_end_treatment_rct     = integer(0),
     x_control_after_rct         = numeric(0),
     x_treatment_after_rct       = numeric(0),
-    is_baseline_control_rct_zero    = 0L,
-    is_baseline_treatment_rct_zero  = 0L,
-    is_time_trend_rct_zero          = 0L
+    is_baseline_control_equal_treatment_rct = 0L,
+    is_time_trend_rct_zero = 0L
   )
 }
 
@@ -56,7 +55,8 @@ null_stan_data_pp <- function() {
     study_end_treatment_pp     = integer(0),
     x_treatment_before_pp      = numeric(0),
     x_treatment_after_pp       = numeric(0),
-    is_time_trend_pp_zero       = 0L
+    is_time_trend_pp_zero       = 0L,
+    is_differenced_likelihood_pp = 1L
   )
 }
 
@@ -103,9 +103,8 @@ null_stan_data_rct_summary <- function() {
     sample_size_treatment_rct_summary               = integer(0),
     sd_control_after_rct_summary                    = numeric(0),
     sd_treatment_after_rct_summary                  = numeric(0),
-    is_time_trend_rct_summary_zero                  = 0L,
     is_baseline_control_equal_treatment_rct_summary = 0L,
-    is_differenced_likelihood_rct_summary           = 0L
+    is_time_trend_rct_summary_zero = 0L
   )
 }
 
@@ -118,7 +117,7 @@ null_stan_data_pp_summary <- function() {
     sd_treatment_before_pp_summary       = numeric(0),
     sd_treatment_after_pp_summary        = numeric(0),
     is_time_trend_pp_summary_zero        = 0L,
-    is_differenced_likelihood_pp_summary = 0L,
+    is_differenced_likelihood_pp_summary = 1L,
     n_rho_known_pp_summary               = 0L,
     n_rho_missing_pp_summary             = 0L,
     idx_rho_known_pp_summary             = integer(0),
@@ -222,9 +221,8 @@ adapt_summary_rct <- function(data) {
     sample_size_treatment_rct_summary               = as.integer(data$n_treatment),
     sd_control_after_rct_summary                    = data$sd_post_control,
     sd_treatment_after_rct_summary                  = data$sd_post_treatment,
-    is_time_trend_rct_summary_zero                  = 1L,
-    is_baseline_control_equal_treatment_rct_summary = 1L,
-    is_differenced_likelihood_rct_summary           = 0L
+    is_baseline_control_equal_treatment_rct_summary = 0L,
+    is_time_trend_rct_summary_zero = 0L
   )
 }
 
@@ -240,7 +238,7 @@ adapt_summary_pp <- function(data) {
     sd_treatment_before_pp_summary       = data$sd_pre_treatment,
     sd_treatment_after_pp_summary        = data$sd_post_treatment,
     is_time_trend_pp_summary_zero        = 0L,
-    is_differenced_likelihood_pp_summary = 0L,
+    is_differenced_likelihood_pp_summary = 1L,
     n_rho_known_pp_summary               = rho_split$n_known,
     n_rho_missing_pp_summary             = rho_split$n_missing,
     idx_rho_known_pp_summary             = rho_split$idx_known,
@@ -255,6 +253,7 @@ adapt_summary_pp <- function(data) {
 
 prepare_individual_did <- function(df) {
   if (nrow(df) == 0) return(null_stan_data_did())
+  df <- dplyr::arrange(df, .data$study_id)
   n_studies <- dplyr::n_distinct(df$study_id)
   ctrl <- dplyr::filter(df, .data$type == "control")
   trt  <- dplyr::filter(df, .data$type == "treatment")
@@ -277,6 +276,7 @@ prepare_individual_did <- function(df) {
 
 prepare_individual_rct <- function(df) {
   if (nrow(df) == 0) return(null_stan_data_rct())
+  df <- dplyr::arrange(df, .data$study_id)
   n_studies <- dplyr::n_distinct(df$study_id)
   ctrl <- dplyr::filter(df, .data$type == "control")
   trt  <- dplyr::filter(df, .data$type == "treatment")
@@ -292,14 +292,14 @@ prepare_individual_rct <- function(df) {
     study_end_treatment_rct     = as.integer(cumsum(n_t)),
     x_control_after_rct         = ctrl$after,
     x_treatment_after_rct       = trt$after,
-    is_baseline_control_rct_zero    = 0L,
-    is_baseline_treatment_rct_zero  = 0L,
-    is_time_trend_rct_zero          = 0L
+    is_baseline_control_equal_treatment_rct = 0L,
+    is_time_trend_rct_zero = 0L
   )
 }
 
 prepare_individual_pp <- function(df) {
   if (nrow(df) == 0) return(null_stan_data_pp())
+  df <- dplyr::arrange(df, .data$study_id)
   n_studies <- dplyr::n_distinct(df$study_id)
   trt <- dplyr::filter(df, .data$type == "treatment")
   n_t <- dplyr::count(trt, .data$study_id)$n
@@ -310,7 +310,8 @@ prepare_individual_pp <- function(df) {
     study_end_treatment_pp     = as.integer(cumsum(n_t)),
     x_treatment_before_pp      = trt$before,
     x_treatment_after_pp       = trt$after,
-    is_time_trend_pp_zero       = 0L
+    is_time_trend_pp_zero       = 0L,
+    is_differenced_likelihood_pp = 1L
   )
 }
 

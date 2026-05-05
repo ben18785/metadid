@@ -238,17 +238,20 @@ validate_individual_data <- function(data) {
           call. = FALSE
         )
       }
-      # Check every subject has both pre and post
-      subj_times <- table(sub$subject_id, sub$time)
-      incomplete <- rownames(subj_times)[apply(subj_times, 1, function(r) any(r == 0))]
-      if (length(incomplete) > 0) {
-        stop(
-          "Study '", study, "': subject_id(s) ",
-          paste(head(incomplete, 3), collapse = ", "),
-          if (length(incomplete) > 3) ", ..." else "",
-          " are missing a 'pre' or 'post' observation.",
-          call. = FALSE
-        )
+      # Check every subject has both pre and post within each group
+      for (grp in unique(sub$group)) {
+        grp_sub <- sub[sub$group == grp, ]
+        subj_times <- table(grp_sub$subject_id, grp_sub$time)
+        incomplete <- rownames(subj_times)[apply(subj_times, 1, function(r) any(r == 0))]
+        if (length(incomplete) > 0) {
+          stop(
+            "Study '", study, "', group '", grp, "': subject_id(s) ",
+            paste(head(incomplete, 3), collapse = ", "),
+            if (length(incomplete) > 3) ", ..." else "",
+            " are missing a 'pre' or 'post' observation.",
+            call. = FALSE
+          )
+        }
       }
     }
   }

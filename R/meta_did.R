@@ -100,6 +100,130 @@ meta_did <- function(
     allow_no_did          = FALSE,
     ...
 ) {
+  .meta_did_core(
+    summary_data          = summary_data,
+    individual_data       = individual_data,
+    normalise_by_baseline = normalise_by_baseline,
+    robust_heterogeneity  = robust_heterogeneity,
+    design_effects        = design_effects,
+    hierarchical_rho      = hierarchical_rho,
+    priors                = priors,
+    method                = method,
+    chains                = chains,
+    iter_warmup           = iter_warmup,
+    iter_sampling         = iter_sampling,
+    seed                  = seed,
+    allow_no_did          = allow_no_did,
+    ...
+  )
+}
+
+
+#' Fit a naive meta-analysis model (no borrowing across designs)
+#'
+#' A convenience wrapper around the meta-analysis model that imposes the
+#' "naive" assumptions typically made when analysing each design in isolation:
+#' \itemize{
+#'   \item **RCT**: Baseline means are assumed equal across treatment and
+#'     control groups (randomisation assumption), so the baseline difference
+#'     \eqn{\gamma} is fixed to zero.
+#'   \item **Pre-post**: The time trend \eqn{\beta} is fixed to zero, so the
+#'     pre-post change is attributed entirely to the treatment effect.
+#' }
+#' These constraints mean that RCT and pre-post studies do not borrow
+#' information from DiD studies to identify nuisance parameters. DiD studies
+#' are still modelled with the full parameterisation.
+#'
+#' @inheritParams meta_did
+#' @return A `meta_did_fit` object, identical in structure to the return
+#'   value of [meta_did()].
+#'
+#' @seealso [meta_did()] for the full model that borrows across designs.
+#' @export
+#'
+#' @examples
+#' if (instantiate::stan_cmdstan_exists()) {
+#'   studies <- data.frame(
+#'     study_id            = c("Smith 2020", "Jones 2021"),
+#'     design              = c("did", "rct"),
+#'     n_control           = c(50, 60),
+#'     mean_pre_control    = c(0.45, NA),
+#'     mean_post_control   = c(0.42, 0.48),
+#'     sd_pre_control      = c(0.12, NA),
+#'     sd_post_control     = c(0.11, 0.12),
+#'     n_treatment         = c(55, 65),
+#'     mean_pre_treatment  = c(0.46, NA),
+#'     mean_post_treatment = c(0.30, 0.35),
+#'     sd_pre_treatment    = c(0.13, NA),
+#'     sd_post_treatment   = c(0.10, 0.11),
+#'     rho                 = c(0.75, NA)
+#'   )
+#'   fit <- meta_did_naive(summary_data = studies)
+#' }
+meta_did_naive <- function(
+    summary_data          = NULL,
+    individual_data       = NULL,
+    normalise_by_baseline = TRUE,
+    robust_heterogeneity  = FALSE,
+    design_effects        = FALSE,
+    hierarchical_rho      = TRUE,
+    priors                = set_priors(),
+    method                = c("sample", "optimize"),
+    chains                = 4L,
+    iter_warmup           = 1000L,
+    iter_sampling         = 1000L,
+    seed                  = NULL,
+    allow_no_did          = FALSE,
+    ...
+) {
+  .meta_did_core(
+    summary_data          = summary_data,
+    individual_data       = individual_data,
+    normalise_by_baseline = normalise_by_baseline,
+    robust_heterogeneity  = robust_heterogeneity,
+    design_effects        = design_effects,
+    hierarchical_rho      = hierarchical_rho,
+    priors                = priors,
+    method                = method,
+    chains                = chains,
+    iter_warmup           = iter_warmup,
+    iter_sampling         = iter_sampling,
+    seed                  = seed,
+    allow_no_did          = allow_no_did,
+    stan_data_overrides   = list(
+      is_time_trend_pp_zero                          = 1L,
+      is_time_trend_pp_summary_zero                  = 1L,
+      is_time_trend_rct_zero                         = 1L,
+      is_time_trend_rct_summary_zero                 = 1L,
+      is_baseline_control_equal_treatment_rct        = 1L,
+      is_baseline_control_equal_treatment_rct_summary = 1L
+    ),
+    ...
+  )
+}
+
+
+# ---------------------------------------------------------------------------
+# Internal core implementation shared by meta_did() and meta_did_naive()
+# ---------------------------------------------------------------------------
+
+.meta_did_core <- function(
+    summary_data          = NULL,
+    individual_data       = NULL,
+    normalise_by_baseline = TRUE,
+    robust_heterogeneity  = FALSE,
+    design_effects        = FALSE,
+    hierarchical_rho      = TRUE,
+    priors                = set_priors(),
+    method                = c("sample", "optimize"),
+    chains                = 4L,
+    iter_warmup           = 1000L,
+    iter_sampling         = 1000L,
+    seed                  = NULL,
+    allow_no_did          = FALSE,
+    stan_data_overrides   = NULL,
+    ...
+) {
   method <- match.arg(method)
 
   # --- Input checks ---
@@ -158,6 +282,11 @@ meta_did <- function(
 
   # --- Stan data ---
   stan_data <- prepare_stan_data(summary_data, individual_data, model_flags, priors)
+
+  # Apply any overrides (e.g. naive-mode flags)
+  if (!is.null(stan_data_overrides)) {
+    stan_data[names(stan_data_overrides)] <- stan_data_overrides
+  }
 
   # --- Fit ---
   stan_dir <- system.file("bin/stan", package = "metadid")

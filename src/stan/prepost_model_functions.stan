@@ -30,3 +30,17 @@ real prepost_study_lpdf_from_data(
 
   return multi_normal_lpdf(x_vec | mu, Sigma);
 }
+
+real prepost_study_differenced_lpdf_from_data(
+  int start_t, int end_t,
+  vector x_treatment_before,
+  vector x_treatment_after,
+  real time_trend,
+  real treatment_effect,
+  real sigma_d
+) {
+  int n_t = end_t - start_t + 1;
+  vector[n_t] d = segment(x_treatment_after, start_t, n_t)
+                - segment(x_treatment_before, start_t, n_t);
+  return normal_lpdf(d | time_trend + treatment_effect, sigma_d);
+}

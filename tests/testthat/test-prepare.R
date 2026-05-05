@@ -296,6 +296,78 @@ test_that("prepare_individual_pp() handles empty data", {
 })
 
 # ---------------------------------------------------------------------------
+# Out-of-order study_id regression tests
+# ---------------------------------------------------------------------------
+
+test_that("prepare_individual_did() is correct when study_id arrives out of order", {
+  # S2 rows appear before S1 rows
+
+  df <- data.frame(
+    study_id = c(rep("S2", 6), rep("S1", 4)),
+    type     = c(rep(c("control", "treatment"), each = 3),
+                 rep(c("control", "treatment"), each = 2)),
+    before   = c(20, 21, 22, 30, 31, 32, 1, 2, 10, 11),
+    after    = c(23, 24, 25, 33, 34, 35, 3, 4, 12, 13)
+  )
+  result <- prepare_individual_did(df)
+
+  # S1 (2 control, 2 treatment) should come first after sorting
+
+  expect_equal(result$n_studies_did, 2)
+  expect_equal(result$sample_size_control_did, c(2L, 3L))
+  expect_equal(result$sample_size_treatment_did, c(2L, 3L))
+
+  # Indices into data vectors
+
+  expect_equal(result$study_start_control_did, c(1L, 3L))
+  expect_equal(result$study_end_control_did, c(2L, 5L))
+  expect_equal(result$study_start_treatment_did, c(1L, 3L))
+  expect_equal(result$study_end_treatment_did, c(2L, 5L))
+
+  # Data vectors should be sorted: S1 values then S2 values
+
+  expect_equal(result$x_control_before_did, c(1, 2, 20, 21, 22))
+  expect_equal(result$x_control_after_did, c(3, 4, 23, 24, 25))
+  expect_equal(result$x_treatment_before_did, c(10, 11, 30, 31, 32))
+  expect_equal(result$x_treatment_after_did, c(12, 13, 33, 34, 35))
+})
+
+test_that("prepare_individual_rct() is correct when study_id arrives out of order", {
+  df <- data.frame(
+    study_id = c(rep("S2", 4), rep("S1", 2)),
+    type     = c(rep(c("control", "treatment"), each = 2),
+                 rep(c("control", "treatment"), each = 1)),
+    after    = c(20, 21, 30, 31, 1, 10)
+  )
+  result <- prepare_individual_rct(df)
+
+  expect_equal(result$n_studies_rct, 2)
+  expect_equal(result$sample_size_control_rct, c(1L, 2L))
+  expect_equal(result$sample_size_treatment_rct, c(1L, 2L))
+  expect_equal(result$study_start_control_rct, c(1L, 2L))
+  expect_equal(result$study_end_control_rct, c(1L, 3L))
+  expect_equal(result$x_control_after_rct, c(1, 20, 21))
+  expect_equal(result$x_treatment_after_rct, c(10, 30, 31))
+})
+
+test_that("prepare_individual_pp() is correct when study_id arrives out of order", {
+  df <- data.frame(
+    study_id = c(rep("S2", 3), rep("S1", 2)),
+    type     = rep("treatment", 5),
+    before   = c(20, 21, 22, 1, 2),
+    after    = c(30, 31, 32, 3, 4)
+  )
+  result <- prepare_individual_pp(df)
+
+  expect_equal(result$n_studies_pp, 2)
+  expect_equal(result$sample_size_treatment_pp, c(2L, 3L))
+  expect_equal(result$study_start_treatment_pp, c(1L, 3L))
+  expect_equal(result$study_end_treatment_pp, c(2L, 5L))
+  expect_equal(result$x_treatment_before_pp, c(1, 2, 20, 21, 22))
+  expect_equal(result$x_treatment_after_pp, c(3, 4, 30, 31, 32))
+})
+
+# ---------------------------------------------------------------------------
 # prepare_stan_data() dispatcher
 # ---------------------------------------------------------------------------
 
