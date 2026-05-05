@@ -5,7 +5,7 @@ Authors@R: c(
     person("Ben", "Lambert", email = "ben.c.lambert@gmail.com",
            role = c("aut", "cre")),
     person("Joseph", "Poore", email = "joseph.poore@biology.ox.ac.uk",
-           role = c("aut", "cre"))
+           role = "aut")
     )
 Description: A Bayesian meta-analysis framework for synthesizing treatment 
     effects across different study designs, including difference-in-differences 
