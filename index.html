@@ -50,7 +50,7 @@
 <div class="page-header"><h1 id="metadid">metadid<a class="anchor" aria-label="anchor" href="#metadid"></a>
 </h1></div>
 <p><a href="https://github.com/ben18785/metadid/actions" class="external-link"><img src="https://github.com/ben18785/metadid/actions/workflows/tests.yaml/badge.svg" alt="tests"></a> <a href="https://app.codecov.io/gh/ben18785/metadid" class="external-link"><img src="https://codecov.io/gh/ben18785/metadid/graph/badge.svg" alt="Codecov test coverage"></a></p>
-<p><strong>metadid</strong> is an R package for Bayesian meta-analysis that synthesises treatment effects across studies with different designs: difference-in-differences (DiD), randomised controlled trials (RCT), and pre-post studies. It uses a hierarchical Stan model that accounts for design-specific information and heterogeneity across studies, with optional baseline normalisation to place outcomes on a common fractional scale.</p>
+<p><strong>metadid</strong> is an R package for Bayesian meta-analysis that synthesises treatment effects across studies with different designs: difference-in-differences (DiD), post-only randomised controlled trials (RCT), and pre-post studies. It uses a hierarchical Stan model that accounts for design-specific information and heterogeneity across studies, with optional baseline normalisation to place outcomes on a common fractional scale.</p>
 <div class="section level2">
 <h2 id="model-assumptions">Model assumptions<a class="anchor" aria-label="anchor" href="#model-assumptions"></a>
 </h2>
@@ -176,6 +176,7 @@ Y_{i,t,\mathrm{post}}
 <h3 id="practical-implication">Practical implication<a class="anchor" aria-label="anchor" href="#practical-implication"></a>
 </h3>
 <p>Designs with missing components (e.g. pre-post) become informative by borrowing structure from other studies, but this increases reliance on the modelling assumptions above.</p>
+<p>Post-only RCTs identify the sum of the treatment effect and any baseline imbalance, while pre-post studies identify the sum of the treatment effect and time trends. In the absence of DiD studies, separating these components relies on modelling assumptions. While RCTs may be less sensitive under randomisation assumptions, both designs provide only partial identification of the treatment effect in this framework.</p>
 </div>
 </div>
 <div class="section level2">
@@ -235,7 +236,7 @@ Y_{i,t,\mathrm{post}}
 <div class="section level3">
 <h3 id="id_2-fit-the-model-via-optimisation">2. Fit the model via optimisation<a class="anchor" aria-label="anchor" href="#id_2-fit-the-model-via-optimisation"></a>
 </h3>
-<p><code><a href="reference/meta_did.html">meta_did()</a></code> fits a hierarchical Bayesian model. Setting <code>method = "optimize"</code> finds the maximum a posteriori (MAP) estimate via L-BFGS — much faster than full MCMC and useful for quick iteration.</p>
+<p><code><a href="reference/meta_did.html">meta_did()</a></code> fits a hierarchical Bayesian model. Setting <code>method = "optimize"</code> finds the maximum a posteriori (MAP) estimate via L-BFGS — this is faster than MCMC but provides no uncertainty measures in estimates.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/meta_did.html">meta_did</a></span><span class="op">(</span></span>
 <span>  summary_data <span class="op">=</span> <span class="va">studies</span>,</span>

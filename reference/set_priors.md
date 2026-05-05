@@ -16,7 +16,8 @@ set_priors(
   rho_sd = normal(0, 0.5),
   nu = gamma(2, 0.1),
   delta_rct = normal(0, 10),
-  delta_pp = normal(0, 10)
+  delta_pp = normal(0, 10),
+  sigma = cauchy(5)
 )
 ```
 
@@ -64,6 +65,11 @@ set_priors(
   Prior on the Pre-Post design offset relative to DiD (only used when
   `design_effects = TRUE`). Default: `normal(0, 10)`.
 
+- sigma:
+
+  Prior on the study-level observation standard deviations (shared
+  across all designs). Default: `cauchy(5)`.
+
 ## Value
 
 A `did_priors` object.
@@ -83,6 +89,7 @@ set_priors()
 #>   nu ~ gamma(shape = 2, rate = 0.1)
 #>   delta_rct ~ normal(mean = 0, sd = 10)
 #>   delta_pp ~ normal(mean = 0, sd = 10)
+#>   sigma ~ cauchy(scale = 5)
 
 # Override one prior
 set_priors(treatment_effect_sd = cauchy(2))
@@ -96,4 +103,5 @@ set_priors(treatment_effect_sd = cauchy(2))
 #>   nu ~ gamma(shape = 2, rate = 0.1)
 #>   delta_rct ~ normal(mean = 0, sd = 10)
 #>   delta_pp ~ normal(mean = 0, sd = 10)
+#>   sigma ~ cauchy(scale = 5)
 ```

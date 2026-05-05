@@ -336,6 +336,38 @@ estimated from DiD studies informs the pre-post decomposition, and the
 baseline structure from DiD studies informs the RCT decomposition. This
 cross-design borrowing is the core value of the metadid approach.</p>
 </div>
+<div class="section level3">
+<h3 id="differenced-form-likelihoods">Differenced-form likelihoods<a class="anchor" aria-label="anchor" href="#differenced-form-likelihoods"></a>
+</h3>
+<p>For RCT and pre-post designs, the model uses differenced-form
+likelihoods that eliminate nuisance parameters algebraically:</p>
+<ul>
+<li>
+<strong>RCT</strong>: the likelihood is based on the
+treatment–control difference in post-treatment means, so the time trend
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
+cancels. The remaining parameters are the treatment effect
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>
+and the baseline difference
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
+(borrowed from DiD studies).</li>
+<li>
+<strong>Pre-post</strong> (default): the likelihood is based on the
+within-subject post–pre difference, so the baseline
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\alpha_i + \gamma_i</annotation></semantics></math>
+cancels. The remaining parameters are the treatment effect
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>
+and the time trend
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
+(borrowed from DiD studies).</li>
+</ul>
+<p>For pre-post studies, a non-differenced (bivariate normal) form is
+available as an alternative. This retains the pre/post correlation
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\rho_i</annotation></semantics></math>
+as an estimable parameter, contributing to the hierarchical
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
+model, at the cost of estimating additional nuisance parameters.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="baseline-normalisation">Baseline normalisation<a class="anchor" aria-label="anchor" href="#baseline-normalisation"></a>
@@ -394,26 +426,25 @@ meta-analysis. This places the change scores on the same relative scale
 as the other designs, but requires that at least some full DiD studies
 are present.</p>
 <p>For RCT studies, there is no pre-treatment data, so normalisation
-divides by the post-treatment control mean. This fixes the <em>sum</em>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\alpha_i + \beta_i = 1</annotation></semantics></math>,
-but does not fix
+divides by the post-treatment control mean. The RCT likelihood uses a
+differenced form — the difference between treatment and control
+post-treatment means — in which the time trend
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
+cancels algebraically and does not appear as a parameter. After
+normalisation, both baselines are fixed at 1, and the observed
+treatment–control difference directly estimates the treatment effect
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>.</p>
+<p>When data are not normalised, the RCT baselines
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>α</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\alpha_i</annotation></semantics></math>
 and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
-individually. Since only their sum is determined, the model fixes
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\alpha_i = 1</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>β</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta_i = 0</annotation></semantics></math>
-— the simplest split consistent with the constraint. The treatment
-effect then simplifies to:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>θ</mi><mi>i</mi></msub><mo>=</mo><msub><mover><mi>y</mi><mo accent="true">‾</mo></mover><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">
-\theta_i = \bar{y}_{i,t,\mathrm{post}} - 1
-</annotation></semantics></math></p>
-<p>This is a modelling choice, not a consequence of the data. It means
-that normalised RCT treatment effects are interpreted relative to the
-control post-treatment mean, with no time-trend adjustment. This is
-appropriate when the primary goal is cross-design synthesis anchored by
-DiD studies, which provide the time-trend information.</p>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\alpha_i + \gamma_i</annotation></semantics></math>
+are free parameters drawn from the same hierarchical distributions as in
+DiD studies, allowing the baseline difference
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
+to be informed by DiD evidence. By default, the model allows
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>≠</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\gamma_i \neq 0</annotation></semantics></math>;
+this can be constrained to zero if randomisation is assumed to eliminate
+baseline imbalances.</p>
 </div>
 <div class="section level3">
 <h3 id="interpreting-normalised-treatment-effects">Interpreting normalised treatment effects<a class="anchor" aria-label="anchor" href="#interpreting-normalised-treatment-effects"></a>
