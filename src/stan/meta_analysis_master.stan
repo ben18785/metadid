@@ -33,6 +33,8 @@ parameters {
 transformed parameters {
   // handles special case for equal baseline parameters i.e. diff is zero
   #include "rct_summary_model_transformed_parameters.stan"
+  // derives treatment_effect_rct_derived from apparent_effect_rct when normalised
+  #include "rct_model_transformed_parameters.stan"
   // computes treatment_effect_mean_rct and treatment_effect_mean_pp
   #include "shared_transformed_parameters.stan"
 }

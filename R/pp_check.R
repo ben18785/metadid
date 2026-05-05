@@ -628,26 +628,46 @@ get_cell_draws <- function(draws, design, design_idx, group, time, is_normalised
     }
 
   } else if (design == "rct") {
-    bc_param <- paste0("baseline_control_rct[", idx, "]")
-    baseline_c <- if (bc_param %in% colnames(draws))
-      as.numeric(draws[, bc_param]) else rep(if (is_normalised) 1 else 0, nrow(draws))
+    if (is_normalised) {
+      # Normalised RCT: control mean is 1, treatment mean is 1 + apparent_effect
+      # (or 1 + treatment_effect when time trends are zero, since apparent = true)
+      apparent_param <- paste0("apparent_effect_rct[", idx, "]")
+      if (apparent_param %in% colnames(draws)) {
+        apparent <- as.numeric(draws[, apparent_param])
+      } else {
+        # Time trends forced to zero: treatment_effect_rct is sampled directly
+        apparent <- as.numeric(draws[, paste0("treatment_effect_rct[", idx, "]")])
+      }
 
-    bt_param <- paste0("baseline_treatment_rct[", idx, "]")
-    baseline_t <- if (bt_param %in% colnames(draws))
-      as.numeric(draws[, bt_param]) else baseline_c
-
-    tt_param <- paste0("time_trend_rct[", idx, "]")
-    tt <- if (tt_param %in% colnames(draws))
-      as.numeric(draws[, tt_param]) else rep(0, nrow(draws))
-
-    te <- as.numeric(draws[, paste0("treatment_effect_rct[", idx, "]")])
-
-    if (group == "control") {
-      list(mu = baseline_c + tt,
-           sigma = as.numeric(draws[, paste0("sigma_control_after_rct[", idx, "]")]))
+      if (group == "control") {
+        list(mu = rep(1, nrow(draws)),
+             sigma = as.numeric(draws[, paste0("sigma_control_after_rct[", idx, "]")]))
+      } else {
+        list(mu = 1 + apparent,
+             sigma = as.numeric(draws[, paste0("sigma_treatment_after_rct[", idx, "]")]))
+      }
     } else {
-      list(mu = baseline_t + tt + te,
-           sigma = as.numeric(draws[, paste0("sigma_treatment_after_rct[", idx, "]")]))
+      # Unnormalised RCT: original parameterisation
+      bc_param <- paste0("baseline_control_rct[", idx, "]")
+      baseline_c <- as.numeric(draws[, bc_param])
+
+      bt_param <- paste0("baseline_treatment_rct[", idx, "]")
+      baseline_t <- if (bt_param %in% colnames(draws))
+        as.numeric(draws[, bt_param]) else baseline_c
+
+      tt_param <- paste0("time_trend_rct[", idx, "]")
+      tt <- if (tt_param %in% colnames(draws))
+        as.numeric(draws[, tt_param]) else rep(0, nrow(draws))
+
+      te <- as.numeric(draws[, paste0("treatment_effect_rct[", idx, "]")])
+
+      if (group == "control") {
+        list(mu = baseline_c + tt,
+             sigma = as.numeric(draws[, paste0("sigma_control_after_rct[", idx, "]")]))
+      } else {
+        list(mu = baseline_t + tt + te,
+             sigma = as.numeric(draws[, paste0("sigma_treatment_after_rct[", idx, "]")]))
+      }
     }
 
   } else { # pp
