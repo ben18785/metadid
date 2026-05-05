@@ -41,30 +41,15 @@ real rct_summary_study_lpdf_from_data_differenced_form(
   return normal_lpdf(x_diff| mu_diff_treatment_control, sigma_diff);
 }
 
-// Normalised RCT summary likelihood: accounts for the fact that RCT data is
-// normalised by mean_post_control (≈ α + β), not by the pre-treatment baseline α.
-// Parameters are on the "normalised by α" scale. Division by (1 + time_trend)
-// converts expected means to the scale of the data.
+// Normalised RCT summary likelihood (reparameterised).
+// apparent_effect = theta / (alpha + beta).  For summary data the control mean
+// is exactly 1 by construction, so only the treatment mean contributes.
 real rct_summary_study_normalised_lpdf_from_data(
-  real x_bar_control_after,
   real x_bar_treatment_after,
-  real baseline_control,
-  real baseline_treatment,
-  real time_trend,
-  real treatment_effect,
-  real sigma_ca,
+  real apparent_effect,
   real sigma_ta,
-  int n_control,
   int n_treatment
 ) {
-  real sigma_ca_n = sigma_ca / sqrt(n_control);
   real sigma_ta_n = sigma_ta / sqrt(n_treatment);
-
-  real mu_control_after = (baseline_control + time_trend) / (1 + time_trend);
-  real mu_treatment_after = (baseline_treatment + time_trend + treatment_effect) / (1 + time_trend);
-
-  return normal_lpdf(x_bar_control_after | mu_control_after, sigma_ca_n) +
-         normal_lpdf(x_bar_treatment_after | mu_treatment_after, sigma_ta_n);
+  return normal_lpdf(x_bar_treatment_after | 1.0 + apparent_effect, sigma_ta_n);
 }
-
-
