@@ -62,6 +62,7 @@ articles:
   - title: Getting started
     contents:
       - mixed-designs
+      - covariates
   - title: Theory
     contents:
       - model-details
