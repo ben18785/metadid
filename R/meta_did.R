@@ -36,6 +36,20 @@
 #'   one have their correlation imputed.
 #' @param priors A `did_priors` object from [set_priors()]. Controls the
 #'   prior distributions on all population-level parameters.
+#' @param covariates An optional one-sided formula specifying study-level
+#'   covariates for meta-regression on the treatment effect (e.g.,
+#'   `~ dose + year`). The named columns must be numeric and present in
+#'   both `summary_data` and `individual_data` (whichever are provided).
+#'   For individual-level data, covariate values must be constant within
+#'   each study. Default `NULL` (no meta-regression).
+#' @param center_covariates Logical. If `TRUE` (default), covariates are
+#'   mean-centered across all studies before fitting. This ensures that
+#'   `treatment_effect_mean` is the population treatment effect at the
+#'   average covariate values. Set to `FALSE` to use raw covariate values,
+#'   in which case `treatment_effect_mean` is the effect when all covariates
+#'   equal zero. The covariate coefficients (`beta_cov`) have the same
+#'   interpretation regardless of centering: the change in expected
+#'   treatment effect per unit increase in the covariate.
 #' @param method Inference method. `"sample"` (default) runs full MCMC via
 #'   Stan's HMC-NUTS sampler and returns a posterior distribution. `"optimize"`
 #'   finds the maximum a posteriori (MAP) estimate via L-BFGS and is
@@ -91,6 +105,8 @@ meta_did <- function(
     robust_heterogeneity  = FALSE,
     design_effects        = FALSE,
     hierarchical_rho      = TRUE,
+    covariates            = NULL,
+    center_covariates     = TRUE,
     priors                = set_priors(),
     method                = c("sample", "optimize"),
     chains                = 4L,
@@ -107,6 +123,8 @@ meta_did <- function(
     robust_heterogeneity  = robust_heterogeneity,
     design_effects        = design_effects,
     hierarchical_rho      = hierarchical_rho,
+    covariates            = covariates,
+    center_covariates     = center_covariates,
     priors                = priors,
     method                = method,
     chains                = chains,
@@ -167,6 +185,8 @@ meta_did_naive <- function(
     robust_heterogeneity  = FALSE,
     design_effects        = FALSE,
     hierarchical_rho      = TRUE,
+    covariates            = NULL,
+    center_covariates     = TRUE,
     priors                = set_priors(),
     method                = c("sample", "optimize"),
     chains                = 4L,
@@ -183,6 +203,8 @@ meta_did_naive <- function(
     robust_heterogeneity  = robust_heterogeneity,
     design_effects        = design_effects,
     hierarchical_rho      = hierarchical_rho,
+    covariates            = covariates,
+    center_covariates     = center_covariates,
     priors                = priors,
     method                = method,
     chains                = chains,
@@ -214,6 +236,8 @@ meta_did_naive <- function(
     robust_heterogeneity  = FALSE,
     design_effects        = FALSE,
     hierarchical_rho      = TRUE,
+    covariates            = NULL,
+    center_covariates     = TRUE,
     priors                = set_priors(),
     method                = c("sample", "optimize"),
     chains                = 4L,
@@ -263,6 +287,21 @@ meta_did_naive <- function(
     )
   }
 
+  # --- Parse covariates ---
+  covariate_names <- NULL
+  if (!is.null(covariates)) {
+    if (!inherits(covariates, "formula")) {
+      stop("'covariates' must be a one-sided formula (e.g., ~ dose + year).",
+           call. = FALSE)
+    }
+    # Extract variable names from the formula (drop intercept)
+    covariate_names <- all.vars(covariates)
+    if (length(covariate_names) == 0) {
+      stop("'covariates' formula contains no variables.", call. = FALSE)
+    }
+    validate_covariates(covariate_names, summary_data, individual_data)
+  }
+
   # --- Normalisation ---
   normalisation_factors <- NULL
   if (normalise_by_baseline) {
@@ -281,7 +320,10 @@ meta_did_naive <- function(
   )
 
   # --- Stan data ---
-  stan_data <- prepare_stan_data(summary_data, individual_data, model_flags, priors)
+  stan_data <- prepare_stan_data(summary_data, individual_data, model_flags, priors,
+                                  covariate_names = covariate_names,
+                                  center_covariates = center_covariates)
+  cov_centers <- attr(stan_data, "cov_centers")
 
   # Apply any overrides (e.g. naive-mode flags)
   if (!is.null(stan_data_overrides)) {
@@ -335,7 +377,10 @@ meta_did_naive <- function(
     model_flags           = model_flags,
     priors                = priors,
     normalisation_factors = normalisation_factors,
-    method                = method
+    method                = method,
+    covariate_names       = covariate_names,
+    cov_centers           = cov_centers,
+    center_covariates     = center_covariates
   )
 }
 

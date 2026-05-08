@@ -23,3 +23,5 @@ if (is_design_effect) {
   delta_rct_raw ~ normal(0, delta_rct_prior_sd);
   delta_pp_raw  ~ normal(0, delta_pp_prior_sd);
 }
+
+beta_cov ~ normal(0, beta_cov_prior_sd);

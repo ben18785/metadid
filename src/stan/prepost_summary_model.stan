@@ -68,9 +68,9 @@ if(n_studies_pp_summary > 0) {
     baseline_treatment_pp_summary ~ normal(baseline_treatment_mean[1], baseline_treatment_sd[1]);
   }
   if (is_student_t_heterogeneity) {
-    treatment_effect_pp_summary ~ student_t(nu_treatment_vec[1], treatment_effect_mean_pp, treatment_effect_sd);
+    treatment_effect_pp_summary ~ student_t(nu_treatment_vec[1], treatment_effect_mean_pp + X_cov_pp_summary * beta_cov, treatment_effect_sd);
   } else {
-    treatment_effect_pp_summary ~ normal(treatment_effect_mean_pp, treatment_effect_sd);
+    treatment_effect_pp_summary ~ normal(treatment_effect_mean_pp + X_cov_pp_summary * beta_cov, treatment_effect_sd);
   }
 }
 
