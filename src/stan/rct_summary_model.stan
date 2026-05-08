@@ -33,9 +33,9 @@ if(n_studies_rct_summary > 0) {
 
       // Hierarchical prior on the derived true treatment effect
       if (is_student_t_heterogeneity) {
-        target += student_t_lpdf(treatment_effect_rct_summary_derived[i] | nu_treatment_vec[1], treatment_effect_mean_rct, treatment_effect_sd);
+        target += student_t_lpdf(treatment_effect_rct_summary_derived[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
       } else {
-        target += normal_lpdf(treatment_effect_rct_summary_derived[i] | treatment_effect_mean_rct, treatment_effect_sd);
+        target += normal_lpdf(treatment_effect_rct_summary_derived[i] | treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
       }
 
       // Jacobian: |d(te)/d(apparent)| = |1 + time_trend|
@@ -58,9 +58,9 @@ if(n_studies_rct_summary > 0) {
 
       // Hierarchical prior on treatment effect
       if (is_student_t_heterogeneity) {
-        target += student_t_lpdf(treatment_effect_rct_summary[i] | nu_treatment_vec[1], treatment_effect_mean_rct, treatment_effect_sd);
+        target += student_t_lpdf(treatment_effect_rct_summary[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
       } else {
-        target += normal_lpdf(treatment_effect_rct_summary[i] | treatment_effect_mean_rct, treatment_effect_sd);
+        target += normal_lpdf(treatment_effect_rct_summary[i] | treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
       }
     }
   }

@@ -50,6 +50,8 @@ model {
 }
 
 generated quantities {
+  // Predictive draw for a new study at the covariate reference point
+  // (covariate mean when centered, zero when not; ignores covariate variation).
   if(is_student_t_heterogeneity == 0) {
     real treatment_effect_sim = normal_rng(treatment_effect_mean, treatment_effect_sd);
   } else {

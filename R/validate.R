@@ -260,6 +260,83 @@ validate_individual_data <- function(data) {
 }
 
 # ---------------------------------------------------------------------------
+# validate_covariates()
+# ---------------------------------------------------------------------------
+
+#' Validate study-level covariates for meta-regression
+#'
+#' Checks that covariate columns exist, are numeric, contain no `NA` values,
+#' and (for individual-level data) are constant within each study.
+#'
+#' @param covariate_names Character vector of column names to use as covariates.
+#' @param summary_data Summary-level data frame (or NULL).
+#' @param individual_data Individual-level data frame (or NULL).
+#'
+#' @return Invisible NULL. Stops with an error if validation fails.
+#' @keywords internal
+validate_covariates <- function(covariate_names, summary_data, individual_data) {
+  if (is.null(covariate_names) || length(covariate_names) == 0) {
+    return(invisible(NULL))
+  }
+
+  # Check columns exist in summary_data
+
+if (!is.null(summary_data) && nrow(summary_data) > 0) {
+    missing <- setdiff(covariate_names, names(summary_data))
+    if (length(missing) > 0) {
+      stop(
+        "Covariate columns not found in summary_data: ",
+        paste(missing, collapse = ", "), ".",
+        call. = FALSE
+      )
+    }
+    for (col in covariate_names) {
+      if (!is.numeric(summary_data[[col]])) {
+        stop("Covariate '", col, "' in summary_data must be numeric.", call. = FALSE)
+      }
+      if (any(is.na(summary_data[[col]]))) {
+        stop("Covariate '", col, "' in summary_data contains NA values.", call. = FALSE)
+      }
+    }
+  }
+
+  # Check columns exist in individual_data and are constant within study
+  if (!is.null(individual_data) && nrow(individual_data) > 0) {
+    missing <- setdiff(covariate_names, names(individual_data))
+    if (length(missing) > 0) {
+      stop(
+        "Covariate columns not found in individual_data: ",
+        paste(missing, collapse = ", "), ".",
+        call. = FALSE
+      )
+    }
+    for (col in covariate_names) {
+      if (!is.numeric(individual_data[[col]])) {
+        stop("Covariate '", col, "' in individual_data must be numeric.", call. = FALSE)
+      }
+      if (any(is.na(individual_data[[col]]))) {
+        stop("Covariate '", col, "' in individual_data contains NA values.", call. = FALSE)
+      }
+      # Check constant within study
+      n_unique <- tapply(individual_data[[col]], individual_data$study_id,
+                         function(x) length(unique(x)))
+      bad_studies <- names(n_unique)[n_unique > 1]
+      if (length(bad_studies) > 0) {
+        stop(
+          "Covariate '", col, "' varies within study in individual_data ",
+          "(must be constant within study). Problem studies: ",
+          paste(head(bad_studies, 3), collapse = ", "),
+          if (length(bad_studies) > 3) ", ..." else "", ".",
+          call. = FALSE
+        )
+      }
+    }
+  }
+
+  invisible(NULL)
+}
+
+# ---------------------------------------------------------------------------
 # Internal helper
 # ---------------------------------------------------------------------------
 

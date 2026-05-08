@@ -12,6 +12,7 @@ vector<lower=0>[n_studies_did_summary] sd_control_after_did_summary;
 vector<lower=0>[n_studies_did_summary] sd_treatment_before_did_summary;
 vector<lower=0>[n_studies_did_summary] sd_treatment_after_did_summary;
 int<lower=0, upper=1> is_differenced_likelihood_did_summary;
+matrix[n_studies_did_summary, K_cov] X_cov_did_summary;
 
 // Change-only studies: only change means and SDs available (no pre/post split).
 int<lower=0> n_studies_did_change_only;
@@ -21,6 +22,7 @@ array[n_studies_did_change_only] int sample_size_control_did_change_only;
 array[n_studies_did_change_only] int sample_size_treatment_did_change_only;
 vector<lower=0>[n_studies_did_change_only] sd_change_control_did_change_only;
 vector<lower=0>[n_studies_did_change_only] sd_change_treatment_did_change_only;
+matrix[n_studies_did_change_only, K_cov] X_cov_did_change_only;
 
 // Rho: split into known (data) and missing (to be inferred) studies.
 // When is_correlation_coefficient_hierarchical == 0, all rho are known:

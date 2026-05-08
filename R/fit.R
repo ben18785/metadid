@@ -11,7 +11,10 @@ new_meta_did_fit <- function(
     model_flags,
     priors,
     normalisation_factors,
-    method = "sample"
+    method = "sample",
+    covariate_names = NULL,
+    cov_centers = NULL,
+    center_covariates = TRUE
 ) {
   structure(
     list(
@@ -21,7 +24,10 @@ new_meta_did_fit <- function(
       model_flags           = model_flags,
       priors                = priors,
       normalisation_factors = normalisation_factors,
-      method                = method
+      method                = method,
+      covariate_names       = covariate_names,
+      cov_centers           = cov_centers,
+      center_covariates     = center_covariates
     ),
     class = "meta_did_fit"
   )
@@ -52,6 +58,8 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
   cat("Studies: DiD =", n_did, "| RCT =", n_rct,
       "| Pre-Post =", n_pp, "| DiD (change only) =", n_change, "\n")
 
+  K_cov <- length(x$covariate_names)
+
   if (x$method == "sample") {
     draws <- x$fit$draws("treatment_effect_mean", format = "matrix")
     m     <- mean(draws)
@@ -71,6 +79,20 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
       cat(sprintf("  Design offsets: RCT = %.3f, Pre-Post = %.3f\n",
                   delta_rct, delta_pp))
     }
+    if (K_cov > 0) {
+      beta_draws <- x$fit$draws("beta_cov", format = "matrix")
+      beta_means <- colMeans(beta_draws)
+      cat("Covariate coefficients:\n")
+      for (k in seq_len(K_cov)) {
+        beta_lo <- stats::quantile(beta_draws[, k], (1 - prob) / 2)
+        beta_hi <- stats::quantile(beta_draws[, k], 1 - (1 - prob) / 2)
+        cat(sprintf("  %s: %.3f  %g%% CI [%.3f, %.3f]\n",
+                    x$covariate_names[k], beta_means[k], prob * 100, beta_lo, beta_hi))
+      }
+      if (x$center_covariates) {
+        cat("  (covariates were mean-centered; treatment_effect_mean is the effect at covariate means)\n")
+      }
+    }
   } else {
     mle <- x$fit$mle()
     m   <- mle[["treatment_effect_mean"]]
@@ -82,6 +104,16 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
       delta_pp  <- mle[["treatment_effect_mean_pp"]]  - m
       cat(sprintf("  Design offsets: RCT = %.3f, Pre-Post = %.3f\n",
                   delta_rct, delta_pp))
+    }
+    if (K_cov > 0) {
+      cat("Covariate coefficients:\n")
+      for (k in seq_len(K_cov)) {
+        beta_k <- mle[[paste0("beta_cov[", k, "]")]]
+        cat(sprintf("  %s: %.3f  (MAP estimate)\n", x$covariate_names[k], beta_k))
+      }
+      if (x$center_covariates) {
+        cat("  (covariates were mean-centered; treatment_effect_mean is the effect at covariate means)\n")
+      }
     }
   }
 
@@ -147,6 +179,14 @@ summary.meta_did_fit <- function(object, prob = 0.9, ...) {
       summarise_draws("treatment_effect_mean_rct"),
       summarise_draws("treatment_effect_mean_pp")
     )
+  }
+  if (length(object$covariate_names) > 0) {
+    beta_summary <- summarise_draws("beta_cov")
+    if (!is.null(beta_summary)) {
+      # Label rows with covariate names for clarity
+      beta_summary$parameter <- paste0("beta_cov[", object$covariate_names, "]")
+      pop <- rbind(pop, beta_summary)
+    }
   }
 
   # Study-level treatment effects (all design types combined)

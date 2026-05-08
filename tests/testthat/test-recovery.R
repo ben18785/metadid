@@ -416,10 +416,6 @@ test_that("Fit 5b: full model is closer to truth than naive when PP studies have
   )
 })
 
-# ---------------------------------------------------------------------------
-# Fit 6: Unnormalised — recover baseline, effect, and trend on raw scale
-# ---------------------------------------------------------------------------
-
 sim_unnorm <- simulate_meta_did(
   n_studies     = 25,
   true_effect   = TRUE_EFFECT_RAW,
@@ -433,7 +429,89 @@ sim_unnorm <- simulate_meta_did(
   seed          = 8471L
 )
 
-test_that("Fit 6: unnormalised recovers baseline, treatment effect, and time trend", {
+# ---------------------------------------------------------------------------
+# Fit 6a: Covariate meta-regression (single covariate)
+# ---------------------------------------------------------------------------
+# Simulate studies whose true treatment effect varies with a covariate (dose).
+# After normalisation, verify that both the intercept (treatment_effect_mean)
+# and slope (beta_cov) are recovered.
+
+TRUE_BETA_COV_RAW <- -0.04   # raw-scale effect of one unit increase in dose
+COV_DOSE <- seq(1, 4, length.out = 40)
+MEAN_DOSE <- mean(COV_DOSE)
+
+sim_cov <- simulate_meta_did(
+  n_studies     = 40,
+  true_effect   = TRUE_EFFECT_RAW,
+  sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
+  true_trend    = TRUE_TREND_RAW,
+  sigma_trend   = TRUE_SIGMA_TREND_RAW,
+  baseline_mean = MEAN_BASELINE,
+  baseline_sd   = TRUE_BASELINE_SD,
+  n_control     = 100L,
+  n_treatment   = 100L,
+  seed          = 6427L,
+  covariates    = data.frame(dose = COV_DOSE),
+  beta_cov      = TRUE_BETA_COV_RAW
+)
+
+# After normalisation, both effect and slope are divided by baseline_mean.
+# Since covariates are centered, treatment_effect_mean is the effect at
+# the mean dose: (true_effect + mean_dose * beta_cov) / baseline_mean.
+TRUE_BETA_COV_NORMALISED <- TRUE_BETA_COV_RAW / MEAN_BASELINE
+TRUE_EFFECT_AT_MEAN_DOSE_NORMALISED <-
+  (TRUE_EFFECT_RAW + MEAN_DOSE * TRUE_BETA_COV_RAW) / MEAN_BASELINE
+
+test_that("Fit 6a: covariate meta-regression recovers treatment effect and beta_cov", {
+  skip_if_no_stan()
+  fit <- recovery_fit(
+    summary_data = as_summary_did(sim_cov),
+    covariates   = ~ dose
+  )
+  te <- summary(fit)
+
+  # treatment_effect_mean: 90% CI covers true value (at mean dose, since
+  # covariates are centered by default)
+  te_row <- te[te$parameter == "treatment_effect_mean", ]
+  expect_true(
+    te_row$lo < TRUE_EFFECT_AT_MEAN_DOSE_NORMALISED &&
+      te_row$hi > TRUE_EFFECT_AT_MEAN_DOSE_NORMALISED,
+    label = ci_label(te_row, TRUE_EFFECT_AT_MEAN_DOSE_NORMALISED)
+  )
+
+  # beta_cov[dose]: 90% CI covers true slope
+  beta_row <- te[te$parameter == "beta_cov[dose]", ]
+  expect_true(
+    nrow(beta_row) == 1,
+    label = "beta_cov[dose] appears in summary"
+  )
+  expect_true(
+    beta_row$lo < TRUE_BETA_COV_NORMALISED && beta_row$hi > TRUE_BETA_COV_NORMALISED,
+    label = ci_label(beta_row, TRUE_BETA_COV_NORMALISED)
+  )
+
+  # beta_cov should be negative (higher dose → more negative treatment effect)
+  expect_true(beta_row$mean < 0,
+              label = "estimated beta_cov is negative")
+
+  # treatment_effect_sd should be smaller than the no-covariate case because
+  # dose explains some between-study variation. We don't have a strict target
+  # but verify it's estimated and positive.
+  sd_row <- te[te$parameter == "treatment_effect_sd", ]
+  expect_true(sd_row$mean > 0, label = "residual between-study SD is positive")
+
+  # Convergence
+  rhat <- fit$fit$summary(c("treatment_effect_mean", "treatment_effect_sd",
+                            "beta_cov"))$rhat
+  expect_true(all(rhat < 1.05),
+              label = paste("R-hat:", paste(round(rhat, 3), collapse = ", ")))
+})
+
+# ---------------------------------------------------------------------------
+# Fit 6b: Unnormalised — recover baseline, effect, and trend on raw scale
+# ---------------------------------------------------------------------------
+
+test_that("Fit 6b: unnormalised recovers baseline, treatment effect, and time trend", {
   skip_if_no_stan()
   fit <- recovery_fit(
     summary_data = as_summary_did(sim_unnorm),
