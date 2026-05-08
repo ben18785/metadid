@@ -16,7 +16,9 @@ simulate_meta_did(
   baseline_sd = 0,
   within_sd = 0.12,
   rho = 0.5,
-  seed = NULL
+  seed = NULL,
+  covariates = NULL,
+  beta_cov = NULL
 )
 }
 \arguments{
@@ -47,10 +49,20 @@ both groups). Default \code{0.12}.}
 the off-diagonal of the bivariate normal covariance matrix. Default \code{0.5}.}
 
 \item{seed}{Integer random seed for reproducibility. Default \code{NULL}.}
+
+\item{covariates}{An optional data frame with \code{n_studies} rows containing
+study-level covariate values. Column names are used as covariate names.
+Default \code{NULL} (no covariates).}
+
+\item{beta_cov}{A numeric vector of true covariate regression coefficients,
+with length equal to \code{ncol(covariates)}. Required when \code{covariates} is
+provided. Each coefficient represents the change in treatment effect per
+unit increase in the corresponding covariate. Default \code{NULL}.}
 }
 \value{
 A data frame with columns \code{study_id}, \code{subject_id}, \code{group}
-(\code{"control"} or \code{"treatment"}), \code{time} (\code{"pre"} or \code{"post"}), \code{value}.
+(\code{"control"} or \code{"treatment"}), \code{time} (\code{"pre"} or \code{"post"}), \code{value},
+plus any covariate columns (repeated for each observation within a study).
 The true study-level parameters are attached as attribute \code{"true_params"}.
 }
 \description{

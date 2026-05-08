@@ -14,7 +14,8 @@ set_priors(
   nu = gamma(2, 0.1),
   delta_rct = normal(0, 10),
   delta_pp = normal(0, 10),
-  sigma = cauchy(5)
+  sigma = cauchy(5),
+  beta_cov = normal(0, 10)
 )
 }
 \arguments{
@@ -44,6 +45,10 @@ correlation (only used when \code{hierarchical_rho = TRUE}). Default: \code{norm
 
 \item{sigma}{Prior on the study-level observation standard deviations
 (shared across all designs). Default: \code{cauchy(5)}.}
+
+\item{beta_cov}{Prior on the covariate regression coefficients
+(only used when \code{covariates} is specified in \code{\link[=meta_did]{meta_did()}}).
+Default: \code{normal(0, 10)}.}
 }
 \value{
 A \code{did_priors} object.
