@@ -137,26 +137,47 @@ meta_did <- function(
 }
 
 
-#' Fit a naive meta-analysis model (no borrowing across designs)
+#' Fit a meta-analysis model with explicit control over design assumptions
 #'
-#' A convenience wrapper around the meta-analysis model that imposes the
-#' "naive" assumptions typically made when analysing each design in isolation:
-#' \itemize{
-#'   \item **RCT**: Baseline means are assumed equal across treatment and
-#'     control groups (randomisation assumption), so the baseline difference
-#'     \eqn{\gamma} is fixed to zero.
-#'   \item **Pre-post**: The time trend \eqn{\beta} is fixed to zero, so the
-#'     pre-post change is attributed entirely to the treatment effect.
-#' }
-#' These constraints mean that RCT and pre-post studies do not borrow
-#' information from DiD studies to identify nuisance parameters. DiD studies
-#' are still modelled with the full parameterisation.
+#' A flexible interface for controlling how nuisance parameters are handled
+#' for non-DiD study designs. By default, behaves identically to
+#' [meta_did()]. Users can independently control whether time trends and
+#' baseline imbalances are estimated or fixed to zero for RCT and pre-post
+#' studies.
+#'
+#' DiD studies always estimate both time trends and baseline differences
+#' regardless of these settings, since they provide the identifying
+#' information for these parameters.
 #'
 #' @inheritParams meta_did
+#' @param time_trend How to handle the time trend \eqn{\beta_i} for non-DiD
+#'   studies. One of:
+#'   \describe{
+#'     \item{`"pooled"`}{(Default) Estimate study-level time trends with a
+#'       hierarchical prior shared across designs. Information from DiD studies
+#'       informs the RCT and pre-post time trends. This is the same behaviour
+#'       as [meta_did()].}
+#'     \item{`"fixed_zero"`}{Fix \eqn{\beta_i = 0} for RCT and pre-post
+#'       studies. For pre-post studies, this means the pre-post change is
+#'       attributed entirely to treatment. For RCT studies, the
+#'       reparameterised time trend correction is bypassed.}
+#'   }
+#' @param baseline_imbalance How to handle the baseline difference
+#'   \eqn{\gamma_i} between treatment and control groups for RCT studies.
+#'   One of:
+#'   \describe{
+#'     \item{`"estimated"`}{(Default) Estimate \eqn{\gamma_i}, borrowing
+#'       information from DiD studies when baseline-normalised. This is the
+#'       same behaviour as [meta_did()].}
+#'     \item{`"fixed_zero"`}{Fix \eqn{\gamma_i = 0}, assuming randomisation
+#'       eliminates baseline imbalances. This is the standard RCT assumption.}
+#'   }
+#'
 #' @return A `meta_did_fit` object, identical in structure to the return
 #'   value of [meta_did()].
 #'
-#' @seealso [meta_did()] for the full model that borrows across designs.
+#' @seealso [meta_did()] for the standard model, which is equivalent to
+#'   `meta_did_general()` with default settings.
 #' @export
 #'
 #' @examples
@@ -176,8 +197,96 @@ meta_did <- function(
 #'     sd_post_treatment   = c(0.10, 0.11),
 #'     rho                 = c(0.75, NA)
 #'   )
-#'   fit <- meta_did_naive(summary_data = studies)
+#'
+#'   # Borrow time trends from DiD, but assume equal baselines for RCT
+#'   fit <- meta_did_general(
+#'     summary_data       = studies,
+#'     baseline_imbalance = "fixed_zero"
+#'   )
 #' }
+meta_did_general <- function(
+    summary_data          = NULL,
+    individual_data       = NULL,
+    normalise_by_baseline = TRUE,
+    robust_heterogeneity  = FALSE,
+    design_effects        = FALSE,
+    hierarchical_rho      = TRUE,
+    covariates            = NULL,
+    center_covariates     = TRUE,
+    priors                = set_priors(),
+    time_trend            = c("pooled", "fixed_zero"),
+    baseline_imbalance    = c("estimated", "fixed_zero"),
+    method                = c("sample", "optimize"),
+    chains                = 4L,
+    iter_warmup           = 1000L,
+    iter_sampling         = 1000L,
+    seed                  = NULL,
+    allow_no_did          = FALSE,
+    ...
+) {
+  time_trend         <- match.arg(time_trend)
+  baseline_imbalance <- match.arg(baseline_imbalance)
+
+  overrides <- list()
+
+  if (time_trend == "fixed_zero") {
+    overrides$is_time_trend_pp_zero             <- 1L
+    overrides$is_time_trend_pp_summary_zero     <- 1L
+    overrides$is_time_trend_rct_zero            <- 1L
+    overrides$is_time_trend_rct_summary_zero    <- 1L
+  }
+
+  if (baseline_imbalance == "fixed_zero") {
+    overrides$is_baseline_control_equal_treatment_rct         <- 1L
+    overrides$is_baseline_control_equal_treatment_rct_summary <- 1L
+  }
+
+  .meta_did_core(
+    summary_data          = summary_data,
+    individual_data       = individual_data,
+    normalise_by_baseline = normalise_by_baseline,
+    robust_heterogeneity  = robust_heterogeneity,
+    design_effects        = design_effects,
+    hierarchical_rho      = hierarchical_rho,
+    covariates            = covariates,
+    center_covariates     = center_covariates,
+    priors                = priors,
+    method                = method,
+    chains                = chains,
+    iter_warmup           = iter_warmup,
+    iter_sampling         = iter_sampling,
+    seed                  = seed,
+    allow_no_did          = allow_no_did,
+    stan_data_overrides   = if (length(overrides) > 0) overrides else NULL,
+    ...
+  )
+}
+
+
+#' Fit a naive meta-analysis model (no borrowing across designs)
+#'
+#' @description
+#' **Deprecated.** `meta_did_naive()` is deprecated in favour of [meta_did_general()] with
+#' `time_trend = "fixed_zero"` and `baseline_imbalance = "fixed_zero"`,
+#' which provides the same behaviour with more explicit control.
+#'
+#' This function imposes the "naive" assumptions typically made when
+#' analysing each design in isolation:
+#' \itemize{
+#'   \item **RCT**: Baseline means are assumed equal across treatment and
+#'     control groups (randomisation assumption), so the baseline difference
+#'     \eqn{\gamma} is fixed to zero.
+#'   \item **Pre-post**: The time trend \eqn{\beta} is fixed to zero, so the
+#'     pre-post change is attributed entirely to the treatment effect.
+#' }
+#'
+#' @inheritParams meta_did
+#' @return A `meta_did_fit` object, identical in structure to the return
+#'   value of [meta_did()].
+#'
+#' @seealso [meta_did_general()] for independent control over assumptions.
+#' @export
+#' @keywords internal
 meta_did_naive <- function(
     summary_data          = NULL,
     individual_data       = NULL,
@@ -196,7 +305,13 @@ meta_did_naive <- function(
     allow_no_did          = FALSE,
     ...
 ) {
-  .meta_did_core(
+  .Deprecated("meta_did_general",
+              msg = paste(
+                "'meta_did_naive()' is deprecated.",
+                "Use meta_did_general(time_trend = \"fixed_zero\",",
+                "baseline_imbalance = \"fixed_zero\") instead."
+              ))
+  meta_did_general(
     summary_data          = summary_data,
     individual_data       = individual_data,
     normalise_by_baseline = normalise_by_baseline,
@@ -206,20 +321,14 @@ meta_did_naive <- function(
     covariates            = covariates,
     center_covariates     = center_covariates,
     priors                = priors,
+    time_trend            = "fixed_zero",
+    baseline_imbalance    = "fixed_zero",
     method                = method,
     chains                = chains,
     iter_warmup           = iter_warmup,
     iter_sampling         = iter_sampling,
     seed                  = seed,
     allow_no_did          = allow_no_did,
-    stan_data_overrides   = list(
-      is_time_trend_pp_zero                          = 1L,
-      is_time_trend_pp_summary_zero                  = 1L,
-      is_time_trend_rct_zero                         = 1L,
-      is_time_trend_rct_summary_zero                 = 1L,
-      is_baseline_control_equal_treatment_rct        = 1L,
-      is_baseline_control_equal_treatment_rct_summary = 1L
-    ),
     ...
   )
 }
