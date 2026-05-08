@@ -127,6 +127,7 @@ correlation (only used when <code>hierarchical_rho = TRUE</code>). Default: <cod
 <span class="r-out co"><span class="r-pr">#&gt;</span>   delta_rct ~ normal(mean = 0, sd = 10)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   delta_pp ~ normal(mean = 0, sd = 10)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   sigma ~ cauchy(scale = 5)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   beta_cov ~ normal(mean = 0, sd = 10)</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Override one prior</span></span></span>
 <span class="r-in"><span><span class="fu">set_priors</span><span class="op">(</span>treatment_effect_sd <span class="op">=</span> <span class="fu"><a href="cauchy.html">cauchy</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
@@ -141,6 +142,7 @@ correlation (only used when <code>hierarchical_rho = TRUE</code>). Default: <cod
 <span class="r-out co"><span class="r-pr">#&gt;</span>   delta_rct ~ normal(mean = 0, sd = 10)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   delta_pp ~ normal(mean = 0, sd = 10)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   sigma ~ cauchy(scale = 5)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   beta_cov ~ normal(mean = 0, sd = 10)</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

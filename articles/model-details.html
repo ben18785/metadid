@@ -426,14 +426,60 @@ meta-analysis. This places the change scores on the same relative scale
 as the other designs, but requires that at least some full DiD studies
 are present.</p>
 <p>For RCT studies, there is no pre-treatment data, so normalisation
-divides by the post-treatment control mean. The RCT likelihood uses a
-differenced form — the difference between treatment and control
-post-treatment means — in which the time trend
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
-cancels algebraically and does not appear as a parameter. After
-normalisation, both baselines are fixed at 1, and the observed
-treatment–control difference directly estimates the treatment effect
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>.</p>
+divides by the post-treatment control mean
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\alpha_i + \beta_i</annotation></semantics></math>).
+After normalisation, the control post-mean is fixed at 1. The normalised
+treatment post-mean is</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mfrac><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub></mrow><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow></mfrac><mo>=</mo><mn>1</mn><mo>+</mo><mfrac><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub></mrow><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\frac{\alpha_i + \gamma_i + \beta_i + \theta_i}{\alpha_i + \beta_i}
+= 1 + \frac{\gamma_i + \theta_i}{\alpha_i + \beta_i}.
+</annotation></semantics></math></p>
+<p>When the model assumes equal baselines
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\gamma_i = 0</annotation></semantics></math>),
+the normalised treatment–control difference reduces to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi>i</mi></msub><mo>=</mo><msub><mi>θ</mi><mi>i</mi></msub><mi>/</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\phi_i = \theta_i / (\alpha_i +
+\beta_i)</annotation></semantics></math>, the <strong>apparent
+effect</strong>. This is what the normalised data directly measures.</p>
+<p>To recover the treatment effect on the same scale as DiD studies
+(normalised by
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>α</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\alpha_i</annotation></semantics></math>),
+we need to undo the RCT-specific normalisation. Writing
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>θ</mi><mi>i</mi></msub><mi>/</mi><msub><mi>α</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\tilde\theta_i = \theta_i / \alpha_i</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>β</mi><mi>i</mi></msub><mi>/</mi><msub><mi>α</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\tilde\beta_i = \beta_i / \alpha_i</annotation></semantics></math>
+for the DiD-normalised quantities:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi>i</mi></msub><mo>=</mo><mfrac><msub><mi>θ</mi><mi>i</mi></msub><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow></mfrac><mo>=</mo><mfrac><mrow><msub><mi>θ</mi><mi>i</mi></msub><mi>/</mi><msub><mi>α</mi><mi>i</mi></msub></mrow><mrow><mn>1</mn><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mi>/</mi><msub><mi>α</mi><mi>i</mi></msub></mrow></mfrac><mo>=</mo><mfrac><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mrow><mn>1</mn><mo>+</mo><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub></mrow></mfrac><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\phi_i
+= \frac{\theta_i}{\alpha_i + \beta_i}
+= \frac{\theta_i / \alpha_i}{1 + \beta_i / \alpha_i}
+= \frac{\tilde\theta_i}{1 + \tilde\beta_i},
+</annotation></semantics></math></p>
+<p>so the normalised treatment effect is</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>ϕ</mi><mi>i</mi></msub><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\tilde\theta_i = \phi_i \cdot (1 + \tilde\beta_i).
+</annotation></semantics></math></p>
+<p>The model is reparameterised so that
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ϕ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\phi_i</annotation></semantics></math>
+(apparent effect) and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\beta_i</annotation></semantics></math>
+(normalised time trend) are the sampled parameters, and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\theta_i</annotation></semantics></math>
+is derived via the formula above. A Jacobian correction
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">|</mo><mn>1</mn><mo>+</mo><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo stretchy="false" form="prefix">|</mo></mrow><annotation encoding="application/x-tex">|1 + \tilde\beta_i|</annotation></semantics></math>
+is applied to the log-posterior to account for this change of variables.
+The hierarchical prior on
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\beta_i</annotation></semantics></math>
+— informed primarily by DiD studies, which directly identify time trends
+— provides the regularisation needed to separate
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\theta_i</annotation></semantics></math>
+from
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\beta_i</annotation></semantics></math>.</p>
+<p>In the naive model (<code>meta_did_naive()</code>), the time trend is
+forced to zero for RCT studies, so
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi>i</mi></msub><mo>=</mo><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\phi_i = \tilde\theta_i</annotation></semantics></math>
+and the reparameterisation is bypassed. This is equivalent to the
+standard assumption that the post-treatment control–treatment difference
+is an unbiased estimate of the treatment effect.</p>
 <p>When data are not normalised, the RCT baselines
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>α</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\alpha_i</annotation></semantics></math>
 and
@@ -511,6 +557,71 @@ instead of a normal:</p>
 (the degrees of freedom) is estimated. This accommodates outlier studies
 that would otherwise inflate
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>τ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\tau_\theta</annotation></semantics></math>.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="meta-regression-with-covariates">Meta-regression with covariates<a class="anchor" aria-label="anchor" href="#meta-regression-with-covariates"></a>
+</h2>
+<p>When study-level covariates are available (e.g., intervention dose,
+year of publication), the treatment effect mean can be modelled as a
+linear function of those covariates. If
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>𝐱</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\mathbf{x}_i</annotation></semantics></math>
+is a
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>-vector
+of covariate values for study
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>,
+the hierarchical prior becomes</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>θ</mi><mi>i</mi></msub><mo>∼</mo><mi>𝒩</mi><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>μ</mi><mi>θ</mi></msub><mo>+</mo><msubsup><mi>𝐱</mi><mi>i</mi><mi>⊤</mi></msubsup><mi>𝛃</mi><mo>,</mo><mspace width="0.278em"></mspace><msubsup><mi>τ</mi><mi>θ</mi><mn>2</mn></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\theta_i \sim \mathcal{N}\!\left(
+  \mu_\theta + \mathbf{x}_i^\top \boldsymbol{\beta},\;
+  \tau_\theta^2
+\right),
+</annotation></semantics></math></p>
+<p>where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝛃</mi><annotation encoding="application/x-tex">\boldsymbol{\beta}</annotation></semantics></math>
+is a vector of meta-regression coefficients estimated jointly with all
+other parameters. When <code>robust_heterogeneity = TRUE</code>, the
+normal is replaced by a
+Student-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>
+as before. The same covariate adjustment applies across all study
+designs (DiD, RCT, and pre-post), with design-specific offsets
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>δ</mi><mtext mathvariant="normal">RCT</mtext></msub><annotation encoding="application/x-tex">\delta_{\text{RCT}}</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>δ</mi><mtext mathvariant="normal">PP</mtext></msub><annotation encoding="application/x-tex">\delta_{\text{PP}}</annotation></semantics></math>)
+added when <code>design_effects = TRUE</code>.</p>
+<div class="section level3">
+<h3 id="covariate-centering">Covariate centering<a class="anchor" aria-label="anchor" href="#covariate-centering"></a>
+</h3>
+<p>By default (<code>center_covariates = TRUE</code>), covariates are
+mean-centered across all studies in the meta-analysis before fitting.
+This has a useful interpretive consequence:
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\mu_\theta</annotation></semantics></math>
+represents the population treatment effect <strong>at the average
+covariate values</strong>, rather than at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐱</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\mathbf{x} = 0</annotation></semantics></math>
+(which may not be a meaningful reference point).</p>
+<p>The centering values are stored in the fitted object
+(<code>fit$cov_centers</code>) and are needed to reconstruct predictions
+on the original covariate scale.</p>
+</div>
+<div class="section level3">
+<h3 id="specifying-covariates-in-meta_did">Specifying covariates in <code>meta_did()</code><a class="anchor" aria-label="anchor" href="#specifying-covariates-in-meta_did"></a>
+</h3>
+<p>Covariates are passed as a one-sided formula:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/meta_did.html">meta_did</a></span><span class="op">(</span></span>
+<span>  summary_data <span class="op">=</span> <span class="va">my_data</span>,</span>
+<span>  covariates   <span class="op">=</span> <span class="op">~</span> <span class="va">dose</span> <span class="op">+</span> <span class="va">year</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The covariate columns must be present in <code>summary_data</code>
+(and/or <code>individual_data</code>), must be numeric, and must be
+constant within each study. The prior on
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝛃</mi><annotation encoding="application/x-tex">\boldsymbol{\beta}</annotation></semantics></math>
+defaults to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>10</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathcal{N}(0, 10)</annotation></semantics></math>
+per coefficient and can be adjusted via
+<code>set_priors(beta_cov = normal(0, sd))</code>.</p>
+<p>For a worked example including simulation and recovery, see
+<code><a href="../articles/covariates.html">vignette("covariates")</a></code>.</p>
 </div>
 </div>
 <div class="section level2">

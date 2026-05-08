@@ -223,12 +223,54 @@ as the other designs, but requires that at least some full DiD studies
 are present.
 
 For RCT studies, there is no pre-treatment data, so normalisation
-divides by the post-treatment control mean. The RCT likelihood uses a
-differenced form — the difference between treatment and control
-post-treatment means — in which the time trend $`\beta_i`$ cancels
-algebraically and does not appear as a parameter. After normalisation,
-both baselines are fixed at 1, and the observed treatment–control
-difference directly estimates the treatment effect $`\theta_i`$.
+divides by the post-treatment control mean ($`\alpha_i + \beta_i`$).
+After normalisation, the control post-mean is fixed at 1. The normalised
+treatment post-mean is
+
+``` math
+\frac{\alpha_i + \gamma_i + \beta_i + \theta_i}{\alpha_i + \beta_i}
+= 1 + \frac{\gamma_i + \theta_i}{\alpha_i + \beta_i}.
+```
+
+When the model assumes equal baselines ($`\gamma_i = 0`$), the
+normalised treatment–control difference reduces to
+$`\phi_i = \theta_i / (\alpha_i +
+\beta_i)`$, the **apparent effect**. This is what the normalised data
+directly measures.
+
+To recover the treatment effect on the same scale as DiD studies
+(normalised by $`\alpha_i`$), we need to undo the RCT-specific
+normalisation. Writing $`\tilde\theta_i = \theta_i / \alpha_i`$ and
+$`\tilde\beta_i = \beta_i / \alpha_i`$ for the DiD-normalised
+quantities:
+
+``` math
+\phi_i
+= \frac{\theta_i}{\alpha_i + \beta_i}
+= \frac{\theta_i / \alpha_i}{1 + \beta_i / \alpha_i}
+= \frac{\tilde\theta_i}{1 + \tilde\beta_i},
+```
+
+so the normalised treatment effect is
+
+``` math
+\tilde\theta_i = \phi_i \cdot (1 + \tilde\beta_i).
+```
+
+The model is reparameterised so that $`\phi_i`$ (apparent effect) and
+$`\tilde\beta_i`$ (normalised time trend) are the sampled parameters,
+and $`\tilde\theta_i`$ is derived via the formula above. A Jacobian
+correction $`|1 + \tilde\beta_i|`$ is applied to the log-posterior to
+account for this change of variables. The hierarchical prior on
+$`\tilde\beta_i`$ — informed primarily by DiD studies, which directly
+identify time trends — provides the regularisation needed to separate
+$`\tilde\theta_i`$ from $`\tilde\beta_i`$.
+
+In the naive model (`meta_did_naive()`), the time trend is forced to
+zero for RCT studies, so $`\phi_i = \tilde\theta_i`$ and the
+reparameterisation is bypassed. This is equivalent to the standard
+assumption that the post-treatment control–treatment difference is an
+unbiased estimate of the treatment effect.
 
 When data are not normalised, the RCT baselines $`\alpha_i`$ and
 $`\alpha_i + \gamma_i`$ are free parameters drawn from the same
@@ -288,6 +330,62 @@ uses a Student-$`t`$ instead of a normal:
 
 where $`\nu`$ (the degrees of freedom) is estimated. This accommodates
 outlier studies that would otherwise inflate $`\tau_\theta`$.
+
+## Meta-regression with covariates
+
+When study-level covariates are available (e.g., intervention dose, year
+of publication), the treatment effect mean can be modelled as a linear
+function of those covariates. If $`\mathbf{x}_i`$ is a $`K`$-vector of
+covariate values for study $`i`$, the hierarchical prior becomes
+
+``` math
+\theta_i \sim \mathcal{N}\!\left(
+  \mu_\theta + \mathbf{x}_i^\top \boldsymbol{\beta},\;
+  \tau_\theta^2
+\right),
+```
+
+where $`\boldsymbol{\beta}`$ is a vector of meta-regression coefficients
+estimated jointly with all other parameters. When
+`robust_heterogeneity = TRUE`, the normal is replaced by a Student-$`t`$
+as before. The same covariate adjustment applies across all study
+designs (DiD, RCT, and pre-post), with design-specific offsets
+($`\delta_{\text{RCT}}`$, $`\delta_{\text{PP}}`$) added when
+`design_effects = TRUE`.
+
+### Covariate centering
+
+By default (`center_covariates = TRUE`), covariates are mean-centered
+across all studies in the meta-analysis before fitting. This has a
+useful interpretive consequence: $`\mu_\theta`$ represents the
+population treatment effect **at the average covariate values**, rather
+than at $`\mathbf{x} = 0`$ (which may not be a meaningful reference
+point).
+
+The centering values are stored in the fitted object (`fit$cov_centers`)
+and are needed to reconstruct predictions on the original covariate
+scale.
+
+### Specifying covariates in `meta_did()`
+
+Covariates are passed as a one-sided formula:
+
+``` r
+
+fit <- meta_did(
+  summary_data = my_data,
+  covariates   = ~ dose + year
+)
+```
+
+The covariate columns must be present in `summary_data` (and/or
+`individual_data`), must be numeric, and must be constant within each
+study. The prior on $`\boldsymbol{\beta}`$ defaults to
+$`\mathcal{N}(0, 10)`$ per coefficient and can be adjusted via
+`set_priors(beta_cov = normal(0, sd))`.
+
+For a worked example including simulation and recovery, see
+[`vignette("covariates")`](https://ben18785.github.io/metadid/articles/covariates.md).
 
 ## Prior specification
 

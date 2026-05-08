@@ -90,6 +90,7 @@ set_priors()
 #>   delta_rct ~ normal(mean = 0, sd = 10)
 #>   delta_pp ~ normal(mean = 0, sd = 10)
 #>   sigma ~ cauchy(scale = 5)
+#>   beta_cov ~ normal(mean = 0, sd = 10)
 
 # Override one prior
 set_priors(treatment_effect_sd = cauchy(2))
@@ -104,4 +105,5 @@ set_priors(treatment_effect_sd = cauchy(2))
 #>   delta_rct ~ normal(mean = 0, sd = 10)
 #>   delta_pp ~ normal(mean = 0, sd = 10)
 #>   sigma ~ cauchy(scale = 5)
+#>   beta_cov ~ normal(mean = 0, sd = 10)
 ```
