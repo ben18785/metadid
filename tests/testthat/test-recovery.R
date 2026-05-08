@@ -416,6 +416,88 @@ test_that("Fit 5b: full model is closer to truth than naive when PP studies have
   )
 })
 
+# ---------------------------------------------------------------------------
+# Fit 5c–5e: meta_did_general() equivalence and mixed-settings tests
+# ---------------------------------------------------------------------------
+
+general_recovery_fit <- function(summary_data = NULL, individual_data = NULL, ...) {
+  model <- get_compiled_model()
+  skip_if(is.null(model), "Stan model could not be compiled")
+  local_mocked_bindings(
+    stan_package_model = function(...) model,
+    .package = "instantiate"
+  )
+  meta_did_general(
+    summary_data    = summary_data,
+    individual_data = individual_data,
+    chains          = 2L,
+    iter_warmup     = 500L,
+    iter_sampling   = 500L,
+    seed            = 8153L,
+    refresh         = 0,
+    ...
+  )
+}
+
+test_that("Fit 5c: meta_did_general defaults match meta_did", {
+  skip_if_no_stan()
+  fit <- general_recovery_fit(summary_data = as_summary_did(sim_naive))
+  te <- summary(fit)
+  te_row <- te[te$parameter == "treatment_effect_mean", ]
+  expect_true(te_row$mean < 0, label = "estimated effect is negative")
+  expect_true(
+    te_row$lo < TRUE_EFFECT_NORMALISED && te_row$hi > TRUE_EFFECT_NORMALISED,
+    label = ci_label(te_row, TRUE_EFFECT_NORMALISED)
+  )
+})
+
+test_that("Fit 5d: meta_did_general with fixed_zero settings matches naive", {
+  skip_if_no_stan()
+  # sim_naive has true_trend = 0 and equal baselines, so the naive
+  # assumptions are satisfied and the treatment effect should be recovered.
+  rct_df <- as_summary_rct(sim_naive)
+  rct_df$study_id <- paste0("rct_", rct_df$study_id)
+  pp_df <- as_summary_pp(sim_naive)
+  pp_df$study_id <- paste0("pp_", pp_df$study_id)
+  mixed <- dplyr::bind_rows(
+    as_summary_did(sim_naive),
+    rct_df,
+    pp_df
+  )
+  fit <- general_recovery_fit(
+    summary_data       = mixed,
+    time_trend         = "fixed_zero",
+    baseline_imbalance = "fixed_zero"
+  )
+  te <- summary(fit)
+  te_row <- te[te$parameter == "treatment_effect_mean", ]
+  expect_true(te_row$mean < 0, label = "estimated effect is negative")
+  expect_true(
+    te_row$lo < TRUE_EFFECT_NORMALISED && te_row$hi > TRUE_EFFECT_NORMALISED,
+    label = ci_label(te_row, TRUE_EFFECT_NORMALISED)
+  )
+})
+
+test_that("Fit 5e: meta_did_general with mixed settings runs without error", {
+  skip_if_no_stan()
+  # sim_large_trend has a non-trivial time trend and equal baselines
+  # (simulate_meta_did uses the same baseline for both arms). Using
+  # pooled time trends + fixed-zero baselines is a meaningful combination.
+  did_df <- as_summary_did(sim_large_trend)
+  rct_df <- as_summary_rct(sim_large_trend)
+  rct_df$study_id <- paste0("rct_", rct_df$study_id)
+  mixed <- dplyr::bind_rows(did_df, rct_df)
+
+  fit <- general_recovery_fit(
+    summary_data       = mixed,
+    time_trend         = "pooled",
+    baseline_imbalance = "fixed_zero"
+  )
+  te <- summary(fit)
+  te_row <- te[te$parameter == "treatment_effect_mean", ]
+  expect_true(!is.na(te_row$mean), label = "treatment_effect_mean is estimated")
+})
+
 sim_unnorm <- simulate_meta_did(
   n_studies     = 25,
   true_effect   = TRUE_EFFECT_RAW,

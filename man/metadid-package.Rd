@@ -20,5 +20,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Ben Lambert \email{ben.c.lambert@gmail.com}
 
+Authors:
+\itemize{
+  \item Joseph Poore \email{joseph.poore@biology.ox.ac.uk}
+}
+
 }
 \keyword{internal}
