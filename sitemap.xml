@@ -19,6 +19,8 @@
 <url><loc>https://ben18785.github.io/metadid/reference/gamma.html</loc></url>
 <url><loc>https://ben18785.github.io/metadid/reference/index.html</loc></url>
 <url><loc>https://ben18785.github.io/metadid/reference/meta_did.html</loc></url>
+<url><loc>https://ben18785.github.io/metadid/reference/meta_did_general.html</loc></url>
+<url><loc>https://ben18785.github.io/metadid/reference/meta_did_naive.html</loc></url>
 <url><loc>https://ben18785.github.io/metadid/reference/metadid-package.html</loc></url>
 <url><loc>https://ben18785.github.io/metadid/reference/normal.html</loc></url>
 <url><loc>https://ben18785.github.io/metadid/reference/pp_check_cdf.html</loc></url>
@@ -28,6 +30,7 @@
 <url><loc>https://ben18785.github.io/metadid/reference/simulate_meta_did.html</loc></url>
 <url><loc>https://ben18785.github.io/metadid/reference/summary.meta_did_fit.html</loc></url>
 <url><loc>https://ben18785.github.io/metadid/reference/tidy.meta_did_fit.html</loc></url>
+<url><loc>https://ben18785.github.io/metadid/reference/validate_covariates.html</loc></url>
 <url><loc>https://ben18785.github.io/metadid/reference/validate_individual_data.html</loc></url>
 <url><loc>https://ben18785.github.io/metadid/reference/validate_summary_data.html</loc></url>
 </urlset>

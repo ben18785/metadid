@@ -17,7 +17,8 @@ set_priors(
   nu = gamma(2, 0.1),
   delta_rct = normal(0, 10),
   delta_pp = normal(0, 10),
-  sigma = cauchy(5)
+  sigma = cauchy(5),
+  beta_cov = normal(0, 10)
 )
 ```
 
@@ -69,6 +70,13 @@ set_priors(
 
   Prior on the study-level observation standard deviations (shared
   across all designs). Default: `cauchy(5)`.
+
+- beta_cov:
+
+  Prior on the covariate regression coefficients (only used when
+  `covariates` is specified in
+  [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)).
+  Default: `normal(0, 10)`.
 
 ## Value
 

@@ -266,11 +266,13 @@ $`\tilde\beta_i`$ — informed primarily by DiD studies, which directly
 identify time trends — provides the regularisation needed to separate
 $`\tilde\theta_i`$ from $`\tilde\beta_i`$.
 
-In the naive model (`meta_did_naive()`), the time trend is forced to
-zero for RCT studies, so $`\phi_i = \tilde\theta_i`$ and the
-reparameterisation is bypassed. This is equivalent to the standard
-assumption that the post-treatment control–treatment difference is an
-unbiased estimate of the treatment effect.
+In the naive model
+([`meta_did_naive()`](https://ben18785.github.io/metadid/reference/meta_did_naive.md)),
+the time trend is forced to zero for RCT studies, so
+$`\phi_i = \tilde\theta_i`$ and the reparameterisation is bypassed. This
+is equivalent to the standard assumption that the post-treatment
+control–treatment difference is an unbiased estimate of the treatment
+effect.
 
 When data are not normalised, the RCT baselines $`\alpha_i`$ and
 $`\alpha_i + \gamma_i`$ are free parameters drawn from the same
@@ -330,6 +332,41 @@ uses a Student-$`t`$ instead of a normal:
 
 where $`\nu`$ (the degrees of freedom) is estimated. This accommodates
 outlier studies that would otherwise inflate $`\tau_\theta`$.
+
+### Controlling assumptions with `meta_did_general()`
+
+The
+[`meta_did_general()`](https://ben18785.github.io/metadid/reference/meta_did_general.md)
+function provides explicit control over how nuisance parameters are
+handled for non-DiD designs, via two arguments:
+
+- **`time_trend`**: Controls the time trend $`\beta_i`$ for RCT and
+  pre-post studies.
+  - `"pooled"` (default): hierarchical prior shared across designs,
+    informed by DiD studies.
+  - `"fixed_zero"`: $`\beta_i = 0`$ for RCT and pre-post studies. For
+    pre-post studies, this attributes all pre-post change to treatment.
+    For RCTs, it bypasses the time trend reparameterisation described
+    above.
+- **`baseline_imbalance`**: Controls the baseline difference
+  $`\gamma_i`$ for RCT studies.
+  - `"estimated"` (default): $`\gamma_i`$ is estimated, with information
+    borrowed from DiD studies when normalised.
+  - `"fixed_zero"`: $`\gamma_i = 0`$, assuming randomisation eliminates
+    baseline imbalances.
+
+These settings can be combined independently. For example, one might
+trust the randomisation assumption (`baseline_imbalance = "fixed_zero"`)
+while still borrowing time trend information from DiD studies
+(`time_trend = "pooled"`).
+
+The default settings of
+[`meta_did_general()`](https://ben18785.github.io/metadid/reference/meta_did_general.md)
+are identical to
+[`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md).
+Setting both to their restrictive values (`"fixed_zero"`) reproduces the
+behaviour of the deprecated
+[`meta_did_naive()`](https://ben18785.github.io/metadid/reference/meta_did_naive.md).
 
 ## Meta-regression with covariates
 

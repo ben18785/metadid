@@ -20,3 +20,7 @@ Useful links:
 ## Author
 
 **Maintainer**: Ben Lambert <ben.c.lambert@gmail.com>
+
+Authors:
+
+- Joseph Poore <joseph.poore@biology.ox.ac.uk>

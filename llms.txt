@@ -343,6 +343,9 @@ Fit the hierarchical Bayesian meta-analysis model.
 
 - [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)
   : Fit a Bayesian meta-analysis model across study designs
+- [`meta_did_general()`](https://ben18785.github.io/metadid/reference/meta_did_general.md)
+  : Fit a meta-analysis model with explicit control over design
+  assumptions
 - [`set_priors()`](https://ben18785.github.io/metadid/reference/set_priors.md)
   : Set prior distributions for the meta-analysis model
 

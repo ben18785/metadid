@@ -474,7 +474,7 @@ The hierarchical prior on
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\theta_i</annotation></semantics></math>
 from
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\beta_i</annotation></semantics></math>.</p>
-<p>In the naive model (<code>meta_did_naive()</code>), the time trend is
+<p>In the naive model (<code><a href="../reference/meta_did_naive.html">meta_did_naive()</a></code>), the time trend is
 forced to zero for RCT studies, so
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi>i</mi></msub><mo>=</mo><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\phi_i = \tilde\theta_i</annotation></semantics></math>
 and the reparameterisation is bypassed. This is equivalent to the
@@ -557,6 +557,57 @@ instead of a normal:</p>
 (the degrees of freedom) is estimated. This accommodates outlier studies
 that would otherwise inflate
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>τ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\tau_\theta</annotation></semantics></math>.</p>
+</div>
+<div class="section level3">
+<h3 id="controlling-assumptions-with-meta_did_general">Controlling assumptions with <code>meta_did_general()</code><a class="anchor" aria-label="anchor" href="#controlling-assumptions-with-meta_did_general"></a>
+</h3>
+<p>The <code><a href="../reference/meta_did_general.html">meta_did_general()</a></code> function provides explicit
+control over how nuisance parameters are handled for non-DiD designs,
+via two arguments:</p>
+<ul>
+<li>
+<strong><code>time_trend</code></strong>: Controls the time trend
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
+for RCT and pre-post studies.
+<ul>
+<li>
+<code>"pooled"</code> (default): hierarchical prior shared across
+designs, informed by DiD studies.</li>
+<li>
+<code>"fixed_zero"</code>:
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>β</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta_i = 0</annotation></semantics></math>
+for RCT and pre-post studies. For pre-post studies, this attributes all
+pre-post change to treatment. For RCTs, it bypasses the time trend
+reparameterisation described above.</li>
+</ul>
+</li>
+<li>
+<strong><code>baseline_imbalance</code></strong>: Controls the
+baseline difference
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
+for RCT studies.
+<ul>
+<li>
+<code>"estimated"</code> (default):
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
+is estimated, with information borrowed from DiD studies when
+normalised.</li>
+<li>
+<code>"fixed_zero"</code>:
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\gamma_i = 0</annotation></semantics></math>,
+assuming randomisation eliminates baseline imbalances.</li>
+</ul>
+</li>
+</ul>
+<p>These settings can be combined independently. For example, one might
+trust the randomisation assumption
+(<code>baseline_imbalance = "fixed_zero"</code>) while still borrowing
+time trend information from DiD studies
+(<code>time_trend = "pooled"</code>).</p>
+<p>The default settings of <code><a href="../reference/meta_did_general.html">meta_did_general()</a></code> are identical
+to <code><a href="../reference/meta_did.html">meta_did()</a></code>. Setting both to their restrictive values
+(<code>"fixed_zero"</code>) reproduces the behaviour of the deprecated
+<code><a href="../reference/meta_did_naive.html">meta_did_naive()</a></code>.</p>
 </div>
 </div>
 <div class="section level2">

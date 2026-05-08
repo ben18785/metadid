@@ -20,7 +20,9 @@ simulate_meta_did(
   baseline_sd = 0,
   within_sd = 0.12,
   rho = 0.5,
-  seed = NULL
+  seed = NULL,
+  covariates = NULL,
+  beta_cov = NULL
 )
 ```
 
@@ -76,11 +78,25 @@ simulate_meta_did(
 
   Integer random seed for reproducibility. Default `NULL`.
 
+- covariates:
+
+  An optional data frame with `n_studies` rows containing study-level
+  covariate values. Column names are used as covariate names. Default
+  `NULL` (no covariates).
+
+- beta_cov:
+
+  A numeric vector of true covariate regression coefficients, with
+  length equal to `ncol(covariates)`. Required when `covariates` is
+  provided. Each coefficient represents the change in treatment effect
+  per unit increase in the corresponding covariate. Default `NULL`.
+
 ## Value
 
 A data frame with columns `study_id`, `subject_id`, `group` (`"control"`
-or `"treatment"`), `time` (`"pre"` or `"post"`), `value`. The true
-study-level parameters are attached as attribute `"true_params"`.
+or `"treatment"`), `time` (`"pre"` or `"post"`), `value`, plus any
+covariate columns (repeated for each observation within a study). The
+true study-level parameters are attached as attribute `"true_params"`.
 
 ## Data-generating model
 

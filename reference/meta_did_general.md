@@ -1,14 +1,15 @@
-# Fit a Bayesian meta-analysis model across study designs
+# Fit a meta-analysis model with explicit control over design assumptions
 
-Fits a hierarchical Bayesian model synthesising treatment effects from
-studies with different designs: difference-in-differences (DiD),
-randomised controlled trials (RCT), and pre-post studies. All designs
-contribute to a shared population treatment effect.
+A flexible interface for controlling how nuisance parameters are handled
+for non-DiD study designs. By default, behaves identically to
+[`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md).
+Users can independently control whether time trends and baseline
+imbalances are estimated or fixed to zero for RCT and pre-post studies.
 
 ## Usage
 
 ``` r
-meta_did(
+meta_did_general(
   summary_data = NULL,
   individual_data = NULL,
   normalise_by_baseline = TRUE,
@@ -18,6 +19,8 @@ meta_did(
   covariates = NULL,
   center_covariates = TRUE,
   priors = set_priors(),
+  time_trend = c("pooled", "fixed_zero"),
+  baseline_imbalance = c("estimated", "fixed_zero"),
   method = c("sample", "optimize"),
   chains = 4L,
   iter_warmup = 1000L,
@@ -98,6 +101,40 @@ meta_did(
   [`set_priors()`](https://ben18785.github.io/metadid/reference/set_priors.md).
   Controls the prior distributions on all population-level parameters.
 
+- time_trend:
+
+  How to handle the time trend \\\beta_i\\ for non-DiD studies. One of:
+
+  `"pooled"`
+
+  :   (Default) Estimate study-level time trends with a hierarchical
+      prior shared across designs. Information from DiD studies informs
+      the RCT and pre-post time trends. This is the same behaviour as
+      [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md).
+
+  `"fixed_zero"`
+
+  :   Fix \\\beta_i = 0\\ for RCT and pre-post studies. For pre-post
+      studies, this means the pre-post change is attributed entirely to
+      treatment. For RCT studies, the reparameterised time trend
+      correction is bypassed.
+
+- baseline_imbalance:
+
+  How to handle the baseline difference \\\gamma_i\\ between treatment
+  and control groups for RCT studies. One of:
+
+  `"estimated"`
+
+  :   (Default) Estimate \\\gamma_i\\, borrowing information from DiD
+      studies when baseline-normalised. This is the same behaviour as
+      [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md).
+
+  `"fixed_zero"`
+
+  :   Fix \\\gamma_i = 0\\, assuming randomisation eliminates baseline
+      imbalances. This is the standard RCT assumption.
+
 - method:
 
   Inference method. `"sample"` (default) runs full MCMC via Stan's
@@ -127,11 +164,12 @@ meta_did(
 
 - allow_no_did:
 
-  Logical. If `FALSE` (default), `meta_did()` will stop with an error
-  when no DiD studies are present, because the treatment effect is not
-  identified from the data without the double-difference structure. Set
-  to `TRUE` to override this check if you understand the limitation (the
-  posterior will be prior-driven).
+  Logical. If `FALSE` (default),
+  [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)
+  will stop with an error when no DiD studies are present, because the
+  treatment effect is not identified from the data without the
+  double-difference structure. Set to `TRUE` to override this check if
+  you understand the limitation (the posterior will be prior-driven).
 
 - ...:
 
@@ -142,20 +180,20 @@ meta_did(
 
 ## Value
 
-A `meta_did_fit` object. See
-[`print.meta_did_fit()`](https://ben18785.github.io/metadid/reference/print.meta_did_fit.md)
-and
-[`summary.meta_did_fit()`](https://ben18785.github.io/metadid/reference/summary.meta_did_fit.md)
-for extracting results. When `method = "optimize"`, the summary contains
-MAP point estimates only; `sd`, `lo`, and `hi` columns will be `NA`.
+A `meta_did_fit` object, identical in structure to the return value of
+[`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md).
 
 ## Details
 
-DiD studies are required for identification of the treatment effect.
-Without them, the treatment effect is confounded with time trends
-(pre-post) or baseline group differences (RCT). See
-[`vignette("model-details")`](https://ben18785.github.io/metadid/articles/model-details.md)
-for a full discussion of the model, normalisation, and identification.
+DiD studies always estimate both time trends and baseline differences
+regardless of these settings, since they provide the identifying
+information for these parameters.
+
+## See also
+
+[`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)
+for the standard model, which is equivalent to `meta_did_general()` with
+default settings.
 
 ## Examples
 
@@ -176,7 +214,12 @@ if (instantiate::stan_cmdstan_exists()) {
     sd_post_treatment   = c(0.10, 0.11),
     rho                 = c(0.75, NA)
   )
-  fit <- meta_did(summary_data = studies)
+
+  # Borrow time trends from DiD, but assume equal baselines for RCT
+  fit <- meta_did_general(
+    summary_data       = studies,
+    baseline_imbalance = "fixed_zero"
+  )
 }
 #> Running MCMC with 4 sequential chains...
 #> 
@@ -202,7 +245,7 @@ if (instantiate::stan_cmdstan_exists()) {
 #> Chain 1 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
 #> Chain 1 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
 #> Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
-#> Chain 1 finished in 0.9 seconds.
+#> Chain 1 finished in 0.6 seconds.
 #> Chain 2 Iteration:    1 / 2000 [  0%]  (Warmup) 
 #> Chain 2 Iteration:  100 / 2000 [  5%]  (Warmup) 
 #> Chain 2 Iteration:  200 / 2000 [ 10%]  (Warmup) 
@@ -225,7 +268,7 @@ if (instantiate::stan_cmdstan_exists()) {
 #> Chain 2 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
 #> Chain 2 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
 #> Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
-#> Chain 2 finished in 0.7 seconds.
+#> Chain 2 finished in 0.6 seconds.
 #> Chain 3 Iteration:    1 / 2000 [  0%]  (Warmup) 
 #> Chain 3 Iteration:  100 / 2000 [  5%]  (Warmup) 
 #> Chain 3 Iteration:  200 / 2000 [ 10%]  (Warmup) 
@@ -248,7 +291,7 @@ if (instantiate::stan_cmdstan_exists()) {
 #> Chain 3 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
 #> Chain 3 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
 #> Chain 3 Iteration: 2000 / 2000 [100%]  (Sampling) 
-#> Chain 3 finished in 0.6 seconds.
+#> Chain 3 finished in 0.5 seconds.
 #> Chain 4 Iteration:    1 / 2000 [  0%]  (Warmup) 
 #> Chain 4 Iteration:  100 / 2000 [  5%]  (Warmup) 
 #> Chain 4 Iteration:  200 / 2000 [ 10%]  (Warmup) 
@@ -274,9 +317,9 @@ if (instantiate::stan_cmdstan_exists()) {
 #> Chain 4 finished in 0.5 seconds.
 #> 
 #> All 4 chains finished successfully.
-#> Mean chain execution time: 0.7 seconds.
-#> Total execution time: 3.0 seconds.
+#> Mean chain execution time: 0.5 seconds.
+#> Total execution time: 2.3 seconds.
 #> 
-#> Warning: 547 of 4000 (14.0%) transitions ended with a divergence.
+#> Warning: 222 of 4000 (6.0%) transitions ended with a divergence.
 #> See https://mc-stan.org/misc/warnings for details.
 ```

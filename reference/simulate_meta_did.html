@@ -60,7 +60,9 @@ the data as it would appear under different levels of access.</p>
 <span>  baseline_sd <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  within_sd <span class="op">=</span> <span class="fl">0.12</span>,</span>
 <span>  rho <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  seed <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  covariates <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  beta_cov <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -119,11 +121,25 @@ the off-diagonal of the bivariate normal covariance matrix. Default <code>0.5</c
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
 <dd><p>Integer random seed for reproducibility. Default <code>NULL</code>.</p></dd>
 
+
+<dt id="arg-covariates">covariates<a class="anchor" aria-label="anchor" href="#arg-covariates"></a></dt>
+<dd><p>An optional data frame with <code>n_studies</code> rows containing
+study-level covariate values. Column names are used as covariate names.
+Default <code>NULL</code> (no covariates).</p></dd>
+
+
+<dt id="arg-beta-cov">beta_cov<a class="anchor" aria-label="anchor" href="#arg-beta-cov"></a></dt>
+<dd><p>A numeric vector of true covariate regression coefficients,
+with length equal to <code>ncol(covariates)</code>. Required when <code>covariates</code> is
+provided. Each coefficient represents the change in treatment effect per
+unit increase in the corresponding covariate. Default <code>NULL</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A data frame with columns <code>study_id</code>, <code>subject_id</code>, <code>group</code>
-(<code>"control"</code> or <code>"treatment"</code>), <code>time</code> (<code>"pre"</code> or <code>"post"</code>), <code>value</code>.
+(<code>"control"</code> or <code>"treatment"</code>), <code>time</code> (<code>"pre"</code> or <code>"post"</code>), <code>value</code>,
+plus any covariate columns (repeated for each observation within a study).
 The true study-level parameters are attached as attribute <code>"true_params"</code>.</p>
     </div>
     <div class="section level2">
