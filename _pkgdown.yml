@@ -17,6 +17,7 @@ reference:
     desc: Fit the hierarchical Bayesian meta-analysis model.
     contents:
       - meta_did
+      - meta_did_general
       - set_priors
 
   - title: Prior distributions
