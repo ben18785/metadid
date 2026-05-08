@@ -98,10 +98,10 @@ control group.
 Different study designs correspond to observing subsets of this latent
 structure:
 
-- **DiD / RCT**: both groups and both time points observed  
-- **Pre-post**: treatment group only  
-- **Post-only / change-score**: partial observations of levels or
-  differences
+- **DiD**: both groups and both time points observed  
+- **RCT**: both groups, post-treatment only  
+- **Pre-post**: treatment group only, both time points  
+- **Change-score**: partial observations of differences
 
 Inference for incomplete designs relies on the shared latent structure
 across studies.
@@ -138,7 +138,7 @@ The model supports both:
 - **individual-level data**, and  
 - **summary statistics** (means, variances, sample sizes)
 
-by deriving likelihoods from the same bivariate normal model.
+by deriving likelihoods from the same latent bivariate normal structure.
 
 ------------------------------------------------------------------------
 
@@ -181,122 +181,127 @@ pak::pak("ben18785/metadid")
 ### 1. Simulate studies
 
 `simulate_meta_did()` generates individual-level pre/post data for both
-arms across a set of studies from a known hierarchical model.
-`as_summary_did()` then aggregates this to the four-cell summary
-statistics (pre/post × control/treatment) that represent what is
-typically reported in a published study.
+arms across a set of studies from a known hierarchical model. We
+simulate 30 studies from a shared latent DiD structure:
 
 ``` r
 library(metadid)
-#> 
-#> Attaching package: 'metadid'
-#> The following object is masked from 'package:base':
-#> 
-#>     gamma
+library(dplyr)
+library(ggplot2)
 
 sim <- simulate_meta_did(
-  n_studies     = 20,
+  n_studies     = 30,
+  n_control     = 80,
+  n_treatment   = 80,
   true_effect   = -0.15,
   sigma_effect  = 0.03,
+  true_trend    = -0.02,
+  sigma_trend   = 0.01,
   baseline_mean = 0.45,
+  baseline_sd   = 0.02,
   rho           = 0.5,
-  seed          = 42
+  seed          = 7251
 )
-
-studies <- as_summary_did(sim)
-head(studies)
-#> # A tibble: 6 × 13
-#>   study_id design n_control n_treatment mean_pre_control mean_post_control
-#>   <chr>    <chr>      <int>       <int>            <dbl>             <dbl>
-#> 1 study_1  did          100         100            0.450             0.418
-#> 2 study_10 did          100         100            0.448             0.435
-#> 3 study_11 did          100         100            0.420             0.409
-#> 4 study_12 did          100         100            0.475             0.444
-#> 5 study_13 did          100         100            0.447             0.435
-#> 6 study_14 did          100         100            0.461             0.416
-#> # ℹ 7 more variables: sd_pre_control <dbl>, sd_post_control <dbl>,
-#> #   mean_pre_treatment <dbl>, mean_post_treatment <dbl>,
-#> #   sd_pre_treatment <dbl>, sd_post_treatment <dbl>, rho <dbl>
 ```
 
 The true population treatment effect is `-0.15` on the raw scale, or
-approximately -0.333 after normalising by the baseline mean of `0.45`.
+approximately `-0.333` after normalising by the baseline mean of `0.45`.
 
-### 2. Fit the model via optimisation
+### 2. Two scenarios from the same data
 
-`meta_did()` fits a hierarchical Bayesian model. Setting
-`method = "optimize"` finds the maximum a posteriori (MAP) estimate via
-L-BFGS — this is faster than MCMC but provides no uncertainty measures
-in estimates.
+In the best case, every study provides full four-cell summary statistics
+(pre/post × control/treatment). This gives the model maximum information
+per study:
 
 ``` r
-fit <- meta_did(
-  summary_data = studies,
-  method       = "optimize",
-  seed         = 42
+all_did <- as_summary_did(sim)
+
+fit_all_did <- meta_did(
+  summary_data = all_did,
+  seed         = 7251
 )
 
-print(fit)
+print(fit_all_did)
 ```
 
     #> Bayesian meta-analysis (metadid)
-    #> Studies: DiD = 20 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0 
-    #> Population treatment effect: -0.303  (MAP estimate, no uncertainty)
+    #> Studies: DiD = 30 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0 
+    #> Population treatment effect: -0.363  90% CI [-0.392, -0.334]
 
-### 3. Inspect study-level estimates
-
-`summary()` returns a data frame of population- and study-level
-parameters. With MAP optimisation, only point estimates are available
-(`sd`, `lo`, and `hi` are `NA`); use `method = "sample"` for full
-posterior uncertainty.
+Now suppose, from the same underlying data, only a third of studies
+provide full DiD information. Another third are RCTs (post-treatment
+outcomes only), and the remaining third are pre-post studies (treatment
+arm only):
 
 ``` r
-summary(fit)
-```
+study_ids <- unique(sim$study_id)
+true_params <- attr(sim, "true_params")
 
-    #>                       parameter       mean sd lo hi
-    #> 1         treatment_effect_mean -0.3032553 NA NA NA
-    #> 2           treatment_effect_sd  0.2621790 NA NA NA
-    #> 3  treatment_effect_did_summary -0.2626185 NA NA NA
-    #> 4  treatment_effect_did_summary -0.4008142 NA NA NA
-    #> 5  treatment_effect_did_summary -0.1788253 NA NA NA
-    #> ...
+sim_did <- sim |> filter(study_id %in% study_ids[1:10])
+sim_rct <- sim |> filter(study_id %in% study_ids[11:20])
+sim_pp  <- sim |> filter(study_id %in% study_ids[21:30])
 
-### 4. Fit the model via MCMC
+attr(sim_did, "true_params") <- true_params |> filter(study_id %in% study_ids[1:10])
+attr(sim_rct, "true_params") <- true_params |> filter(study_id %in% study_ids[11:20])
+attr(sim_pp, "true_params")  <- true_params |> filter(study_id %in% study_ids[21:30])
 
-For full posterior uncertainty, use the default `method = "sample"`:
-
-``` r
-fit_mcmc <- meta_did(
-  summary_data  = studies,
-  seed          = 42,
-  iter_warmup   = 200,
-  iter_sampling = 400
+mixed <- bind_rows(
+  as_summary_did(sim_did),
+  as_summary_rct(sim_rct),
+  as_summary_pp(sim_pp)
 )
 
-print(fit_mcmc)
+fit_mixed <- meta_did(
+  summary_data = mixed,
+  seed         = 7251
+)
+
+print(fit_mixed)
 ```
 
     #> Bayesian meta-analysis (metadid)
-    #> Studies: DiD = 20 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0 
-    #> Population treatment effect: -0.307  90% CI [-0.341, -0.273]
+    #> Studies: DiD = 10 | RCT = 10 | Pre-Post = 10 | DiD (change only) = 0 
+    #> Population treatment effect: -0.362  90% CI [-0.394, -0.331]
 
-`summary()` now includes posterior standard deviations and credible
-intervals:
+### 3. Comparing posteriors
+
+Both fits recover the true normalised effect (−0.333, dashed line). The
+mixed-design posterior is slightly wider, reflecting the information
+lost by having two-thirds of the studies provide incomplete data — but
+the difference is modest.
 
 ``` r
-summary(fit_mcmc)
+draws_did <- as.numeric(
+  fit_all_did$fit$draws("treatment_effect_mean", format = "draws_matrix")
+)
+draws_mix <- as.numeric(
+  fit_mixed$fit$draws("treatment_effect_mean", format = "draws_matrix")
+)
+
+comp_df <- data.frame(
+  value = c(draws_did, draws_mix),
+  scenario = rep(c("All DiD (30 studies)", "Mixed designs (10 DiD + 10 RCT + 10 PP)"),
+                 each = length(draws_did))
+)
+
+ggplot(comp_df, aes(x = value, fill = scenario)) +
+  geom_density(alpha = 0.4) +
+  geom_vline(xintercept = -0.15 / 0.45, linetype = "dashed", linewidth = 0.8) +
+  annotate("text", x = -0.15 / 0.45 + 0.003, y = Inf, label = "True effect",
+           hjust = 0, vjust = 1.5, size = 3.5) +
+  labs(x = "Population treatment effect (normalised)", y = "Density", fill = NULL) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
 ```
 
-    #>                       parameter        mean         sd          lo         hi
-    #> 1         treatment_effect_mean -0.30734301 0.02053925 -0.34109011 -0.2731060
-    #> 2           treatment_effect_sd  0.08387904 0.01614552  0.06170731  0.1124974
-    #> 3  treatment_effect_did_summary -0.23482038 0.02605055 -0.27537815 -0.1916570
-    #> 4  treatment_effect_did_summary -0.35087501 0.02539211 -0.39315193 -0.3085825
-    #> 5  treatment_effect_did_summary -0.22512112 0.02910410 -0.27397179 -0.1791810
-    #> ...
+![](man/figures/README-comparison.png)
 
-### 5. Posterior predictive checks
+The key takeaway: by assuming a common latent DiD structure, the model
+borrows strength across designs. RCT and pre-post studies contribute
+meaningful information about the treatment effect, even though they each
+observe less of the underlying process than a full DiD study.
+
+### 4. Posterior predictive checks
 
 `pp_check_cdf(type = "summary")` compares the empirical CDF of observed
 study-level treatment effects (step function) to the posterior
@@ -304,7 +309,7 @@ predictive CDF (ribbon and dashed median). If the model is
 well-calibrated, the observed ECDF should track the predictive band.
 
 ``` r
-pp_check_cdf(fit_mcmc, type = "summary")
+pp_check_cdf(fit_mixed, type = "summary")
 ```
 
 ![](man/figures/README-pp-check-cdf-1.png)
@@ -313,7 +318,7 @@ For a more granular per-study view, `pp_check_effects()` shows each
 study’s observed naive effect against its posterior predictive density:
 
 ``` r
-pp_check_effects(fit_mcmc)
+pp_check_effects(fit_mixed)
 ```
 
 ![](man/figures/README-pp-check-effects-1.png)
