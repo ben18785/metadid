@@ -316,10 +316,72 @@ prepare_individual_pp <- function(df) {
 }
 
 # ---------------------------------------------------------------------------
+# Covariate matrix extraction helpers
+# ---------------------------------------------------------------------------
+
+# Extract a covariate matrix from a summary-level data subset.
+# Returns a matrix with nrow(data) rows and length(covariate_names) columns.
+.extract_cov_matrix_summary <- function(data, covariate_names) {
+  if (nrow(data) == 0 || length(covariate_names) == 0) {
+    return(matrix(0, nrow = nrow(data), ncol = length(covariate_names)))
+  }
+  as.matrix(data[, covariate_names, drop = FALSE])
+}
+
+# Extract a covariate matrix from individual-level data (one row per study).
+# Covariates are constant within study, so take the first value per study.
+.extract_cov_matrix_individual <- function(data, covariate_names) {
+  if (nrow(data) == 0 || length(covariate_names) == 0) {
+    n_studies <- if ("study_id" %in% names(data)) dplyr::n_distinct(data$study_id) else 0L
+    return(matrix(0, nrow = n_studies, ncol = length(covariate_names)))
+  }
+  study_covs <- data |>
+    dplyr::group_by(.data$study_id) |>
+    dplyr::slice(1) |>
+    dplyr::ungroup() |>
+    dplyr::arrange(.data$study_id)
+  as.matrix(study_covs[, covariate_names, drop = FALSE])
+}
+
+# ---------------------------------------------------------------------------
 # prepare_stan_data()  -- main dispatcher
 # ---------------------------------------------------------------------------
 
-prepare_stan_data <- function(summary_data, individual_data, model_flags, priors) {
+prepare_stan_data <- function(summary_data, individual_data, model_flags, priors,
+                              covariate_names = NULL, center_covariates = TRUE) {
+
+  K_cov <- length(covariate_names)
+
+  # --- Compute centering values across all studies ---
+  cov_centers <- NULL
+  if (K_cov > 0 && center_covariates) {
+    # Collect one row per study from both data sources
+    cov_vals <- list()
+    if (!is.null(summary_data) && nrow(summary_data) > 0) {
+      cov_vals[[1]] <- summary_data[, covariate_names, drop = FALSE]
+    }
+    if (!is.null(individual_data) && nrow(individual_data) > 0) {
+      ind_collapsed <- individual_data |>
+        dplyr::group_by(.data$study_id) |>
+        dplyr::slice(1) |>
+        dplyr::ungroup()
+      cov_vals[[2]] <- ind_collapsed[, covariate_names, drop = FALSE]
+    }
+    all_covs <- do.call(rbind, cov_vals)
+    cov_centers <- colMeans(all_covs)
+
+    # Center the data in place
+    if (!is.null(summary_data) && nrow(summary_data) > 0) {
+      for (col in covariate_names) {
+        summary_data[[col]] <- summary_data[[col]] - cov_centers[[col]]
+      }
+    }
+    if (!is.null(individual_data) && nrow(individual_data) > 0) {
+      for (col in covariate_names) {
+        individual_data[[col]] <- individual_data[[col]] - cov_centers[[col]]
+      }
+    }
+  }
 
   # --- Summary-level path ---
   sum_did        <- filter_design(summary_data, "did")
@@ -333,19 +395,37 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   stan_pp_summary         <- adapt_summary_pp(sum_pp)
 
   # --- Individual-level path ---
-  ind_did <- adapt_individual(filter_design(individual_data, "did"))
-  ind_rct <- adapt_individual(filter_design(individual_data, "rct"))
-  ind_pp  <- adapt_individual(filter_design(individual_data, "pp"))
+  ind_did_raw <- filter_design(individual_data, "did")
+  ind_rct_raw <- filter_design(individual_data, "rct")
+  ind_pp_raw  <- filter_design(individual_data, "pp")
+
+  ind_did <- adapt_individual(ind_did_raw)
+  ind_rct <- adapt_individual(ind_rct_raw)
+  ind_pp  <- adapt_individual(ind_pp_raw)
 
   stan_did <- prepare_individual_did(ind_did)
   stan_rct <- prepare_individual_rct(ind_rct)
   stan_pp  <- prepare_individual_pp(ind_pp)
 
-  # --- Shared data: flags + prior hyperparameters ---
-  shared <- c(model_flags, as_stan_data(priors))
+  # --- Covariate matrices ---
+  cov_names <- if (K_cov > 0) covariate_names else character(0)
+
+  # Summary-level covariate matrices
+  stan_did_summary$X_cov_did_summary       <- .extract_cov_matrix_summary(sum_did, cov_names)
+  stan_did_change_only$X_cov_did_change_only <- .extract_cov_matrix_summary(sum_did_change, cov_names)
+  stan_rct_summary$X_cov_rct_summary       <- .extract_cov_matrix_summary(sum_rct, cov_names)
+  stan_pp_summary$X_cov_pp_summary         <- .extract_cov_matrix_summary(sum_pp, cov_names)
+
+  # Individual-level covariate matrices (one row per study)
+  stan_did$X_cov_did <- .extract_cov_matrix_individual(ind_did_raw, cov_names)
+  stan_rct$X_cov_rct <- .extract_cov_matrix_individual(ind_rct_raw, cov_names)
+  stan_pp$X_cov_pp   <- .extract_cov_matrix_individual(ind_pp_raw, cov_names)
+
+  # --- Shared data: flags + prior hyperparameters + covariate info ---
+  shared <- c(model_flags, as_stan_data(priors), list(K_cov = K_cov))
 
   # --- Combine ---
-  c(
+  result <- c(
     shared,
     stan_did,
     stan_rct,
@@ -355,4 +435,7 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
     stan_pp_summary,
     stan_did_change_only
   )
+
+  attr(result, "cov_centers") <- cov_centers
+  result
 }

@@ -65,9 +65,9 @@ if(n_studies_pp > 0) {
 
   time_trend_pp ~ normal(time_trend_mean, time_trend_sd);
   if (is_student_t_heterogeneity) {
-    treatment_effect_pp ~ student_t(nu_treatment_vec[1], treatment_effect_mean_pp, treatment_effect_sd);
+    treatment_effect_pp ~ student_t(nu_treatment_vec[1], treatment_effect_mean_pp + X_cov_pp * beta_cov, treatment_effect_sd);
   } else {
-    treatment_effect_pp ~ normal(treatment_effect_mean_pp, treatment_effect_sd);
+    treatment_effect_pp ~ normal(treatment_effect_mean_pp + X_cov_pp * beta_cov, treatment_effect_sd);
   }
 }
 

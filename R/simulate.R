@@ -56,9 +56,17 @@
 #' @param rho Pre-post correlation within individuals. Directly parameterises
 #'   the off-diagonal of the bivariate normal covariance matrix. Default `0.5`.
 #' @param seed Integer random seed for reproducibility. Default `NULL`.
+#' @param covariates An optional data frame with `n_studies` rows containing
+#'   study-level covariate values. Column names are used as covariate names.
+#'   Default `NULL` (no covariates).
+#' @param beta_cov A numeric vector of true covariate regression coefficients,
+#'   with length equal to `ncol(covariates)`. Required when `covariates` is
+#'   provided. Each coefficient represents the change in treatment effect per
+#'   unit increase in the corresponding covariate. Default `NULL`.
 #'
 #' @return A data frame with columns `study_id`, `subject_id`, `group`
-#'   (`"control"` or `"treatment"`), `time` (`"pre"` or `"post"`), `value`.
+#'   (`"control"` or `"treatment"`), `time` (`"pre"` or `"post"`), `value`,
+#'   plus any covariate columns (repeated for each observation within a study).
 #'   The true study-level parameters are attached as attribute `"true_params"`.
 #'
 #' @seealso [as_individual_did()], [as_individual_rct()], [as_individual_pp()],
@@ -82,9 +90,36 @@ simulate_meta_did <- function(
   baseline_sd   = 0,
   within_sd     = 0.12,
   rho           = 0.5,
-  seed          = NULL
+  seed          = NULL,
+  covariates    = NULL,
+  beta_cov      = NULL
 ) {
   if (!is.null(seed)) set.seed(seed)
+
+  # Validate covariate arguments
+  if (!is.null(covariates)) {
+    if (!is.data.frame(covariates)) {
+      stop("'covariates' must be a data frame.", call. = FALSE)
+    }
+    if (nrow(covariates) != n_studies) {
+      stop("'covariates' must have ", n_studies, " rows (one per study).",
+           call. = FALSE)
+    }
+    if (is.null(beta_cov)) {
+      stop("'beta_cov' must be provided when 'covariates' is specified.",
+           call. = FALSE)
+    }
+    if (length(beta_cov) != ncol(covariates)) {
+      stop("'beta_cov' must have length ", ncol(covariates),
+           " (one per covariate column).", call. = FALSE)
+    }
+  }
+
+  # Compute covariate contribution to treatment effect mean
+  cov_effect <- rep(0, n_studies)
+  if (!is.null(covariates) && !is.null(beta_cov)) {
+    cov_effect <- as.numeric(as.matrix(covariates) %*% beta_cov)
+  }
 
   # Covariance matrix: same for both groups, pre-post corr = rho
   Sigma <- within_sd^2 * matrix(c(1, rho, rho, 1), 2, 2)
@@ -92,7 +127,7 @@ simulate_meta_did <- function(
   # Study-level parameters
   params <- tibble::tibble(
     study_id = paste0("study_", seq_len(n_studies)),
-    theta    = stats::rnorm(n_studies, true_effect,   sigma_effect),
+    theta    = stats::rnorm(n_studies, true_effect + cov_effect, sigma_effect),
     gamma    = stats::rnorm(n_studies, true_trend,    sigma_trend),
     baseline = stats::rnorm(n_studies, baseline_mean, baseline_sd)
   )
@@ -117,6 +152,13 @@ simulate_meta_did <- function(
       tidyr::pivot_longer(c("pre", "post"), names_to = "time", values_to = "value")
   })
 
+  # Attach covariate columns to observations (repeated per study)
+  if (!is.null(covariates)) {
+    cov_df <- tibble::tibble(study_id = paste0("study_", seq_len(n_studies)))
+    cov_df <- dplyr::bind_cols(cov_df, covariates)
+    obs <- dplyr::left_join(obs, cov_df, by = "study_id")
+  }
+
   attr(obs, "true_params") <- params
   obs
 }
@@ -139,8 +181,10 @@ simulate_meta_did <- function(
 #' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' head(as_individual_did(sim))
 as_individual_did <- function(sim) {
+  core_cols <- c("study_id", "subject_id", "design", "group", "time", "value")
+  extra_cols <- setdiff(names(sim), c("study_id", "subject_id", "group", "time", "value"))
   dplyr::mutate(sim, design = "did") |>
-    dplyr::select("study_id", "subject_id", "design", "group", "time", "value")
+    dplyr::select(dplyr::all_of(c(core_cols, extra_cols)))
 }
 
 #' Extract post-only individual-level RCT data for use with meta_did()
@@ -157,10 +201,12 @@ as_individual_did <- function(sim) {
 #' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' head(as_individual_rct(sim))
 as_individual_rct <- function(sim) {
+  core_cols <- c("study_id", "design", "group", "time", "value")
+  extra_cols <- setdiff(names(sim), c("study_id", "subject_id", "group", "time", "value"))
   sim |>
     dplyr::filter(.data$time == "post") |>
     dplyr::mutate(design = "rct") |>
-    dplyr::select("study_id", "design", "group", "time", "value")
+    dplyr::select(dplyr::all_of(c(core_cols, extra_cols)))
 }
 
 #' Extract treatment-arm individual-level pre-post data for use with meta_did()
@@ -176,10 +222,12 @@ as_individual_rct <- function(sim) {
 #' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' head(as_individual_pp(sim))
 as_individual_pp <- function(sim) {
+  core_cols <- c("study_id", "subject_id", "design", "group", "time", "value")
+  extra_cols <- setdiff(names(sim), c("study_id", "subject_id", "group", "time", "value"))
   sim |>
     dplyr::filter(.data$group == "treatment") |>
     dplyr::mutate(design = "pp") |>
-    dplyr::select("study_id", "subject_id", "design", "group", "time", "value")
+    dplyr::select(dplyr::all_of(c(core_cols, extra_cols)))
 }
 
 # ---------------------------------------------------------------------------
@@ -201,6 +249,9 @@ as_individual_pp <- function(sim) {
 #' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' as_summary_did(sim)
 as_summary_did <- function(sim) {
+  # Extract study-level covariate columns (if any)
+  cov_cols <- .extract_study_covariates(sim)
+
   cell_stats <- sim |>
     dplyr::group_by(.data$study_id, .data$group, .data$time) |>
     dplyr::summarise(
@@ -221,7 +272,7 @@ as_summary_did <- function(sim) {
     dplyr::group_by(.data$study_id) |>
     dplyr::summarise(rho = mean(.data$rho, na.rm = TRUE), .groups = "drop")
 
-  cell_stats |>
+  result <- cell_stats |>
     dplyr::left_join(rho_est, by = "study_id") |>
     dplyr::transmute(
       study_id            = .data$study_id,
@@ -238,6 +289,8 @@ as_summary_did <- function(sim) {
       sd_post_treatment   = .data$sd_treatment_post,
       rho                 = .data$rho
     )
+
+  .join_covariates(result, cov_cols)
 }
 
 #' Summarise simulated DiD data as RCT-style post-only statistics
@@ -254,7 +307,9 @@ as_summary_did <- function(sim) {
 #' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' as_summary_rct(sim)
 as_summary_rct <- function(sim) {
-  sim |>
+  cov_cols <- .extract_study_covariates(sim)
+
+  result <- sim |>
     dplyr::filter(.data$time == "post") |>
     dplyr::group_by(.data$study_id, .data$group) |>
     dplyr::summarise(
@@ -274,6 +329,8 @@ as_summary_rct <- function(sim) {
       mean_post_treatment = .data$mean_treatment,
       sd_post_treatment   = .data$sd_treatment
     )
+
+  .join_covariates(result, cov_cols)
 }
 
 #' Summarise simulated DiD data as pre-post (treatment arm only) statistics
@@ -290,6 +347,7 @@ as_summary_rct <- function(sim) {
 #' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' as_summary_pp(sim)
 as_summary_pp <- function(sim) {
+  cov_cols <- .extract_study_covariates(sim)
   trt <- dplyr::filter(sim, .data$group == "treatment")
 
   cell_stats <- trt |>
@@ -307,7 +365,7 @@ as_summary_pp <- function(sim) {
     dplyr::summarise(rho = .within_arm_rho(dplyr::pick(dplyr::everything())),
                      .groups = "drop")
 
-  cell_stats |>
+  result <- cell_stats |>
     dplyr::left_join(rho_est, by = "study_id") |>
     dplyr::transmute(
       study_id            = .data$study_id,
@@ -319,6 +377,8 @@ as_summary_pp <- function(sim) {
       sd_post_treatment   = .data$sd_post,
       rho                 = .data$rho
     )
+
+  .join_covariates(result, cov_cols)
 }
 
 #' Summarise simulated DiD data as change-score statistics
@@ -335,7 +395,10 @@ as_summary_pp <- function(sim) {
 #' sim <- simulate_meta_did(n_studies = 3, seed = 1)
 #' as_summary_did_change(sim)
 as_summary_did_change <- function(sim) {
-  sim |>
+  cov_cols <- .extract_study_covariates(sim)
+
+  result <- sim |>
+    dplyr::select("study_id", "subject_id", "group", "time", "value") |>
     tidyr::pivot_wider(
       id_cols     = c("study_id", "subject_id", "group"),
       names_from  = "time",
@@ -360,11 +423,32 @@ as_summary_did_change <- function(sim) {
       mean_change_treatment = .data$mean_treatment,
       sd_change_treatment   = .data$sd_treatment
     )
+
+  .join_covariates(result, cov_cols)
 }
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+# Extract study-level covariate columns from simulation output.
+# Returns NULL if no extra columns are present.
+.extract_study_covariates <- function(sim) {
+  known_cols <- c("study_id", "subject_id", "group", "time", "value", "design")
+  extra <- setdiff(names(sim), known_cols)
+  if (length(extra) == 0) return(NULL)
+  sim |>
+    dplyr::group_by(.data$study_id) |>
+    dplyr::slice(1) |>
+    dplyr::ungroup() |>
+    dplyr::select(dplyr::all_of(c("study_id", extra)))
+}
+
+# Join covariate columns back to a summary data frame.
+.join_covariates <- function(result, cov_cols) {
+  if (is.null(cov_cols)) return(result)
+  dplyr::left_join(result, cov_cols, by = "study_id")
+}
 
 # Draw n observations from a bivariate normal via Cholesky decomposition.
 # Returns an n x 2 matrix of (pre, post) pairs.
