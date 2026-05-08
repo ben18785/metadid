@@ -331,6 +331,36 @@ $$
 where $\nu$ (the degrees of freedom) is estimated. This accommodates
 outlier studies that would otherwise inflate $\tau_\theta$.
 
+### Controlling assumptions with `meta_did_general()`
+
+The `meta_did_general()` function provides explicit control over how
+nuisance parameters are handled for non-DiD designs, via two arguments:
+
+- **`time_trend`**: Controls the time trend $\beta_i$ for RCT and pre-post
+  studies.
+  - `"pooled"` (default): hierarchical prior shared across designs,
+    informed by DiD studies.
+  - `"fixed_zero"`: $\beta_i = 0$ for RCT and pre-post studies. For
+    pre-post studies, this attributes all pre-post change to treatment.
+    For RCTs, it bypasses the time trend reparameterisation described
+    above.
+
+- **`baseline_imbalance`**: Controls the baseline difference $\gamma_i$ for
+  RCT studies.
+  - `"estimated"` (default): $\gamma_i$ is estimated, with information
+    borrowed from DiD studies when normalised.
+  - `"fixed_zero"`: $\gamma_i = 0$, assuming randomisation eliminates
+    baseline imbalances.
+
+These settings can be combined independently. For example, one might trust
+the randomisation assumption (`baseline_imbalance = "fixed_zero"`) while
+still borrowing time trend information from DiD studies
+(`time_trend = "pooled"`).
+
+The default settings of `meta_did_general()` are identical to `meta_did()`.
+Setting both to their restrictive values (`"fixed_zero"`) reproduces the
+behaviour of the deprecated `meta_did_naive()`.
+
 ## Meta-regression with covariates
 
 When study-level covariates are available (e.g., intervention dose, year of
