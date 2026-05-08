@@ -53,8 +53,8 @@ if(n_studies_did > 0) {
   sigma_treatment_before_did ~ cauchy(0, sigma_prior_scale);
   sigma_treatment_after_did ~ cauchy(0, sigma_prior_scale);
   if (is_student_t_heterogeneity) {
-    treatment_effect_did ~ student_t(nu_treatment_vec[1], treatment_effect_mean, treatment_effect_sd);
+    treatment_effect_did ~ student_t(nu_treatment_vec[1], treatment_effect_mean + X_cov_did * beta_cov, treatment_effect_sd);
   } else {
-    treatment_effect_did ~ normal(treatment_effect_mean, treatment_effect_sd);
+    treatment_effect_did ~ normal(treatment_effect_mean + X_cov_did * beta_cov, treatment_effect_sd);
   }
 }

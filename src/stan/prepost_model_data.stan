@@ -8,3 +8,4 @@ vector[sum(sample_size_treatment_pp)] x_treatment_before_pp;
 vector[sum(sample_size_treatment_pp)] x_treatment_after_pp;
 int<lower=0, upper=1> is_time_trend_pp_zero;
 int<lower=0, upper=1> is_differenced_likelihood_pp;
+matrix[n_studies_pp, K_cov] X_cov_pp;

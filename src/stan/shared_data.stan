@@ -40,6 +40,10 @@ real<lower=0> delta_pp_prior_sd;
 // Prior hyperparameters for study-level observation SDs (shared across all designs)
 real<lower=0> sigma_prior_scale;
 
+// Study-level covariates (meta-regression on treatment effect)
+int<lower=0> K_cov;               // number of covariates (0 = no meta-regression)
+real<lower=0> beta_cov_prior_sd;   // prior SD for covariate coefficients
+
 // When is_student_t_heterogeneity == 1, study-level treatment effects are
 // drawn from a Student-t rather than a normal. The degrees-of-freedom
 // parameter nu_treatment (declared as a length-1 vector in the parameters

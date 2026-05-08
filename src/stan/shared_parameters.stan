@@ -23,3 +23,7 @@ vector<lower=2>[is_student_t_heterogeneity] nu_treatment_vec;
 // Length 1 when is_design_effect == 1, length 0 otherwise (not sampled).
 vector[is_design_effect] delta_rct_raw;
 vector[is_design_effect] delta_pp_raw;
+
+// Study-level covariate regression coefficients (meta-regression).
+// Length K_cov; when K_cov == 0, not sampled.
+vector[K_cov] beta_cov;
