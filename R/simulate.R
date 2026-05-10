@@ -32,6 +32,8 @@
 #' \deqn{\theta_i \sim \text{Normal}(\texttt{true\_effect},\, \texttt{sigma\_effect}^2)}
 #' \deqn{\beta_i \sim \text{Normal}(\texttt{true\_trend},\, \texttt{sigma\_trend}^2)}
 #' \deqn{b_i      \sim \text{Normal}(\texttt{baseline\_mean},\, \texttt{baseline\_sd}^2)}
+#' When `rho_effect_trend` is nonzero, \eqn{(\theta_i, \beta_i)} are drawn
+#' jointly from a bivariate normal with correlation `rho_effect_trend`.
 #'
 #' Within each study, individual (pre, post) pairs are drawn from a bivariate
 #' normal distribution with covariance matrix
@@ -55,6 +57,10 @@
 #'   both groups). Default `0.12`.
 #' @param rho Pre-post correlation within individuals. Directly parameterises
 #'   the off-diagonal of the bivariate normal covariance matrix. Default `0.5`.
+#' @param rho_effect_trend Correlation between study-level treatment effects
+#'   \eqn{\theta_i} and time trends \eqn{\beta_i}. When nonzero (and both
+#'   `sigma_effect` and `sigma_trend` are positive), the pair is drawn
+#'   jointly from a bivariate normal. Default `0` (independent draws).
 #' @param seed Integer random seed for reproducibility. Default `NULL`.
 #' @param covariates An optional data frame with `n_studies` rows containing
 #'   study-level covariate values. Column names are used as covariate names.
@@ -79,20 +85,21 @@
 #' head(dat)
 #' attr(dat, "true_params")
 simulate_meta_did <- function(
-  n_studies     = 20L,
-  n_control     = 100L,
-  n_treatment   = 100L,
-  true_effect   = -0.15,
-  sigma_effect  = 0.03,
-  true_trend    = -0.02,
-  sigma_trend   = 0,
-  baseline_mean = 0.45,
-  baseline_sd   = 0,
-  within_sd     = 0.12,
-  rho           = 0.5,
-  seed          = NULL,
-  covariates    = NULL,
-  beta_cov      = NULL
+  n_studies        = 20L,
+  n_control        = 100L,
+  n_treatment      = 100L,
+  true_effect      = -0.15,
+  sigma_effect     = 0.03,
+  true_trend       = -0.02,
+  sigma_trend      = 0,
+  baseline_mean    = 0.45,
+  baseline_sd      = 0,
+  within_sd        = 0.12,
+  rho              = 0.5,
+  rho_effect_trend = 0,
+  seed             = NULL,
+  covariates       = NULL,
+  beta_cov         = NULL
 ) {
   if (!is.null(seed)) set.seed(seed)
 
@@ -125,10 +132,31 @@ simulate_meta_did <- function(
   Sigma <- within_sd^2 * matrix(c(1, rho, rho, 1), 2, 2)
 
   # Study-level parameters
+  if (rho_effect_trend != 0 && sigma_effect > 0 && sigma_trend > 0) {
+    # Draw (theta, beta) jointly from a bivariate normal
+    Sigma_study <- matrix(
+      c(sigma_effect^2,
+        rho_effect_trend * sigma_effect * sigma_trend,
+        rho_effect_trend * sigma_effect * sigma_trend,
+        sigma_trend^2),
+      2, 2
+    )
+    theta_beta <- .rbvnorm(n_studies,
+      mu    = c(0, true_trend),
+      Sigma = Sigma_study
+    )
+    # Add per-study covariate effect to theta (mean was 0 above for centering)
+    theta_vals <- theta_beta[, 1] + true_effect + cov_effect
+    beta_vals  <- theta_beta[, 2]
+  } else {
+    theta_vals <- stats::rnorm(n_studies, true_effect + cov_effect, sigma_effect)
+    beta_vals  <- stats::rnorm(n_studies, true_trend, sigma_trend)
+  }
+
   params <- tibble::tibble(
     study_id = paste0("study_", seq_len(n_studies)),
-    theta    = stats::rnorm(n_studies, true_effect + cov_effect, sigma_effect),
-    beta     = stats::rnorm(n_studies, true_trend,    sigma_trend),
+    theta    = theta_vals,
+    beta     = beta_vals,
     baseline = stats::rnorm(n_studies, baseline_mean, baseline_sd)
   )
 

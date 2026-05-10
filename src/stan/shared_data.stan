@@ -57,3 +57,11 @@ int<lower=0, upper=1> is_student_t_heterogeneity;
 // DiD (the reference). Offsets are estimated with normal(0, 10) priors.
 // When 0, the offsets are not sampled and all designs share treatment_effect_mean.
 int<lower=0, upper=1> is_design_effect;
+
+// When is_correlated_effects == 1, study-level treatment effects and time
+// trends are drawn jointly from a bivariate normal with a shared correlation
+// parameter. The correlation is parameterised via a Cholesky factor of the
+// 2x2 correlation matrix with an LKJ prior.
+// When 0, treatment effects and time trends have independent priors.
+int<lower=0, upper=1> is_correlated_effects;
+real<lower=0> lkj_eta_prior;

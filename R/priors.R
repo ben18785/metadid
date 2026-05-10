@@ -47,12 +47,29 @@ gamma <- function(shape, rate) {
   structure(list(dist = "gamma", shape = shape, rate = rate), class = "did_prior")
 }
 
+#' Specify an LKJ prior
+#'
+#' Used for the correlation between treatment effects and time trends when
+#' `correlated_effects = TRUE`. The LKJ distribution with concentration
+#' parameter `eta` is placed on the Cholesky factor of the correlation matrix.
+#' `eta = 1` is uniform over correlation matrices; `eta = 2` gently
+#' regularises toward zero correlation.
+#'
+#' @param eta Concentration parameter (must be positive).
+#' @return A `did_prior` object.
+#' @export
+lkj <- function(eta) {
+  stopifnot(is.numeric(eta), length(eta) == 1, eta > 0)
+  structure(list(dist = "lkj", eta = eta), class = "did_prior")
+}
+
 #' @export
 print.did_prior <- function(x, ...) {
   params <- switch(x$dist,
     normal = paste0("mean = ", x$mean, ", sd = ", x$sd),
     cauchy = paste0("scale = ", x$scale),
-    gamma  = paste0("shape = ", x$shape, ", rate = ", x$rate)
+    gamma  = paste0("shape = ", x$shape, ", rate = ", x$rate),
+    lkj    = paste0("eta = ", x$eta)
   )
   cat(x$dist, "(", params, ")\n", sep = "")
   invisible(x)
@@ -73,7 +90,8 @@ print.did_prior <- function(x, ...) {
   delta_rct             = c("normal"),
   delta_pp              = c("normal"),
   sigma                 = c("cauchy"),
-  beta_cov              = c("normal")
+  beta_cov              = c("normal"),
+  lkj_eta               = c("lkj")
 )
 
 # ---------------------------------------------------------------------------
@@ -105,6 +123,10 @@ print.did_prior <- function(x, ...) {
 #' @param beta_cov Prior on the covariate regression coefficients
 #'   (only used when `covariates` is specified in [meta_did()]).
 #'   Default: `normal(0, 10)`.
+#' @param lkj_eta Prior on the Cholesky factor of the correlation matrix
+#'   between treatment effects and time trends (only used when
+#'   `correlated_effects = TRUE`). Default: `lkj(2)`, which gently
+#'   regularises toward zero correlation.
 #'
 #' @return A `did_priors` object.
 #' @export
@@ -126,7 +148,8 @@ set_priors <- function(
     delta_rct             = normal(0, 10),
     delta_pp              = normal(0, 10),
     sigma                 = cauchy(5),
-    beta_cov              = normal(0, 10)
+    beta_cov              = normal(0, 10),
+    lkj_eta               = lkj(2)
 ) {
   priors <- list(
     treatment_effect_mean = treatment_effect_mean,
@@ -139,7 +162,8 @@ set_priors <- function(
     delta_rct             = delta_rct,
     delta_pp              = delta_pp,
     sigma                 = sigma,
-    beta_cov              = beta_cov
+    beta_cov              = beta_cov,
+    lkj_eta               = lkj_eta
   )
   validate_priors(priors)
   structure(priors, class = "did_priors")
@@ -220,7 +244,9 @@ as_stan_data.did_priors <- function(priors) {
     # sigma ~ cauchy(0, scale) — study-level observation SDs
     sigma_prior_scale                = priors$sigma$scale,
     # beta_cov ~ normal(0, sd) — covariate regression coefficients
-    beta_cov_prior_sd                = priors$beta_cov$sd
+    beta_cov_prior_sd                = priors$beta_cov$sd,
+    # LKJ prior on correlation between treatment effects and time trends
+    lkj_eta_prior                    = priors$lkj_eta$eta
   )
 }
 
