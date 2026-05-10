@@ -187,10 +187,10 @@ likelihoods that eliminate nuisance parameters algebraically:
   time trend $`\beta_i`$ (borrowed from DiD studies).
 
 For pre-post studies, a non-differenced (bivariate normal) form is
-available as an alternative. This retains the pre/post correlation
-$`\rho_i`$ as an estimable parameter, contributing to the hierarchical
-$`\rho`$ model, at the cost of estimating additional nuisance
-parameters.
+available via `meta_did_general(pp_likelihood = "bivariate")`. This
+retains the pre/post correlation $`\rho_i`$ as an estimable parameter,
+contributing to the hierarchical $`\rho`$ model, at the cost of
+estimating additional nuisance parameters.
 
 ## Baseline normalisation
 
@@ -338,7 +338,7 @@ outlier studies that would otherwise inflate $`\tau_\theta`$.
 The
 [`meta_did_general()`](https://ben18785.github.io/metadid/reference/meta_did_general.md)
 function provides explicit control over how nuisance parameters are
-handled for non-DiD designs, via two arguments:
+handled for non-DiD designs, via three arguments:
 
 - **`time_trend`**: Controls the time trend $`\beta_i`$ for RCT and
   pre-post studies.
@@ -354,6 +354,15 @@ handled for non-DiD designs, via two arguments:
     borrowed from DiD studies when normalised.
   - `"fixed_zero"`: $`\gamma_i = 0`$, assuming randomisation eliminates
     baseline imbalances.
+- **`pp_likelihood`**: Controls the likelihood form for pre-post
+  studies.
+  - `"differenced"` (default): uses the post-minus-pre difference,
+    eliminating the baseline algebraically. The pre/post correlation
+    $`\rho_i`$ is not separately estimable.
+  - `"bivariate"`: uses the full bivariate normal likelihood for the
+    (pre, post) pair. This retains $`\rho_i`$ as an estimable parameter,
+    contributing to the hierarchical $`\rho`$ model, at the cost of
+    estimating additional nuisance parameters.
 
 These settings can be combined independently. For example, one might
 trust the randomisation assumption (`baseline_imbalance = "fixed_zero"`)
@@ -364,8 +373,8 @@ The default settings of
 [`meta_did_general()`](https://ben18785.github.io/metadid/reference/meta_did_general.md)
 are identical to
 [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md).
-Setting both to their restrictive values (`"fixed_zero"`) reproduces the
-behaviour of the deprecated
+Setting `time_trend` and `baseline_imbalance` to `"fixed_zero"`
+reproduces the behaviour of the deprecated
 [`meta_did_naive()`](https://ben18785.github.io/metadid/reference/meta_did_naive.md).
 
 ## Meta-regression with covariates

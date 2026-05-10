@@ -362,7 +362,9 @@ and the time trend
 (borrowed from DiD studies).</li>
 </ul>
 <p>For pre-post studies, a non-differenced (bivariate normal) form is
-available as an alternative. This retains the pre/post correlation
+available via
+<code>meta_did_general(pp_likelihood = "bivariate")</code>. This retains
+the pre/post correlation
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\rho_i</annotation></semantics></math>
 as an estimable parameter, contributing to the hierarchical
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
@@ -563,7 +565,7 @@ that would otherwise inflate
 </h3>
 <p>The <code><a href="../reference/meta_did_general.html">meta_did_general()</a></code> function provides explicit
 control over how nuisance parameters are handled for non-DiD designs,
-via two arguments:</p>
+via three arguments:</p>
 <ul>
 <li>
 <strong><code>time_trend</code></strong>: Controls the time trend
@@ -598,6 +600,25 @@ normalised.</li>
 assuming randomisation eliminates baseline imbalances.</li>
 </ul>
 </li>
+<li>
+<strong><code>pp_likelihood</code></strong>: Controls the likelihood
+form for pre-post studies.
+<ul>
+<li>
+<code>"differenced"</code> (default): uses the post-minus-pre
+difference, eliminating the baseline algebraically. The pre/post
+correlation
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\rho_i</annotation></semantics></math>
+is not separately estimable.</li>
+<li>
+<code>"bivariate"</code>: uses the full bivariate normal likelihood
+for the (pre, post) pair. This retains
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\rho_i</annotation></semantics></math>
+as an estimable parameter, contributing to the hierarchical
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
+model, at the cost of estimating additional nuisance parameters.</li>
+</ul>
+</li>
 </ul>
 <p>These settings can be combined independently. For example, one might
 trust the randomisation assumption
@@ -605,9 +626,9 @@ trust the randomisation assumption
 time trend information from DiD studies
 (<code>time_trend = "pooled"</code>).</p>
 <p>The default settings of <code><a href="../reference/meta_did_general.html">meta_did_general()</a></code> are identical
-to <code><a href="../reference/meta_did.html">meta_did()</a></code>. Setting both to their restrictive values
-(<code>"fixed_zero"</code>) reproduces the behaviour of the deprecated
-<code><a href="../reference/meta_did_naive.html">meta_did_naive()</a></code>.</p>
+to <code><a href="../reference/meta_did.html">meta_did()</a></code>. Setting <code>time_trend</code> and
+<code>baseline_imbalance</code> to <code>"fixed_zero"</code> reproduces
+the behaviour of the deprecated <code><a href="../reference/meta_did_naive.html">meta_did_naive()</a></code>.</p>
 </div>
 </div>
 <div class="section level2">

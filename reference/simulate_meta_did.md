@@ -139,7 +139,7 @@ head(dat)
 #> 6 study_1           3 control post  0.296
 attr(dat, "true_params")
 #> # A tibble: 10 × 4
-#>    study_id   theta gamma baseline
+#>    study_id   theta  beta baseline
 #>    <chr>      <dbl> <dbl>    <dbl>
 #>  1 study_1  -0.109  -0.02     0.45
 #>  2 study_2  -0.167  -0.02     0.45
