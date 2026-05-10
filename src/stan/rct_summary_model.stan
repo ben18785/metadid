@@ -21,6 +21,14 @@ if(n_studies_rct_summary > 0) {
   else
     time_trend_rct_summary_eff = time_trend_rct_summary;
 
+  // Precompute L_Sigma for joint prior (only used when correlated + time trends estimated)
+  matrix[2, 2] L_Sigma_rct_summary;
+  if (is_correlated_effects && !is_time_trend_rct_summary_zero) {
+    L_Sigma_rct_summary = diag_pre_multiply(
+      [treatment_effect_sd, time_trend_sd]', L_corr_theta_beta[1]
+    );
+  }
+
   for (i in 1:n_studies_rct_summary) {
     if (is_baseline_normalised && !is_time_trend_rct_summary_zero) {
       // Reparameterised: apparent_effect is sampled, control mean is 1 by construction.
@@ -32,7 +40,13 @@ if(n_studies_rct_summary > 0) {
       );
 
       // Hierarchical prior on the derived true treatment effect
-      if (is_student_t_heterogeneity) {
+      if (is_correlated_effects) {
+        target += multi_normal_cholesky_lpdf(
+          [treatment_effect_rct_summary_derived[i], time_trend_rct_summary[i]]' |
+          [treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, time_trend_mean]',
+          L_Sigma_rct_summary
+        );
+      } else if (is_student_t_heterogeneity) {
         target += student_t_lpdf(treatment_effect_rct_summary_derived[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
       } else {
         target += normal_lpdf(treatment_effect_rct_summary_derived[i] | treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
@@ -57,7 +71,13 @@ if(n_studies_rct_summary > 0) {
       );
 
       // Hierarchical prior on treatment effect
-      if (is_student_t_heterogeneity) {
+      if (is_correlated_effects && !is_time_trend_rct_summary_zero) {
+        target += multi_normal_cholesky_lpdf(
+          [treatment_effect_rct_summary[i], time_trend_rct_summary[i]]' |
+          [treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, time_trend_mean]',
+          L_Sigma_rct_summary
+        );
+      } else if (is_student_t_heterogeneity) {
         target += student_t_lpdf(treatment_effect_rct_summary[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
       } else {
         target += normal_lpdf(treatment_effect_rct_summary[i] | treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
@@ -70,7 +90,8 @@ if(n_studies_rct_summary > 0) {
     if (!is_baseline_control_equal_treatment_rct_summary)
       baseline_treatment_rct_summary ~ normal(baseline_treatment_mean[1], baseline_treatment_sd[1]);
   }
-  if (!is_time_trend_rct_summary_zero)
+  // When correlated, the time trend prior is included in the joint bivariate prior above
+  if (!is_time_trend_rct_summary_zero && !is_correlated_effects)
     time_trend_rct_summary ~ normal(time_trend_mean, time_trend_sd);
 }
 

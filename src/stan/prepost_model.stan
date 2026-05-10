@@ -63,11 +63,24 @@ if(n_studies_pp > 0) {
     }
   }
 
-  time_trend_pp ~ normal(time_trend_mean, time_trend_sd);
-  if (is_student_t_heterogeneity) {
-    treatment_effect_pp ~ student_t(nu_treatment_vec[1], treatment_effect_mean_pp + X_cov_pp * beta_cov, treatment_effect_sd);
+  if (is_correlated_effects && !is_time_trend_pp_zero) {
+    matrix[2, 2] L_Sigma_pp = diag_pre_multiply(
+      [treatment_effect_sd, time_trend_sd]', L_corr_theta_beta[1]
+    );
+    for (i in 1:n_studies_pp) {
+      target += multi_normal_cholesky_lpdf(
+        [treatment_effect_pp[i], time_trend_pp[i]]' |
+        [treatment_effect_mean_pp + X_cov_pp[i] * beta_cov, time_trend_mean]',
+        L_Sigma_pp
+      );
+    }
   } else {
-    treatment_effect_pp ~ normal(treatment_effect_mean_pp + X_cov_pp * beta_cov, treatment_effect_sd);
+    time_trend_pp ~ normal(time_trend_mean, time_trend_sd);
+    if (is_student_t_heterogeneity) {
+      treatment_effect_pp ~ student_t(nu_treatment_vec[1], treatment_effect_mean_pp + X_cov_pp * beta_cov, treatment_effect_sd);
+    } else {
+      treatment_effect_pp ~ normal(treatment_effect_mean_pp + X_cov_pp * beta_cov, treatment_effect_sd);
+    }
   }
 }
 

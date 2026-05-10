@@ -25,3 +25,7 @@ if (is_design_effect) {
 }
 
 beta_cov ~ normal(0, beta_cov_prior_sd);
+
+if (is_correlated_effects) {
+  L_corr_theta_beta[1] ~ lkj_corr_cholesky(lkj_eta_prior);
+}

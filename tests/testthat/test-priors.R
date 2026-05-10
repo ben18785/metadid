@@ -36,6 +36,15 @@ test_that("constructors reject invalid inputs", {
   expect_error(cauchy(0))
   expect_error(gamma(0, 0.1))
   expect_error(gamma(2, -1))
+  expect_error(lkj(0))
+  expect_error(lkj(-1))
+})
+
+test_that("lkj() creates a valid did_prior", {
+  p <- lkj(2)
+  expect_s3_class(p, "did_prior")
+  expect_equal(p$dist, "lkj")
+  expect_equal(p$eta, 2)
 })
 
 # ---------------------------------------------------------------------------
@@ -50,7 +59,7 @@ test_that("set_priors() returns a did_priors with all parameters", {
     "time_trend_mean", "time_trend_sd",
     "rho_mean", "rho_sd", "nu",
     "delta_rct", "delta_pp", "sigma",
-    "beta_cov"
+    "beta_cov", "lkj_eta"
   )
   expect_equal(names(p), expected_names)
 })
@@ -103,7 +112,8 @@ test_that("as_stan_data() returns all expected hyperparameters", {
     "mu_z_prior_mean", "mu_z_prior_sd",
     "tau_z_prior_mean", "tau_z_prior_sd",
     "nu_prior_shape", "nu_prior_rate",
-    "delta_rct_prior_sd", "delta_pp_prior_sd"
+    "delta_rct_prior_sd", "delta_pp_prior_sd",
+    "lkj_eta_prior"
   )
   expect_true(all(expected %in% names(sd)))
 })
