@@ -498,6 +498,22 @@ test_that("Fit 5e: meta_did_general with mixed settings runs without error", {
   expect_true(!is.na(te_row$mean), label = "treatment_effect_mean is estimated")
 })
 
+test_that("Fit 5f: meta_did_general with bivariate pp_likelihood runs without error", {
+  skip_if_no_stan()
+  did_df <- as_summary_did(sim_naive)
+  pp_df  <- as_summary_pp(sim_naive)
+  pp_df$study_id <- paste0("pp_", pp_df$study_id)
+  mixed <- dplyr::bind_rows(did_df, pp_df)
+
+  fit <- general_recovery_fit(
+    summary_data  = mixed,
+    pp_likelihood = "bivariate"
+  )
+  te <- summary(fit)
+  te_row <- te[te$parameter == "treatment_effect_mean", ]
+  expect_true(!is.na(te_row$mean), label = "treatment_effect_mean is estimated")
+})
+
 sim_unnorm <- simulate_meta_did(
   n_studies     = 25,
   true_effect   = TRUE_EFFECT_RAW,

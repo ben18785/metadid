@@ -30,15 +30,15 @@
 #' @section Data-generating model:
 #' Study-level parameters are drawn hierarchically:
 #' \deqn{\theta_i \sim \text{Normal}(\texttt{true\_effect},\, \texttt{sigma\_effect}^2)}
-#' \deqn{\gamma_i \sim \text{Normal}(\texttt{true\_trend},\, \texttt{sigma\_trend}^2)}
+#' \deqn{\beta_i \sim \text{Normal}(\texttt{true\_trend},\, \texttt{sigma\_trend}^2)}
 #' \deqn{b_i      \sim \text{Normal}(\texttt{baseline\_mean},\, \texttt{baseline\_sd}^2)}
 #'
 #' Within each study, individual (pre, post) pairs are drawn from a bivariate
 #' normal distribution with covariance matrix
 #' \deqn{\Sigma = \sigma^2 \begin{pmatrix} 1 & \rho \\ \rho & 1 \end{pmatrix}}
 #' making the role of \eqn{\rho} as the pre-post correlation explicit. The mean
-#' vector for the control group is \eqn{(b_i,\, b_i + \gamma_i)} and for the
-#' treatment group \eqn{(b_i,\, b_i + \gamma_i + \theta_i)}.
+#' vector for the control group is \eqn{(b_i,\, b_i + \beta_i)} and for the
+#' treatment group \eqn{(b_i,\, b_i + \beta_i + \theta_i)}.
 #'
 #' @param n_studies Number of studies. Default `20`.
 #' @param n_control Number of individuals per study in the control arm.
@@ -128,13 +128,13 @@ simulate_meta_did <- function(
   params <- tibble::tibble(
     study_id = paste0("study_", seq_len(n_studies)),
     theta    = stats::rnorm(n_studies, true_effect + cov_effect, sigma_effect),
-    gamma    = stats::rnorm(n_studies, true_trend,    sigma_trend),
+    beta     = stats::rnorm(n_studies, true_trend,    sigma_trend),
     baseline = stats::rnorm(n_studies, baseline_mean, baseline_sd)
   )
 
-  obs <- purrr::pmap_dfr(params, function(study_id, theta, gamma, baseline) {
-    mu_ctrl <- c(baseline, baseline + gamma)
-    mu_trt  <- c(baseline, baseline + gamma + theta)
+  obs <- purrr::pmap_dfr(params, function(study_id, theta, beta, baseline) {
+    mu_ctrl <- c(baseline, baseline + beta)
+    mu_trt  <- c(baseline, baseline + beta + theta)
 
     ctrl <- .rbvnorm(n_control,   mu_ctrl, Sigma)
     trt  <- .rbvnorm(n_treatment, mu_trt,  Sigma)
