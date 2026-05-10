@@ -361,3 +361,23 @@ test_that("meta_did() errors when both inputs are NULL", {
     "At least one"
   )
 })
+
+# ---------------------------------------------------------------------------
+# hierarchical_rho = FALSE with missing rho
+# ---------------------------------------------------------------------------
+
+test_that("meta_did() errors when hierarchical_rho = FALSE and rho is missing", {
+  did_df <- make_did_summary(2, rho = c(0.5, NA))
+  expect_error(
+    meta_did(summary_data = did_df, hierarchical_rho = FALSE),
+    "hierarchical_rho = FALSE.*missing rho"
+  )
+})
+
+test_that("meta_did() errors when hierarchical_rho = FALSE and rho column absent", {
+  did_df <- make_did_summary(2)
+  expect_error(
+    meta_did(summary_data = did_df, hierarchical_rho = FALSE),
+    "hierarchical_rho = FALSE.*no rho column"
+  )
+})
