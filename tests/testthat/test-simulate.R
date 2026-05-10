@@ -43,7 +43,7 @@ test_that("simulate_meta_did returns correct structure and dimensions", {
 test_that("simulate_meta_did attaches true_params attribute", {
   params <- attr(sim, "true_params")
   expect_s3_class(params, "data.frame")
-  expect_true(all(c("study_id", "theta", "gamma", "baseline") %in% names(params)))
+  expect_true(all(c("study_id", "theta", "beta", "baseline") %in% names(params)))
   expect_equal(nrow(params), N_STUDIES)
 })
 
