@@ -172,6 +172,18 @@ meta_did <- function(
 #'     \item{`"fixed_zero"`}{Fix \eqn{\gamma_i = 0}, assuming randomisation
 #'       eliminates baseline imbalances. This is the standard RCT assumption.}
 #'   }
+#' @param pp_likelihood Likelihood form for pre-post studies. One of:
+#'   \describe{
+#'     \item{`"differenced"`}{(Default) Use the differenced (post minus pre)
+#'       likelihood. The pre/post correlation \eqn{\rho_i} is not separately
+#'       estimable and the baseline cancels algebraically. This is the same
+#'       behaviour as [meta_did()].}
+#'     \item{`"bivariate"`}{Use the full bivariate normal likelihood for the
+#'       (pre, post) pair. This retains the pre/post correlation \eqn{\rho_i}
+#'       as an estimable parameter, contributing to the hierarchical
+#'       \eqn{\rho} model, at the cost of estimating additional nuisance
+#'       parameters.}
+#'   }
 #'
 #' @return A `meta_did_fit` object, identical in structure to the return
 #'   value of [meta_did()].
@@ -216,6 +228,7 @@ meta_did_general <- function(
     priors                = set_priors(),
     time_trend            = c("pooled", "fixed_zero"),
     baseline_imbalance    = c("estimated", "fixed_zero"),
+    pp_likelihood         = c("differenced", "bivariate"),
     method                = c("sample", "optimize"),
     chains                = 4L,
     iter_warmup           = 1000L,
@@ -226,6 +239,7 @@ meta_did_general <- function(
 ) {
   time_trend         <- match.arg(time_trend)
   baseline_imbalance <- match.arg(baseline_imbalance)
+  pp_likelihood      <- match.arg(pp_likelihood)
 
   overrides <- list()
 
@@ -239,6 +253,11 @@ meta_did_general <- function(
   if (baseline_imbalance == "fixed_zero") {
     overrides$is_baseline_control_equal_treatment_rct         <- 1L
     overrides$is_baseline_control_equal_treatment_rct_summary <- 1L
+  }
+
+  if (pp_likelihood == "bivariate") {
+    overrides$is_differenced_likelihood_pp         <- 0L
+    overrides$is_differenced_likelihood_pp_summary <- 0L
   }
 
   .meta_did_core(
@@ -418,6 +437,32 @@ meta_did_naive <- function(
     summary_data          <- norm_result$summary_data
     individual_data       <- norm_result$individual_data
     normalisation_factors <- norm_result$factors
+  }
+
+  # --- Validate rho when hierarchical modelling is off ---
+  if (!hierarchical_rho && !is.null(summary_data) && nrow(summary_data) > 0) {
+    rho_col <- if ("rho" %in% names(summary_data)) summary_data$rho else NULL
+    designs_needing_rho <- summary_data$design %in% c("did", "pp")
+    if (!is.null(rho_col) && any(is.na(rho_col[designs_needing_rho]))) {
+      missing_ids <- summary_data$study_id[designs_needing_rho & is.na(rho_col)]
+      stop(
+        "hierarchical_rho = FALSE but the following summary-level studies have ",
+        "missing rho: ", paste(missing_ids, collapse = ", "), ". ",
+        "Without hierarchical modelling, missing correlations cannot be imputed. ",
+        "Either provide rho for all studies or set hierarchical_rho = TRUE.",
+        call. = FALSE
+      )
+    }
+    if (is.null(rho_col) && any(designs_needing_rho)) {
+      missing_ids <- summary_data$study_id[designs_needing_rho]
+      stop(
+        "hierarchical_rho = FALSE but no rho column is present in summary_data. ",
+        "The following studies require rho: ",
+        paste(missing_ids, collapse = ", "), ". ",
+        "Either provide rho for all studies or set hierarchical_rho = TRUE.",
+        call. = FALSE
+      )
+    }
   }
 
   # --- Model flags ---
