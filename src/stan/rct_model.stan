@@ -22,6 +22,14 @@ if(n_studies_rct > 0) {
   else
     time_trend_rct_eff = time_trend_rct;
 
+  // Precompute L_Sigma for joint prior (only used when correlated + time trends estimated)
+  matrix[2, 2] L_Sigma_rct;
+  if (is_correlated_effects && !is_time_trend_rct_zero) {
+    L_Sigma_rct = diag_pre_multiply(
+      [treatment_effect_sd, time_trend_sd]', L_corr_theta_beta[1]
+    );
+  }
+
   for (i in 1:n_studies_rct) {
     if (is_baseline_normalised && !is_time_trend_rct_zero) {
       // Reparameterised: apparent_effect_rct[i] is theta/(alpha+beta),
@@ -37,7 +45,13 @@ if(n_studies_rct > 0) {
       );
 
       // Hierarchical prior on the derived true treatment effect
-      if (is_student_t_heterogeneity) {
+      if (is_correlated_effects) {
+        target += multi_normal_cholesky_lpdf(
+          [treatment_effect_rct_derived[i], time_trend_rct[i]]' |
+          [treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, time_trend_mean]',
+          L_Sigma_rct
+        );
+      } else if (is_student_t_heterogeneity) {
         target += student_t_lpdf(treatment_effect_rct_derived[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
       } else {
         target += normal_lpdf(treatment_effect_rct_derived[i] | treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
@@ -63,7 +77,13 @@ if(n_studies_rct > 0) {
       );
 
       // Hierarchical prior on treatment effect
-      if (is_student_t_heterogeneity) {
+      if (is_correlated_effects && !is_time_trend_rct_zero) {
+        target += multi_normal_cholesky_lpdf(
+          [treatment_effect_rct[i], time_trend_rct[i]]' |
+          [treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, time_trend_mean]',
+          L_Sigma_rct
+        );
+      } else if (is_student_t_heterogeneity) {
         target += student_t_lpdf(treatment_effect_rct[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
       } else {
         target += normal_lpdf(treatment_effect_rct[i] | treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
@@ -76,7 +96,8 @@ if(n_studies_rct > 0) {
     if (!is_baseline_control_equal_treatment_rct)
       baseline_treatment_rct ~ normal(baseline_treatment_mean[1], baseline_treatment_sd[1]);
   }
-  if (!is_time_trend_rct_zero)
+  // When correlated, the time trend prior is included in the joint bivariate prior above
+  if (!is_time_trend_rct_zero && !is_correlated_effects)
     time_trend_rct ~ normal(time_trend_mean, time_trend_sd);
   sigma_control_after_rct ~ cauchy(0, sigma_prior_scale);
   sigma_treatment_after_rct ~ cauchy(0, sigma_prior_scale);

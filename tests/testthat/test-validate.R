@@ -381,3 +381,11 @@ test_that("meta_did() errors when hierarchical_rho = FALSE and rho column absent
     "hierarchical_rho = FALSE.*no rho column"
   )
 })
+
+test_that("meta_did() errors when correlated_effects and robust_heterogeneity are both TRUE", {
+  did_df <- make_did_summary(2, rho = c(0.5, 0.6))
+  expect_error(
+    meta_did(summary_data = did_df, correlated_effects = TRUE, robust_heterogeneity = TRUE),
+    "correlated_effects.*robust_heterogeneity"
+  )
+})
