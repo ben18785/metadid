@@ -1,3 +1,4 @@
+// rct_summary_model.stan
 
 if(n_studies_rct_summary > 0) {
   // Construct effective baselines
@@ -39,7 +40,7 @@ if(n_studies_rct_summary > 0) {
         sample_size_treatment_rct_summary[i]
       );
 
-      // Hierarchical prior on the derived true treatment effect
+      // Hierarchical prior on the derived true treatment effect (stays centered)
       if (is_correlated_effects) {
         target += multi_normal_cholesky_lpdf(
           [treatment_effect_rct_summary_derived[i], time_trend_rct_summary[i]]' |
@@ -70,7 +71,7 @@ if(n_studies_rct_summary > 0) {
         sample_size_treatment_rct_summary[i]
       );
 
-      // Hierarchical prior on treatment effect
+      // Hierarchical prior on treatment effect (student-t and correlated stay centered)
       if (is_correlated_effects && !is_time_trend_rct_summary_zero) {
         target += multi_normal_cholesky_lpdf(
           [treatment_effect_rct_summary[i], time_trend_rct_summary[i]]' |
@@ -79,19 +80,21 @@ if(n_studies_rct_summary > 0) {
         );
       } else if (is_student_t_heterogeneity) {
         target += student_t_lpdf(treatment_effect_rct_summary[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
-      } else {
-        target += normal_lpdf(treatment_effect_rct_summary[i] | treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
       }
+      // Normal case: handled by treatment_effect_rct_summary_raw ~ std_normal() below
     }
   }
 
   if (!is_baseline_normalised) {
-    baseline_control_rct_summary ~ normal(baseline_control_mean[1], baseline_control_sd[1]);
+    baseline_control_rct_summary_raw ~ std_normal();
     if (!is_baseline_control_equal_treatment_rct_summary)
-      baseline_treatment_rct_summary ~ normal(baseline_treatment_mean[1], baseline_treatment_sd[1]);
+      baseline_treatment_rct_summary_raw ~ std_normal();
   }
-  // When correlated, the time trend prior is included in the joint bivariate prior above
+  // Time trend prior (non-centered; when correlated, included in joint prior above)
   if (!is_time_trend_rct_summary_zero && !is_correlated_effects)
-    time_trend_rct_summary ~ normal(time_trend_mean, time_trend_sd);
+    time_trend_rct_summary_raw ~ std_normal();
+  // Treatment effect prior for the non-apparent-effect branch (normal non-centered case).
+  if (!is_student_t_heterogeneity && !(is_correlated_effects && !is_time_trend_rct_summary_zero))
+    treatment_effect_rct_summary_raw ~ std_normal();
 }
 

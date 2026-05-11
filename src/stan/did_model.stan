@@ -44,8 +44,8 @@ if(n_studies_did > 0) {
   }
 
   if (!is_baseline_normalised) {
-    baseline_control_did ~ normal(baseline_control_mean[1], baseline_control_sd[1]);
-    baseline_treatment_did ~ normal(baseline_treatment_mean[1], baseline_treatment_sd[1]);
+    baseline_control_did_raw ~ std_normal();
+    baseline_treatment_did_raw ~ std_normal();
   }
   sigma_control_before_did ~ cauchy(0, sigma_prior_scale);
   sigma_control_after_did ~ cauchy(0, sigma_prior_scale);
@@ -63,11 +63,11 @@ if(n_studies_did > 0) {
       );
     }
   } else {
-    time_trend_did ~ normal(time_trend_mean, time_trend_sd);
+    time_trend_did_raw ~ std_normal();
     if (is_student_t_heterogeneity) {
       treatment_effect_did ~ student_t(nu_treatment_vec[1], treatment_effect_mean + X_cov_did * beta_cov, treatment_effect_sd);
     } else {
-      treatment_effect_did ~ normal(treatment_effect_mean + X_cov_did * beta_cov, treatment_effect_sd);
+      treatment_effect_did_raw ~ std_normal();
     }
   }
 }
