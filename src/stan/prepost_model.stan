@@ -23,7 +23,10 @@ if(n_studies_pp > 0) {
   } else {
     // Non-differenced (bivariate) form
     vector[n_studies_pp] baseline_treatment_pp_eff;
-    if (is_baseline_normalised) {
+    // When differenced likelihood is active, baseline_treatment_pp has size 0;
+    // this dummy value is set but never read (the differenced branch does not
+    // use baseline_treatment_pp_eff).
+    if (is_baseline_normalised || is_differenced_likelihood_pp) {
       baseline_treatment_pp_eff = rep_vector(1.0, n_studies_pp);
     } else {
       baseline_treatment_pp_eff = baseline_treatment_pp;
