@@ -318,7 +318,7 @@ if (instantiate::stan_cmdstan_exists()) {
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.5 seconds.
-#> Total execution time: 2.3 seconds.
+#> Total execution time: 2.4 seconds.
 #> 
 #> Warning: 222 of 4000 (6.0%) transitions ended with a divergence.
 #> See https://mc-stan.org/misc/warnings for details.
