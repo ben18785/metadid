@@ -34,6 +34,12 @@
 #'   correlation is modelled hierarchically across studies. Studies with a
 #'   reported correlation inform the population distribution; studies without
 #'   one have their correlation imputed.
+#' @param correlated_effects Logical. If `TRUE`, study-level treatment
+#'   effects and time trends are drawn jointly from a bivariate normal
+#'   with a shared correlation parameter, rather than independently. The
+#'   correlation is parameterised via a Cholesky factor of a 2×2 correlation
+#'   matrix with an LKJ prior (see [set_priors()]). Cannot be combined with
+#'   `robust_heterogeneity = TRUE`. Default `FALSE`.
 #' @param priors A `did_priors` object from [set_priors()]. Controls the
 #'   prior distributions on all population-level parameters.
 #' @param covariates An optional one-sided formula specifying study-level
@@ -105,6 +111,7 @@ meta_did <- function(
     robust_heterogeneity  = FALSE,
     design_effects        = FALSE,
     hierarchical_rho      = TRUE,
+    correlated_effects    = FALSE,
     covariates            = NULL,
     center_covariates     = TRUE,
     priors                = set_priors(),
@@ -123,6 +130,7 @@ meta_did <- function(
     robust_heterogeneity  = robust_heterogeneity,
     design_effects        = design_effects,
     hierarchical_rho      = hierarchical_rho,
+    correlated_effects    = correlated_effects,
     covariates            = covariates,
     center_covariates     = center_covariates,
     priors                = priors,
@@ -223,6 +231,7 @@ meta_did_general <- function(
     robust_heterogeneity  = FALSE,
     design_effects        = FALSE,
     hierarchical_rho      = TRUE,
+    correlated_effects    = FALSE,
     covariates            = NULL,
     center_covariates     = TRUE,
     priors                = set_priors(),
@@ -267,6 +276,7 @@ meta_did_general <- function(
     robust_heterogeneity  = robust_heterogeneity,
     design_effects        = design_effects,
     hierarchical_rho      = hierarchical_rho,
+    correlated_effects    = correlated_effects,
     covariates            = covariates,
     center_covariates     = center_covariates,
     priors                = priors,
@@ -364,6 +374,7 @@ meta_did_naive <- function(
     robust_heterogeneity  = FALSE,
     design_effects        = FALSE,
     hierarchical_rho      = TRUE,
+    correlated_effects    = FALSE,
     covariates            = NULL,
     center_covariates     = TRUE,
     priors                = set_priors(),
@@ -465,12 +476,23 @@ meta_did_naive <- function(
     }
   }
 
+  # --- Validate correlated_effects ---
+  if (correlated_effects && robust_heterogeneity) {
+    stop(
+      "correlated_effects = TRUE cannot be combined with robust_heterogeneity = TRUE. ",
+      "The bivariate normal prior on (treatment_effect, time_trend) is not compatible ",
+      "with Student-t heterogeneity. This restriction may be relaxed in a future version.",
+      call. = FALSE
+    )
+  }
+
   # --- Model flags ---
   model_flags <- list(
     is_baseline_normalised                  = as.integer(normalise_by_baseline),
     is_correlation_coefficient_hierarchical = as.integer(hierarchical_rho),
     is_student_t_heterogeneity              = as.integer(robust_heterogeneity),
-    is_design_effect                        = as.integer(design_effects)
+    is_design_effect                        = as.integer(design_effects),
+    is_correlated_effects                   = as.integer(correlated_effects)
   )
 
   # --- Stan data ---

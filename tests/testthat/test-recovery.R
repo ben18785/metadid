@@ -514,6 +514,39 @@ test_that("Fit 5f: meta_did_general with bivariate pp_likelihood runs without er
   expect_true(!is.na(te_row$mean), label = "treatment_effect_mean is estimated")
 })
 
+# ---------------------------------------------------------------------------
+# Fit 5g: correlated_effects recovery test
+# ---------------------------------------------------------------------------
+
+sim_correlated <- simulate_meta_did(
+  n_studies        = 30,
+  true_effect      = TRUE_EFFECT_RAW,
+  sigma_effect     = TRUE_SIGMA_EFFECT_RAW,
+  true_trend       = TRUE_TREND_RAW,
+  sigma_trend      = TRUE_SIGMA_TREND_RAW,
+  baseline_mean    = MEAN_BASELINE,
+  baseline_sd      = 0,
+  n_control        = 100L,
+  n_treatment      = 100L,
+  rho_effect_trend = 0.6,
+  seed             = 7294L
+)
+
+test_that("Fit 5g: correlated_effects recovers treatment effect and correlation", {
+  skip_if_no_stan()
+  fit <- general_recovery_fit(
+    summary_data       = as_summary_did(sim_correlated),
+    correlated_effects = TRUE
+  )
+  te <- summary(fit)
+  te_row <- te[te$parameter == "treatment_effect_mean", ]
+  expect_true(te_row$mean < 0, label = "estimated effect is negative")
+  expect_true(
+    te_row$lo < TRUE_EFFECT_NORMALISED && te_row$hi > TRUE_EFFECT_NORMALISED,
+    label = ci_label(te_row, TRUE_EFFECT_NORMALISED)
+  )
+})
+
 sim_unnorm <- simulate_meta_did(
   n_studies     = 25,
   true_effect   = TRUE_EFFECT_RAW,
