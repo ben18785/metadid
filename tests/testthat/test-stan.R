@@ -200,6 +200,79 @@ test_that("normalise_by_baseline = FALSE runs without error", {
 })
 
 # ---------------------------------------------------------------------------
+# PP + unnormalised smoke tests (regression for baseline_treatment_pp bug)
+# ---------------------------------------------------------------------------
+# When pp_likelihood = "differenced" (the default) and
+# normalise_by_baseline = FALSE, baseline_treatment_pp has size 0. The model
+# block must guard against assigning that 0-length vector.
+
+pp_summary <- function() {
+  data.frame(
+    study_id            = c("P1", "P2", "P3"),
+    design              = "pp",
+    n_treatment         = c(55L, 65L, 52L),
+    mean_pre_treatment  = c(0.46, 0.51, 0.49),
+    sd_pre_treatment    = c(0.13, 0.12, 0.11),
+    mean_post_treatment = c(0.30, 0.34, 0.32),
+    sd_post_treatment   = c(0.10, 0.09, 0.08),
+    rho                 = c(0.5, 0.6, 0.55)
+  )
+}
+
+individual_pp <- function(n_per_group = 5) {
+  set.seed(6142)
+  data.frame(
+    study_id   = rep("pp_study", n_per_group * 2),
+    subject_id = rep(seq_len(n_per_group), each = 2),
+    design     = "pp",
+    group      = "treatment",
+    time       = rep(c("pre", "post"), times = n_per_group),
+    value      = as.vector(rbind(
+      rnorm(n_per_group, 0.46, 0.13),
+      rnorm(n_per_group, 0.30, 0.10)
+    ))
+  )
+}
+
+quick_fit_general <- function(summary_data = NULL, individual_data = NULL, ...) {
+  model <- get_compiled_model()
+  skip_if(is.null(model), "Stan model could not be compiled")
+  local_mocked_bindings(
+    stan_package_model = function(...) model,
+    .package = "instantiate"
+  )
+  meta_did_general(
+    summary_data    = summary_data,
+    individual_data = individual_data,
+    chains          = 1L,
+    iter_warmup     = 200L,
+    iter_sampling   = 100L,
+    seed            = 4917L,
+    refresh         = 0,
+    ...
+  )
+}
+
+test_that("PP summary + normalise_by_baseline = FALSE runs without error", {
+  skip_if_no_stan()
+  mixed <- dplyr::bind_rows(did_summary(), pp_summary())
+  expect_no_error(
+    quick_fit_general(summary_data = mixed, normalise_by_baseline = FALSE)
+  )
+})
+
+test_that("PP individual + normalise_by_baseline = FALSE runs without error", {
+  skip_if_no_stan()
+  expect_no_error(
+    quick_fit_general(
+      summary_data    = did_summary(),
+      individual_data = individual_pp(),
+      normalise_by_baseline = FALSE
+    )
+  )
+})
+
+# ---------------------------------------------------------------------------
 # Optimization (MAP) tests
 # ---------------------------------------------------------------------------
 
