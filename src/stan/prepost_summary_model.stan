@@ -11,18 +11,21 @@ if(n_studies_pp_summary > 0) {
 
   // Construct effective baseline (fixed at 1 when normalised)
   vector[n_studies_pp_summary] baseline_treatment_pp_summary_eff;
-  if (is_baseline_normalised) {
+  // When differenced likelihood is active, baseline_treatment_pp_summary has
+  // size 0; this dummy value is set but never read (the differenced branch
+  // does not use baseline_treatment_pp_summary_eff).
+  if (is_baseline_normalised || is_differenced_likelihood_pp_summary) {
     baseline_treatment_pp_summary_eff = rep_vector(1.0, n_studies_pp_summary);
   } else {
     baseline_treatment_pp_summary_eff = baseline_treatment_pp_summary;
   }
 
   for (i in 1:n_studies_pp_summary) {
-    
+
     real tt_pp_summary_temp = 0;
     if(!is_time_trend_pp_summary_zero)
       tt_pp_summary_temp = time_trend_pp_summary[i];
-    
+
     if(!is_differenced_likelihood_pp_summary) {
       target += prepost_summary_study_lpdf_from_data(
         x_bar_treatment_before_pp_summary[i],
@@ -48,7 +51,7 @@ if(n_studies_pp_summary > 0) {
       );
     }
   }
-  
+
   // Hierarchical prior on rho via Fisher z-transform
   if (is_correlation_coefficient_hierarchical) {
     for (k in 1:n_rho_known_pp_summary) {
