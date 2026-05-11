@@ -1,9 +1,9 @@
-// did_model.stan
+// did_model_parameters.stan
 
-vector[n_studies_did] treatment_effect_did;
-vector[n_studies_did * (1 - is_baseline_normalised)] baseline_control_did;
-vector[n_studies_did * (1 - is_baseline_normalised)] baseline_treatment_did;
-vector[n_studies_did] time_trend_did;
+vector[n_studies_did] treatment_effect_did_raw;
+vector[n_studies_did * (1 - is_baseline_normalised)] baseline_control_did_raw;
+vector[n_studies_did * (1 - is_baseline_normalised)] baseline_treatment_did_raw;
+vector[n_studies_did] time_trend_did_raw;
 vector<lower=-1, upper=1>[n_studies_did] rho_did;
 vector<lower=0>[n_studies_did] sigma_control_before_did;
 vector<lower=0>[n_studies_did] sigma_control_after_did;
