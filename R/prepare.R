@@ -348,11 +348,16 @@ prepare_individual_pp <- function(df) {
 # ---------------------------------------------------------------------------
 
 prepare_stan_data <- function(summary_data, individual_data, model_flags, priors,
-                              covariate_names = NULL, center_covariates = TRUE) {
+                              covariate_names = NULL,
+                              multiplicative_covariate_names = NULL,
+                              center_covariates = TRUE) {
 
-  K_cov <- length(covariate_names)
+  K_cov  <- length(covariate_names)
+  K_mult <- length(multiplicative_covariate_names)
 
   # --- Compute centering values across all studies ---
+  # Only additive covariates are centered; multiplicative ones are never centered
+  # (centering a binary indicator has no meaningful multiplicative interpretation).
   cov_centers <- NULL
   if (K_cov > 0 && center_covariates) {
     # Collect one row per study from both data sources
@@ -407,7 +412,7 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   stan_rct <- prepare_individual_rct(ind_rct)
   stan_pp  <- prepare_individual_pp(ind_pp)
 
-  # --- Covariate matrices ---
+  # --- Covariate matrices (additive) ---
   cov_names <- if (K_cov > 0) covariate_names else character(0)
 
   # Summary-level covariate matrices
@@ -421,8 +426,21 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   stan_rct$X_cov_rct <- .extract_cov_matrix_individual(ind_rct_raw, cov_names)
   stan_pp$X_cov_pp   <- .extract_cov_matrix_individual(ind_pp_raw, cov_names)
 
+  # --- Multiplicative covariate matrices ---
+  mult_names <- if (K_mult > 0) multiplicative_covariate_names else character(0)
+
+  stan_did_summary$X_mult_did_summary           <- .extract_cov_matrix_summary(sum_did,        mult_names)
+  stan_did_change_only$X_mult_did_change_only   <- .extract_cov_matrix_summary(sum_did_change, mult_names)
+  stan_rct_summary$X_mult_rct_summary           <- .extract_cov_matrix_summary(sum_rct,        mult_names)
+  stan_pp_summary$X_mult_pp_summary             <- .extract_cov_matrix_summary(sum_pp,         mult_names)
+
+  stan_did$X_mult_did <- .extract_cov_matrix_individual(ind_did_raw, mult_names)
+  stan_rct$X_mult_rct <- .extract_cov_matrix_individual(ind_rct_raw, mult_names)
+  stan_pp$X_mult_pp   <- .extract_cov_matrix_individual(ind_pp_raw,  mult_names)
+
   # --- Shared data: flags + prior hyperparameters + covariate info ---
-  shared <- c(model_flags, as_stan_data(priors), list(K_cov = K_cov))
+  shared <- c(model_flags, as_stan_data(priors),
+              list(K_cov = K_cov, K_mult = K_mult))
 
   # --- Combine ---
   result <- c(

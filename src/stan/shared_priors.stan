@@ -26,6 +26,11 @@ if (is_design_effect) {
 
 beta_cov ~ normal(0, beta_cov_prior_sd);
 
+// Multiplicative covariates share a single prior across all K_mult elements,
+// mirroring how beta_cov shares one prior across all additive covariates.
+// When K_mult == 0 this is a no-op on a zero-length vector.
+gamma_mult ~ normal(gamma_mult_prior_mean, gamma_mult_prior_sd);
+
 if (is_correlated_effects) {
   L_corr_theta_beta[1] ~ lkj_corr_cholesky(lkj_eta_prior);
 }

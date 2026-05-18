@@ -49,13 +49,13 @@ if(n_studies_rct > 0) {
       if (is_correlated_effects) {
         target += multi_normal_cholesky_lpdf(
           [treatment_effect_rct_derived[i], time_trend_rct[i]]' |
-          [treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, time_trend_mean]',
+          [apply_mult_factor(treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, X_mult_rct[i], gamma_mult), time_trend_mean]',
           L_Sigma_rct
         );
       } else if (is_student_t_heterogeneity) {
-        target += student_t_lpdf(treatment_effect_rct_derived[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
+        target += student_t_lpdf(treatment_effect_rct_derived[i] | nu_treatment_vec[1], apply_mult_factor(treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, X_mult_rct[i], gamma_mult), treatment_effect_sd);
       } else {
-        target += normal_lpdf(treatment_effect_rct_derived[i] | treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
+        target += normal_lpdf(treatment_effect_rct_derived[i] | apply_mult_factor(treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, X_mult_rct[i], gamma_mult), treatment_effect_sd);
       }
 
       // Jacobian: |d(te)/d(apparent)| = |1 + time_trend|
@@ -81,11 +81,11 @@ if(n_studies_rct > 0) {
       if (is_correlated_effects && !is_time_trend_rct_zero) {
         target += multi_normal_cholesky_lpdf(
           [treatment_effect_rct[i], time_trend_rct[i]]' |
-          [treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, time_trend_mean]',
+          [apply_mult_factor(treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, X_mult_rct[i], gamma_mult), time_trend_mean]',
           L_Sigma_rct
         );
       } else if (is_student_t_heterogeneity) {
-        target += student_t_lpdf(treatment_effect_rct[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
+        target += student_t_lpdf(treatment_effect_rct[i] | nu_treatment_vec[1], apply_mult_factor(treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, X_mult_rct[i], gamma_mult), treatment_effect_sd);
       }
       // Normal case: handled by treatment_effect_rct_raw ~ std_normal() below
     }

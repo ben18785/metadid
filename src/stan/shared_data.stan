@@ -44,6 +44,16 @@ real<lower=0> sigma_prior_scale;
 int<lower=0> K_cov;               // number of covariates (0 = no meta-regression)
 real<lower=0> beta_cov_prior_sd;   // prior SD for covariate coefficients
 
+// Multiplicative covariates (meta-regression with multiplier-on-mean structure).
+// For each binary indicator x_mult[i,k] in {0, 1}, the per-study mean is
+// multiplied by gamma_mult[k] when x_mult[i,k] == 1. With K_mult == 0 the
+// model collapses to the additive structure above (no behaviour change).
+int<lower=0> K_mult;                   // number of multiplicative covariates
+real gamma_mult_prior_mean;            // prior mean for each gamma_mult[k]
+real<lower=0> gamma_mult_prior_sd;     // prior SD for each gamma_mult[k]
+real gamma_mult_lower;                 // hard lower bound on gamma_mult (typically 0)
+real gamma_mult_upper;                 // hard upper bound on gamma_mult (large = effectively unbounded)
+
 // When is_student_t_heterogeneity == 1, study-level treatment effects are
 // drawn from a Student-t rather than a normal. The degrees-of-freedom
 // parameter nu_treatment (declared as a length-1 vector in the parameters

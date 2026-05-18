@@ -16,7 +16,8 @@ set_priors(
   delta_pp = normal(0, 10),
   sigma = cauchy(5),
   beta_cov = normal(0, 10),
-  lkj_eta = lkj(2)
+  lkj_eta = lkj(2),
+  multiplier = normal(1, 0.5, lower = 0)
 )
 }
 \arguments{
@@ -55,6 +56,14 @@ Default: \code{normal(0, 10)}.}
 between treatment effects and time trends (only used when
 \code{correlated_effects = TRUE}). Default: \code{lkj(2)}, which gently
 regularises toward zero correlation.}
+
+\item{multiplier}{Prior on the multiplicative-covariate factor(s)
+(only used when \code{multiplicative_covariates} is specified in
+\code{\link[=meta_did]{meta_did()}}). A single prior is shared across all multiplicative
+covariates, mirroring how \code{beta_cov} is shared across additive ones.
+Default: \code{normal(1, 0.5, lower = 0)} — centred at 1 (no multiplicative
+effect) with positive support. Optionally set an upper bound for
+improved MCMC stability, e.g. \code{normal(1, 0.5, lower = 0, upper = 5)}.}
 }
 \value{
 A \code{did_priors} object.

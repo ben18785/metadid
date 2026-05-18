@@ -13,6 +13,7 @@ meta_did(
   hierarchical_rho = TRUE,
   correlated_effects = FALSE,
   covariates = NULL,
+  multiplicative_covariates = NULL,
   center_covariates = TRUE,
   priors = set_priors(),
   method = c("sample", "optimize"),
@@ -58,7 +59,7 @@ one have their correlation imputed.}
 \item{correlated_effects}{Logical. If \code{TRUE}, study-level treatment
 effects and time trends are drawn jointly from a bivariate normal
 with a shared correlation parameter, rather than independently. The
-correlation is parameterised via a Cholesky factor of a 2x2 correlation
+correlation is parameterised via a Cholesky factor of a 2×2 correlation
 matrix with an LKJ prior (see \code{\link[=set_priors]{set_priors()}}). Cannot be combined with
 \code{robust_heterogeneity = TRUE}. Default \code{FALSE}.}
 
@@ -68,6 +69,20 @@ covariates for meta-regression on the treatment effect (e.g.,
 both \code{summary_data} and \code{individual_data} (whichever are provided).
 For individual-level data, covariate values must be constant within
 each study. Default \code{NULL} (no meta-regression).}
+
+\item{multiplicative_covariates}{An optional one-sided formula specifying
+binary study-level covariates that modify the population treatment
+effect \emph{multiplicatively} rather than additively (e.g.,
+\code{~ real_world}). For each such column, a positive multiplier
+\eqn{\gamma_k} is estimated, and the per-study mean for study \eqn{i}
+becomes
+\deqn{\mu_i = \left(\prod_k \gamma_k^{m_{k,i}}\right)
+             \bigl(\texttt{treatment\_effect\_mean} + X_{\text{cov},i}^{\top}\beta_{\text{cov}}\bigr)}
+where \eqn{m_{k,i} \in \{0,1\}}. All multipliers share the prior
+specified by \code{priors$multiplier}. Columns must be binary (values in
+\verb{\{0, 1\}}, no NAs), constant within study for individual-level data,
+and not overlap with \code{covariates}. Multiplicative covariates are
+never centered. Default \code{NULL}.}
 
 \item{center_covariates}{Logical. If \code{TRUE} (default), covariates are
 mean-centered across all studies before fitting. This ensures that

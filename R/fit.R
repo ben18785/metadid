@@ -13,21 +13,23 @@ new_meta_did_fit <- function(
     normalisation_factors,
     method = "sample",
     covariate_names = NULL,
+    multiplicative_covariate_names = NULL,
     cov_centers = NULL,
     center_covariates = TRUE
 ) {
   structure(
     list(
-      fit                   = fit,
-      summary_data          = summary_data,
-      individual_data       = individual_data,
-      model_flags           = model_flags,
-      priors                = priors,
-      normalisation_factors = normalisation_factors,
-      method                = method,
-      covariate_names       = covariate_names,
-      cov_centers           = cov_centers,
-      center_covariates     = center_covariates
+      fit                            = fit,
+      summary_data                   = summary_data,
+      individual_data                = individual_data,
+      model_flags                    = model_flags,
+      priors                         = priors,
+      normalisation_factors          = normalisation_factors,
+      method                         = method,
+      covariate_names                = covariate_names,
+      multiplicative_covariate_names = multiplicative_covariate_names,
+      cov_centers                    = cov_centers,
+      center_covariates              = center_covariates
     ),
     class = "meta_did_fit"
   )
@@ -93,6 +95,19 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
         cat("  (covariates were mean-centered; treatment_effect_mean is the effect at covariate means)\n")
       }
     }
+    K_mult <- length(x$multiplicative_covariate_names)
+    if (K_mult > 0) {
+      gamma_draws <- x$fit$draws("gamma_mult", format = "matrix")
+      gamma_means <- colMeans(gamma_draws)
+      cat("Multiplicative covariate factors:\n")
+      for (k in seq_len(K_mult)) {
+        g_lo <- stats::quantile(gamma_draws[, k], (1 - prob) / 2)
+        g_hi <- stats::quantile(gamma_draws[, k], 1 - (1 - prob) / 2)
+        cat(sprintf("  %s: %.3f  %g%% CI [%.3f, %.3f]\n",
+                    x$multiplicative_covariate_names[k], gamma_means[k],
+                    prob * 100, g_lo, g_hi))
+      }
+    }
   } else {
     mle <- x$fit$mle()
     m   <- mle[["treatment_effect_mean"]]
@@ -113,6 +128,15 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
       }
       if (x$center_covariates) {
         cat("  (covariates were mean-centered; treatment_effect_mean is the effect at covariate means)\n")
+      }
+    }
+    K_mult <- length(x$multiplicative_covariate_names)
+    if (K_mult > 0) {
+      cat("Multiplicative covariate factors:\n")
+      for (k in seq_len(K_mult)) {
+        g_k <- mle[[paste0("gamma_mult[", k, "]")]]
+        cat(sprintf("  %s: %.3f  (MAP estimate)\n",
+                    x$multiplicative_covariate_names[k], g_k))
       }
     }
   }
@@ -186,6 +210,14 @@ summary.meta_did_fit <- function(object, prob = 0.9, ...) {
       # Label rows with covariate names for clarity
       beta_summary$parameter <- paste0("beta_cov[", object$covariate_names, "]")
       pop <- rbind(pop, beta_summary)
+    }
+  }
+  if (length(object$multiplicative_covariate_names) > 0) {
+    gamma_summary <- summarise_draws("gamma_mult")
+    if (!is.null(gamma_summary)) {
+      gamma_summary$parameter <- paste0("gamma_mult[",
+                                        object$multiplicative_covariate_names, "]")
+      pop <- rbind(pop, gamma_summary)
     }
   }
 
