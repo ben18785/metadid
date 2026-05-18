@@ -325,3 +325,180 @@ test_that("Stan fit recovers a known multiplier on simulated data", {
     label = sprintf("gamma_mult 90%% CI [%.3f, %.3f] covers true value %.3f",
                     lo, hi, gamma_true))
 })
+
+# ---------------------------------------------------------------------------
+# print.did_prior with bounds
+# ---------------------------------------------------------------------------
+
+test_that("print.did_prior omits bounds when unbounded", {
+  out <- capture.output(print(normal(0, 1)))
+  expect_match(out, "normal", all = FALSE)
+  expect_false(any(grepl("lower", out)))
+  expect_false(any(grepl("upper", out)))
+})
+
+test_that("print.did_prior shows lower bound when finite", {
+  out <- capture.output(print(normal(1, 0.5, lower = 0)))
+  expect_match(out, "lower = 0", all = FALSE)
+  expect_false(any(grepl("upper", out)))
+})
+
+test_that("print.did_prior shows upper bound when finite", {
+  out <- capture.output(print(normal(1, 0.5, upper = 5)))
+  expect_match(out, "upper = 5", all = FALSE)
+  expect_false(any(grepl("lower", out)))
+})
+
+test_that("print.did_prior shows both bounds when finite", {
+  out <- capture.output(print(normal(1, 0.5, lower = 0, upper = 5)))
+  expect_match(out, "lower = 0", all = FALSE)
+  expect_match(out, "upper = 5", all = FALSE)
+})
+
+# ---------------------------------------------------------------------------
+# validate_multiplicative_covariates() additional edge cases
+# ---------------------------------------------------------------------------
+
+test_that("validate_multiplicative_covariates() rejects character column", {
+  df <- make_did_summary_with_mult()
+  df$real_world <- as.character(df$real_world)
+  expect_error(
+    validate_multiplicative_covariates("real_world", df, NULL),
+    "must be numeric"
+  )
+})
+
+test_that("validate_multiplicative_covariates() rejects logical column", {
+  # is.numeric(c(TRUE, FALSE)) is FALSE in base R, so logical columns must be
+  # coerced explicitly to integer/numeric before being passed in. The validator
+  # rejects them with the "must be numeric" message to make this explicit.
+  df <- make_did_summary_with_mult()
+  df$real_world <- as.logical(df$real_world)
+  expect_error(
+    validate_multiplicative_covariates("real_world", df, NULL),
+    "must be numeric"
+  )
+})
+
+test_that("validate_multiplicative_covariates() rejects missing column in individual_data", {
+  ind <- data.frame(
+    study_id   = c("s1", "s1"),
+    subject_id = c(1, 1),
+    design     = "did",
+    group      = c("control", "treatment"),
+    time       = c("post", "post"),
+    value      = rnorm(2)
+    # no real_world column
+  )
+  expect_error(
+    validate_multiplicative_covariates("real_world", NULL, ind),
+    "not found in individual_data"
+  )
+})
+
+test_that("validate_multiplicative_covariates() validates both data sources when supplied", {
+  # Same column name must be valid in both frames. Build a constant-within-study
+  # individual frame whose study_id values do not overlap the summary frame.
+  sum_df <- make_did_summary_with_mult()
+  ind <- data.frame(
+    study_id   = rep(c("ind_a", "ind_b"), each = 4),
+    subject_id = rep(1:2, times = 4),
+    design     = "did",
+    group      = rep(c("control", "control", "treatment", "treatment"), 2),
+    time       = rep(c("pre", "post"), 4),
+    value      = rnorm(8),
+    real_world = rep(c(0, 1), each = 4)  # constant within each study
+  )
+  expect_invisible(
+    validate_multiplicative_covariates("real_world", sum_df, ind)
+  )
+})
+
+# ---------------------------------------------------------------------------
+# meta_did_general() plumbing
+# ---------------------------------------------------------------------------
+
+test_that("meta_did_general() exposes the multiplicative_covariates argument", {
+  # Trigger the same "listed in both" error through meta_did_general() —
+  # this exercises the argument's plumbing without needing to actually fit.
+  df <- make_did_summary_with_mult()
+  expect_error(
+    meta_did_general(
+      summary_data              = df,
+      covariates                = ~ real_world,
+      multiplicative_covariates = ~ real_world
+    ),
+    "listed in both"
+  )
+})
+
+test_that("meta_did_general() rejects non-formula multiplicative_covariates", {
+  df <- make_did_summary_with_mult()
+  expect_error(
+    meta_did_general(
+      summary_data              = df,
+      multiplicative_covariates = "real_world"  # string, not formula
+    ),
+    "one-sided formula"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# new_meta_did_fit() constructor
+# ---------------------------------------------------------------------------
+
+test_that("new_meta_did_fit() stores multiplicative_covariate_names", {
+  obj <- new_meta_did_fit(
+    fit                            = NULL,
+    summary_data                   = NULL,
+    individual_data                = NULL,
+    model_flags                    = list(),
+    priors                         = set_priors(),
+    normalisation_factors          = NULL,
+    multiplicative_covariate_names = c("rw", "fs")
+  )
+  expect_s3_class(obj, "meta_did_fit")
+  expect_equal(obj$multiplicative_covariate_names, c("rw", "fs"))
+})
+
+test_that("new_meta_did_fit() defaults multiplicative_covariate_names to NULL", {
+  obj <- new_meta_did_fit(
+    fit                   = NULL,
+    summary_data          = NULL,
+    individual_data       = NULL,
+    model_flags           = list(),
+    priors                = set_priors(),
+    normalisation_factors = NULL
+  )
+  expect_null(obj$multiplicative_covariate_names)
+})
+
+# ---------------------------------------------------------------------------
+# prepare_stan_data() with individual data
+# ---------------------------------------------------------------------------
+
+test_that("prepare_stan_data() populates X_mult_did from individual data", {
+  # The summary path was tested earlier; this covers the individual-level
+  # extraction in .extract_cov_matrix_individual.
+  ind <- data.frame(
+    study_id   = rep(c("ind_a", "ind_b"), each = 8),
+    subject_id = rep(1:4, times = 4),
+    design     = "did",
+    group      = rep(c("control", "control", "treatment", "treatment"), 4),
+    time       = rep(c("pre", "post"), 8),
+    value      = rnorm(16, mean = 0.45, sd = 0.1),
+    real_world = rep(c(0, 1), each = 8)
+  )
+  sd <- prepare_stan_data(
+    summary_data    = NULL,
+    individual_data = ind,
+    model_flags     = list(),
+    priors          = set_priors(),
+    covariate_names = NULL,
+    multiplicative_covariate_names = "real_world"
+  )
+  expect_equal(sd$K_mult, 1L)
+  expect_equal(nrow(sd$X_mult_did), 2L)  # one row per study
+  expect_equal(ncol(sd$X_mult_did), 1L)
+  expect_setequal(as.numeric(sd$X_mult_did[, 1]), c(0, 1))
+})
