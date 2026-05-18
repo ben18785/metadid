@@ -9,12 +9,18 @@ if(n_studies_did_summary > 0) {
   for (k in 1:n_rho_missing_did_summary)
     rho_eff_did_summary[idx_rho_missing_did_summary[k]] = tanh(z_rho_missing_did_summary[k]);
 
-  // Construct effective baselines (fixed at 1 when normalised)
+  // Construct effective baselines. DiD always uses baseline_difference (data
+  // identifies it per-study). The !is_differenced_likelihood_did_summary guard
+  // ensures baseline_difference_did_summary (size 0 under differenced
+  // likelihood) is only consulted when it has the expected size.
   vector[n_studies_did_summary] baseline_control_did_summary_eff;
   vector[n_studies_did_summary] baseline_treatment_did_summary_eff;
   if (is_baseline_normalised) {
     baseline_control_did_summary_eff = rep_vector(1.0, n_studies_did_summary);
-    baseline_treatment_did_summary_eff = rep_vector(1.0, n_studies_did_summary);
+    if (!is_differenced_likelihood_did_summary)
+      baseline_treatment_did_summary_eff = rep_vector(1.0, n_studies_did_summary) + baseline_difference_did_summary;
+    else
+      baseline_treatment_did_summary_eff = rep_vector(1.0, n_studies_did_summary);
   } else {
     baseline_control_did_summary_eff = baseline_control_did_summary;
     baseline_treatment_did_summary_eff = baseline_treatment_did_summary;
@@ -74,7 +80,9 @@ if(n_studies_did_summary > 0) {
 
   if (!is_baseline_normalised) {
     baseline_control_did_summary_raw ~ std_normal();
-    baseline_treatment_did_summary_raw ~ std_normal();
+  }
+  if (!is_differenced_likelihood_did_summary) {
+    baseline_difference_did_summary_raw ~ std_normal();
   }
   if (is_correlated_effects) {
     matrix[2, 2] L_Sigma_did_summary = diag_pre_multiply(

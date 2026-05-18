@@ -1,12 +1,16 @@
 // did_model.stan
 
 if(n_studies_did > 0) {
-  // Construct effective baselines (fixed at 1 when normalised)
+  // Construct effective baselines. DiD always estimates baseline_difference
+  // per-study (data identifies it). When normalised: control = 1, treatment =
+  // 1 + baseline_difference. When unnormalised: use the transformed parameters
+  // baseline_control_did and baseline_treatment_did (which already incorporates
+  // baseline_difference).
   vector[n_studies_did] baseline_control_did_eff;
   vector[n_studies_did] baseline_treatment_did_eff;
   if (is_baseline_normalised) {
     baseline_control_did_eff = rep_vector(1.0, n_studies_did);
-    baseline_treatment_did_eff = rep_vector(1.0, n_studies_did);
+    baseline_treatment_did_eff = rep_vector(1.0, n_studies_did) + baseline_difference_did;
   } else {
     baseline_control_did_eff = baseline_control_did;
     baseline_treatment_did_eff = baseline_treatment_did;
@@ -45,8 +49,8 @@ if(n_studies_did > 0) {
 
   if (!is_baseline_normalised) {
     baseline_control_did_raw ~ std_normal();
-    baseline_treatment_did_raw ~ std_normal();
   }
+  baseline_difference_did_raw ~ std_normal();
   sigma_control_before_did ~ cauchy(0, sigma_prior_scale);
   sigma_control_after_did ~ cauchy(0, sigma_prior_scale);
   sigma_treatment_before_did ~ cauchy(0, sigma_prior_scale);

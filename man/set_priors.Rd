@@ -15,7 +15,10 @@ set_priors(
   delta_rct = normal(0, 10),
   delta_pp = normal(0, 10),
   sigma = cauchy(5),
-  beta_cov = normal(0, 10)
+  beta_cov = normal(0, 10),
+  lkj_eta = lkj(2),
+  baseline_difference_mean = normal(0, 0.5),
+  baseline_difference_sd = cauchy(0.1)
 )
 }
 \arguments{
@@ -49,6 +52,20 @@ correlation (only used when \code{hierarchical_rho = TRUE}). Default: \code{norm
 \item{beta_cov}{Prior on the covariate regression coefficients
 (only used when \code{covariates} is specified in \code{\link[=meta_did]{meta_did()}}).
 Default: \code{normal(0, 10)}.}
+
+\item{lkj_eta}{Prior on the Cholesky factor of the correlation matrix
+between treatment effects and time trends (only used when
+\code{correlated_effects = TRUE}). Default: \code{lkj(2)}, which gently
+regularises toward zero correlation.}
+
+\item{baseline_difference_mean}{Prior on the population mean of the
+per-study baseline imbalance (treatment-arm vs control-arm pre-treatment
+mean, on the normalised fractional scale). Only used when
+\code{baseline_imbalance = "estimated"}. Default: \code{normal(0, 0.5)}.}
+
+\item{baseline_difference_sd}{Prior on the between-study SD of the
+baseline imbalance. Only used when \code{baseline_imbalance = "estimated"}.
+Default: \code{cauchy(0.1)}.}
 }
 \value{
 A \code{did_priors} object.

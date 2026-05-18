@@ -16,6 +16,7 @@ simulate_meta_did(
   baseline_sd = 0,
   within_sd = 0.12,
   rho = 0.5,
+  rho_effect_trend = 0,
   seed = NULL,
   covariates = NULL,
   beta_cov = NULL
@@ -48,6 +49,11 @@ both groups). Default \code{0.12}.}
 \item{rho}{Pre-post correlation within individuals. Directly parameterises
 the off-diagonal of the bivariate normal covariance matrix. Default \code{0.5}.}
 
+\item{rho_effect_trend}{Correlation between study-level treatment effects
+\eqn{\theta_i} and time trends \eqn{\beta_i}. When nonzero (and both
+\code{sigma_effect} and \code{sigma_trend} are positive), the pair is drawn
+jointly from a bivariate normal. Default \code{0} (independent draws).}
+
 \item{seed}{Integer random seed for reproducibility. Default \code{NULL}.}
 
 \item{covariates}{An optional data frame with \code{n_studies} rows containing
@@ -75,15 +81,17 @@ the data as it would appear under different levels of access.
 
 Study-level parameters are drawn hierarchically:
 \deqn{\theta_i \sim \text{Normal}(\texttt{true\_effect},\, \texttt{sigma\_effect}^2)}
-\deqn{\gamma_i \sim \text{Normal}(\texttt{true\_trend},\, \texttt{sigma\_trend}^2)}
+\deqn{\beta_i \sim \text{Normal}(\texttt{true\_trend},\, \texttt{sigma\_trend}^2)}
 \deqn{b_i      \sim \text{Normal}(\texttt{baseline\_mean},\, \texttt{baseline\_sd}^2)}
+When \code{rho_effect_trend} is nonzero, \eqn{(\theta_i, \beta_i)} are drawn
+jointly from a bivariate normal with correlation \code{rho_effect_trend}.
 
 Within each study, individual (pre, post) pairs are drawn from a bivariate
 normal distribution with covariance matrix
 \deqn{\Sigma = \sigma^2 \begin{pmatrix} 1 & \rho \\ \rho & 1 \end{pmatrix}}
 making the role of \eqn{\rho} as the pre-post correlation explicit. The mean
-vector for the control group is \eqn{(b_i,\, b_i + \gamma_i)} and for the
-treatment group \eqn{(b_i,\, b_i + \gamma_i + \theta_i)}.
+vector for the control group is \eqn{(b_i,\, b_i + \beta_i)} and for the
+treatment group \eqn{(b_i,\, b_i + \beta_i + \theta_i)}.
 }
 
 \examples{
