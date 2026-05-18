@@ -59,7 +59,7 @@ test_that("set_priors() returns a did_priors with all parameters", {
     "time_trend_mean", "time_trend_sd",
     "rho_mean", "rho_sd", "nu",
     "delta_rct", "delta_pp", "sigma",
-    "beta_cov", "lkj_eta"
+    "beta_cov", "lkj_eta", "multiplier"
   )
   expect_equal(names(p), expected_names)
 })

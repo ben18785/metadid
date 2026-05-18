@@ -7,7 +7,7 @@ vector[n_studies_pp * (1 - is_differenced_likelihood_pp) * (1 - is_baseline_norm
 
 if (!is_student_t_heterogeneity && !is_correlated_effects) {
   for (i in 1:n_studies_pp)
-    treatment_effect_pp[i] = treatment_effect_mean_pp + X_cov_pp[i] * beta_cov + treatment_effect_sd * treatment_effect_pp_raw[i];
+    treatment_effect_pp[i] = apply_mult_factor(treatment_effect_mean_pp + X_cov_pp[i] * beta_cov, X_mult_pp[i], gamma_mult) + treatment_effect_sd * treatment_effect_pp_raw[i];
 } else {
   treatment_effect_pp = treatment_effect_pp_raw;
 }

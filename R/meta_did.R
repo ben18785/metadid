@@ -48,6 +48,19 @@
 #'   both `summary_data` and `individual_data` (whichever are provided).
 #'   For individual-level data, covariate values must be constant within
 #'   each study. Default `NULL` (no meta-regression).
+#' @param multiplicative_covariates An optional one-sided formula specifying
+#'   binary study-level covariates that modify the population treatment
+#'   effect *multiplicatively* rather than additively (e.g.,
+#'   `~ real_world`). For each such column, a positive multiplier
+#'   \eqn{\gamma_k} is estimated, and the per-study mean for study \eqn{i}
+#'   becomes
+#'   \deqn{\mu_i = \left(\prod_k \gamma_k^{m_{k,i}}\right)
+#'                \bigl(\texttt{treatment\_effect\_mean} + X_{\text{cov},i}^{\top}\beta_{\text{cov}}\bigr)}
+#'   where \eqn{m_{k,i} \in \{0,1\}}. All multipliers share the prior
+#'   specified by `priors$multiplier`. Columns must be binary (values in
+#'   `{0, 1}`, no NAs), constant within study for individual-level data,
+#'   and not overlap with `covariates`. Multiplicative covariates are
+#'   never centered. Default `NULL`.
 #' @param center_covariates Logical. If `TRUE` (default), covariates are
 #'   mean-centered across all studies before fitting. This ensures that
 #'   `treatment_effect_mean` is the population treatment effect at the
@@ -105,41 +118,43 @@
 #'   fit <- meta_did(summary_data = studies)
 #' }
 meta_did <- function(
-    summary_data          = NULL,
-    individual_data       = NULL,
-    normalise_by_baseline = TRUE,
-    robust_heterogeneity  = FALSE,
-    design_effects        = FALSE,
-    hierarchical_rho      = TRUE,
-    correlated_effects    = FALSE,
-    covariates            = NULL,
-    center_covariates     = TRUE,
-    priors                = set_priors(),
-    method                = c("sample", "optimize"),
-    chains                = 4L,
-    iter_warmup           = 1000L,
-    iter_sampling         = 1000L,
-    seed                  = NULL,
-    allow_no_did          = FALSE,
+    summary_data              = NULL,
+    individual_data           = NULL,
+    normalise_by_baseline     = TRUE,
+    robust_heterogeneity      = FALSE,
+    design_effects            = FALSE,
+    hierarchical_rho          = TRUE,
+    correlated_effects        = FALSE,
+    covariates                = NULL,
+    multiplicative_covariates = NULL,
+    center_covariates         = TRUE,
+    priors                    = set_priors(),
+    method                    = c("sample", "optimize"),
+    chains                    = 4L,
+    iter_warmup               = 1000L,
+    iter_sampling             = 1000L,
+    seed                      = NULL,
+    allow_no_did              = FALSE,
     ...
 ) {
   .meta_did_core(
-    summary_data          = summary_data,
-    individual_data       = individual_data,
-    normalise_by_baseline = normalise_by_baseline,
-    robust_heterogeneity  = robust_heterogeneity,
-    design_effects        = design_effects,
-    hierarchical_rho      = hierarchical_rho,
-    correlated_effects    = correlated_effects,
-    covariates            = covariates,
-    center_covariates     = center_covariates,
-    priors                = priors,
-    method                = method,
-    chains                = chains,
-    iter_warmup           = iter_warmup,
-    iter_sampling         = iter_sampling,
-    seed                  = seed,
-    allow_no_did          = allow_no_did,
+    summary_data              = summary_data,
+    individual_data           = individual_data,
+    normalise_by_baseline     = normalise_by_baseline,
+    robust_heterogeneity      = robust_heterogeneity,
+    design_effects            = design_effects,
+    hierarchical_rho          = hierarchical_rho,
+    correlated_effects        = correlated_effects,
+    covariates                = covariates,
+    multiplicative_covariates = multiplicative_covariates,
+    center_covariates         = center_covariates,
+    priors                    = priors,
+    method                    = method,
+    chains                    = chains,
+    iter_warmup               = iter_warmup,
+    iter_sampling             = iter_sampling,
+    seed                      = seed,
+    allow_no_did              = allow_no_did,
     ...
   )
 }
@@ -225,25 +240,26 @@ meta_did <- function(
 #'   )
 #' }
 meta_did_general <- function(
-    summary_data          = NULL,
-    individual_data       = NULL,
-    normalise_by_baseline = TRUE,
-    robust_heterogeneity  = FALSE,
-    design_effects        = FALSE,
-    hierarchical_rho      = TRUE,
-    correlated_effects    = FALSE,
-    covariates            = NULL,
-    center_covariates     = TRUE,
-    priors                = set_priors(),
-    time_trend            = c("pooled", "fixed_zero"),
-    baseline_imbalance    = c("estimated", "fixed_zero"),
-    pp_likelihood         = c("differenced", "bivariate"),
-    method                = c("sample", "optimize"),
-    chains                = 4L,
-    iter_warmup           = 1000L,
-    iter_sampling         = 1000L,
-    seed                  = NULL,
-    allow_no_did          = FALSE,
+    summary_data              = NULL,
+    individual_data           = NULL,
+    normalise_by_baseline     = TRUE,
+    robust_heterogeneity      = FALSE,
+    design_effects            = FALSE,
+    hierarchical_rho          = TRUE,
+    correlated_effects        = FALSE,
+    covariates                = NULL,
+    multiplicative_covariates = NULL,
+    center_covariates         = TRUE,
+    priors                    = set_priors(),
+    time_trend                = c("pooled", "fixed_zero"),
+    baseline_imbalance        = c("estimated", "fixed_zero"),
+    pp_likelihood             = c("differenced", "bivariate"),
+    method                    = c("sample", "optimize"),
+    chains                    = 4L,
+    iter_warmup               = 1000L,
+    iter_sampling             = 1000L,
+    seed                      = NULL,
+    allow_no_did              = FALSE,
     ...
 ) {
   time_trend         <- match.arg(time_trend)
@@ -270,23 +286,24 @@ meta_did_general <- function(
   }
 
   .meta_did_core(
-    summary_data          = summary_data,
-    individual_data       = individual_data,
-    normalise_by_baseline = normalise_by_baseline,
-    robust_heterogeneity  = robust_heterogeneity,
-    design_effects        = design_effects,
-    hierarchical_rho      = hierarchical_rho,
-    correlated_effects    = correlated_effects,
-    covariates            = covariates,
-    center_covariates     = center_covariates,
-    priors                = priors,
-    method                = method,
-    chains                = chains,
-    iter_warmup           = iter_warmup,
-    iter_sampling         = iter_sampling,
-    seed                  = seed,
-    allow_no_did          = allow_no_did,
-    stan_data_overrides   = if (length(overrides) > 0) overrides else NULL,
+    summary_data              = summary_data,
+    individual_data           = individual_data,
+    normalise_by_baseline     = normalise_by_baseline,
+    robust_heterogeneity      = robust_heterogeneity,
+    design_effects            = design_effects,
+    hierarchical_rho          = hierarchical_rho,
+    correlated_effects        = correlated_effects,
+    covariates                = covariates,
+    multiplicative_covariates = multiplicative_covariates,
+    center_covariates         = center_covariates,
+    priors                    = priors,
+    method                    = method,
+    chains                    = chains,
+    iter_warmup               = iter_warmup,
+    iter_sampling             = iter_sampling,
+    seed                      = seed,
+    allow_no_did              = allow_no_did,
+    stan_data_overrides       = if (length(overrides) > 0) overrides else NULL,
     ...
   )
 }
@@ -368,23 +385,24 @@ meta_did_naive <- function(
 # ---------------------------------------------------------------------------
 
 .meta_did_core <- function(
-    summary_data          = NULL,
-    individual_data       = NULL,
-    normalise_by_baseline = TRUE,
-    robust_heterogeneity  = FALSE,
-    design_effects        = FALSE,
-    hierarchical_rho      = TRUE,
-    correlated_effects    = FALSE,
-    covariates            = NULL,
-    center_covariates     = TRUE,
-    priors                = set_priors(),
-    method                = c("sample", "optimize"),
-    chains                = 4L,
-    iter_warmup           = 1000L,
-    iter_sampling         = 1000L,
-    seed                  = NULL,
-    allow_no_did          = FALSE,
-    stan_data_overrides   = NULL,
+    summary_data              = NULL,
+    individual_data           = NULL,
+    normalise_by_baseline     = TRUE,
+    robust_heterogeneity      = FALSE,
+    design_effects            = FALSE,
+    hierarchical_rho          = TRUE,
+    correlated_effects        = FALSE,
+    covariates                = NULL,
+    multiplicative_covariates = NULL,
+    center_covariates         = TRUE,
+    priors                    = set_priors(),
+    method                    = c("sample", "optimize"),
+    chains                    = 4L,
+    iter_warmup               = 1000L,
+    iter_sampling             = 1000L,
+    seed                      = NULL,
+    allow_no_did              = FALSE,
+    stan_data_overrides       = NULL,
     ...
 ) {
   method <- match.arg(method)
@@ -439,6 +457,31 @@ meta_did_naive <- function(
       stop("'covariates' formula contains no variables.", call. = FALSE)
     }
     validate_covariates(covariate_names, summary_data, individual_data)
+  }
+
+  # --- Parse multiplicative covariates ---
+  multiplicative_covariate_names <- NULL
+  if (!is.null(multiplicative_covariates)) {
+    if (!inherits(multiplicative_covariates, "formula")) {
+      stop("'multiplicative_covariates' must be a one-sided formula ",
+           "(e.g., ~ real_world).", call. = FALSE)
+    }
+    multiplicative_covariate_names <- all.vars(multiplicative_covariates)
+    if (length(multiplicative_covariate_names) == 0) {
+      stop("'multiplicative_covariates' formula contains no variables.",
+           call. = FALSE)
+    }
+    overlap <- intersect(multiplicative_covariate_names, covariate_names %||% character(0))
+    if (length(overlap) > 0) {
+      stop(
+        "Column(s) listed in both 'covariates' and 'multiplicative_covariates': ",
+        paste(overlap, collapse = ", "), ". A covariate must be one or the other.",
+        call. = FALSE
+      )
+    }
+    validate_multiplicative_covariates(
+      multiplicative_covariate_names, summary_data, individual_data
+    )
   }
 
   # --- Normalisation ---
@@ -498,6 +541,7 @@ meta_did_naive <- function(
   # --- Stan data ---
   stan_data <- prepare_stan_data(summary_data, individual_data, model_flags, priors,
                                   covariate_names = covariate_names,
+                                  multiplicative_covariate_names = multiplicative_covariate_names,
                                   center_covariates = center_covariates)
   cov_centers <- attr(stan_data, "cov_centers")
 
@@ -547,16 +591,17 @@ meta_did_naive <- function(
 
   # --- Return ---
   new_meta_did_fit(
-    fit                   = fit,
-    summary_data          = summary_data,
-    individual_data       = individual_data,
-    model_flags           = model_flags,
-    priors                = priors,
-    normalisation_factors = normalisation_factors,
-    method                = method,
-    covariate_names       = covariate_names,
-    cov_centers           = cov_centers,
-    center_covariates     = center_covariates
+    fit                            = fit,
+    summary_data                   = summary_data,
+    individual_data                = individual_data,
+    model_flags                    = model_flags,
+    priors                         = priors,
+    normalisation_factors          = normalisation_factors,
+    method                         = method,
+    covariate_names                = covariate_names,
+    multiplicative_covariate_names = multiplicative_covariate_names,
+    cov_centers                    = cov_centers,
+    center_covariates              = center_covariates
   )
 }
 

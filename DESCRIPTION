@@ -17,7 +17,6 @@ URL: https://ben18785.github.io/metadid/, https://github.com/ben18785/metadid
 BugReports: https://github.com/ben18785/metadid/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Additional_repositories: https://mc-stan.org/r-packages/
 Imports:
     cmdstanr,
@@ -36,3 +35,4 @@ Suggests:
     rmarkdown
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0

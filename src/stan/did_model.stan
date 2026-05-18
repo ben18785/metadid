@@ -58,14 +58,14 @@ if(n_studies_did > 0) {
     for (i in 1:n_studies_did) {
       target += multi_normal_cholesky_lpdf(
         [treatment_effect_did[i], time_trend_did[i]]' |
-        [treatment_effect_mean + X_cov_did[i] * beta_cov, time_trend_mean]',
+        [apply_mult_factor(treatment_effect_mean + X_cov_did[i] * beta_cov, X_mult_did[i], gamma_mult), time_trend_mean]',
         L_Sigma_did
       );
     }
   } else {
     time_trend_did_raw ~ std_normal();
     if (is_student_t_heterogeneity) {
-      treatment_effect_did ~ student_t(nu_treatment_vec[1], treatment_effect_mean + X_cov_did * beta_cov, treatment_effect_sd);
+      treatment_effect_did ~ student_t(nu_treatment_vec[1], apply_mult_factor_vec(treatment_effect_mean + X_cov_did * beta_cov, X_mult_did, gamma_mult), treatment_effect_sd);
     } else {
       treatment_effect_did_raw ~ std_normal();
     }

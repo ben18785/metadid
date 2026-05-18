@@ -337,6 +337,96 @@ if (!is.null(summary_data) && nrow(summary_data) > 0) {
 }
 
 # ---------------------------------------------------------------------------
+# validate_multiplicative_covariates()
+# ---------------------------------------------------------------------------
+
+#' Validate study-level multiplicative covariates
+#'
+#' Checks that multiplicative-covariate columns exist, are binary (values in
+#' `{0, 1}`, no `NA`s), and are constant within each study for individual-level
+#' data. Multiplicative covariates differ from additive ones in that the model
+#' multiplies the per-study linear predictor by `gamma_mult^x` rather than
+#' adding `beta_cov * x`. Only binary indicators are supported.
+#'
+#' @param multiplicative_covariate_names Character vector of column names.
+#' @param summary_data Summary-level data frame (or NULL).
+#' @param individual_data Individual-level data frame (or NULL).
+#'
+#' @return Invisible NULL. Stops with an error if validation fails.
+#' @keywords internal
+validate_multiplicative_covariates <- function(multiplicative_covariate_names,
+                                                summary_data, individual_data) {
+  if (is.null(multiplicative_covariate_names) ||
+      length(multiplicative_covariate_names) == 0) {
+    return(invisible(NULL))
+  }
+
+  .check_binary <- function(col_name, values, context) {
+    if (any(is.na(values))) {
+      stop("Multiplicative covariate '", col_name,
+           "' in ", context, " contains NA values.", call. = FALSE)
+    }
+    if (!is.numeric(values)) {
+      stop("Multiplicative covariate '", col_name,
+           "' in ", context, " must be numeric (binary 0/1).", call. = FALSE)
+    }
+    bad <- setdiff(unique(values), c(0, 1))
+    if (length(bad) > 0) {
+      stop(
+        "Multiplicative covariate '", col_name, "' in ", context,
+        " must be binary (values in {0, 1}). Found other values: ",
+        paste(utils::head(bad, 5), collapse = ", "),
+        if (length(bad) > 5) ", ..." else "", ".",
+        call. = FALSE
+      )
+    }
+  }
+
+  if (!is.null(summary_data) && nrow(summary_data) > 0) {
+    missing <- setdiff(multiplicative_covariate_names, names(summary_data))
+    if (length(missing) > 0) {
+      stop(
+        "Multiplicative covariate columns not found in summary_data: ",
+        paste(missing, collapse = ", "), ".",
+        call. = FALSE
+      )
+    }
+    for (col in multiplicative_covariate_names) {
+      .check_binary(col, summary_data[[col]], "summary_data")
+    }
+  }
+
+  if (!is.null(individual_data) && nrow(individual_data) > 0) {
+    missing <- setdiff(multiplicative_covariate_names, names(individual_data))
+    if (length(missing) > 0) {
+      stop(
+        "Multiplicative covariate columns not found in individual_data: ",
+        paste(missing, collapse = ", "), ".",
+        call. = FALSE
+      )
+    }
+    for (col in multiplicative_covariate_names) {
+      .check_binary(col, individual_data[[col]], "individual_data")
+      # Constant within study
+      n_unique <- tapply(individual_data[[col]], individual_data$study_id,
+                         function(x) length(unique(x)))
+      bad_studies <- names(n_unique)[n_unique > 1]
+      if (length(bad_studies) > 0) {
+        stop(
+          "Multiplicative covariate '", col, "' varies within study in ",
+          "individual_data (must be constant within study). Problem studies: ",
+          paste(utils::head(bad_studies, 3), collapse = ", "),
+          if (length(bad_studies) > 3) ", ..." else "", ".",
+          call. = FALSE
+        )
+      }
+    }
+  }
+
+  invisible(NULL)
+}
+
+# ---------------------------------------------------------------------------
 # Internal helper
 # ---------------------------------------------------------------------------
 

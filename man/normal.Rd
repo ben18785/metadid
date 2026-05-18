@@ -4,12 +4,20 @@
 \alias{normal}
 \title{Specify a normal prior}
 \usage{
-normal(mean, sd)
+normal(mean, sd, lower = -Inf, upper = Inf)
 }
 \arguments{
 \item{mean}{Prior mean.}
 
 \item{sd}{Prior standard deviation (must be positive).}
+
+\item{lower}{Optional hard lower bound on the parameter (default \code{-Inf}).
+When finite, propagates to a \verb{<lower=...>} constraint on the corresponding
+Stan parameter declaration. Currently honoured only by parameters whose
+Stan declaration reads bounds from data (e.g. \code{multiplier}).}
+
+\item{upper}{Optional hard upper bound on the parameter (default \code{Inf}).
+See \code{lower}.}
 }
 \value{
 A \code{did_prior} object.

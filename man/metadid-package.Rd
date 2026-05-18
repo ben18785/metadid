@@ -22,6 +22,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Ben Lambert \email{ben.c.lambert@gmail.com}
   \item Joseph Poore \email{joseph.poore@biology.ox.ac.uk}
 }
 

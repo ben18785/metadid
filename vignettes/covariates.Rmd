@@ -261,3 +261,25 @@ print(fit_mixed)
 ```
 
 The credible intervals are somewhat wider with mixed designs, but both the intercept and slope are still recovered.
+
+## Multiplicative covariates
+
+Most meta-regression questions are additive: each unit increase in a covariate adds some amount to the population mean. But some study-level features act *multiplicatively* — for example, real-world studies often report effects that are a fraction of the corresponding experimental effects, with the *same* fractional shrinkage across other covariate contrasts. In this case it is natural to model the mean as
+
+$$\mu_i = \gamma^{m_i} \bigl(\mu_\theta + \mathbf{x}_i^{\top} \boldsymbol{\beta}\bigr),$$
+
+where $m_i \in \{0, 1\}$ flags the multiplicative regime and $\gamma > 0$ is a free parameter shared across studies. metadid supports this via the `multiplicative_covariates =` argument:
+
+```{r mult, eval = FALSE}
+fit_mult <- meta_did(
+  summary_data              = studies,
+  covariates                = ~ is_retail,             # additive
+  multiplicative_covariates = ~ real_world,            # multiplicative
+  priors = set_priors(
+    multiplier = normal(1, 0.5, lower = 0, upper = 5)  # optional upper bound
+  )
+)
+print(fit_mult)
+```
+
+The named columns must be binary (`{0, 1}`, no `NA`s) and constant within study for individual-level data. Multiplicative columns must not also appear in `covariates`. The same `multiplier` prior is shared across all multiplicative columns, mirroring how `beta_cov` is shared across additive ones. Multiple multiplicative covariates compose: the total factor is $\prod_k \gamma_k^{m_{k,i}}$. Multiplicative covariates are never centered. The `lower` and `upper` arguments to `normal()` are honoured here as hard parameter bounds; finite bounds can help MCMC stability when the prior is tight.

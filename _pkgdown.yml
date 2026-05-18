@@ -26,6 +26,7 @@ reference:
       - normal
       - cauchy
       - gamma
+      - lkj
 
   - title: Results
     desc: Summarise and inspect fitted models.

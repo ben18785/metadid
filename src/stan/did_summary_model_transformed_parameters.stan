@@ -9,9 +9,9 @@ vector[n_studies_did_change_only] treatment_effect_did_change_only;
 
 if (!is_student_t_heterogeneity && !is_correlated_effects) {
   for (i in 1:n_studies_did_summary)
-    treatment_effect_did_summary[i] = treatment_effect_mean + X_cov_did_summary[i] * beta_cov + treatment_effect_sd * treatment_effect_did_summary_raw[i];
+    treatment_effect_did_summary[i] = apply_mult_factor(treatment_effect_mean + X_cov_did_summary[i] * beta_cov, X_mult_did_summary[i], gamma_mult) + treatment_effect_sd * treatment_effect_did_summary_raw[i];
   for (i in 1:n_studies_did_change_only)
-    treatment_effect_did_change_only[i] = treatment_effect_mean + X_cov_did_change_only[i] * beta_cov + treatment_effect_sd * treatment_effect_did_change_only_raw[i];
+    treatment_effect_did_change_only[i] = apply_mult_factor(treatment_effect_mean + X_cov_did_change_only[i] * beta_cov, X_mult_did_change_only[i], gamma_mult) + treatment_effect_sd * treatment_effect_did_change_only_raw[i];
 } else {
   treatment_effect_did_summary = treatment_effect_did_summary_raw;
   treatment_effect_did_change_only = treatment_effect_did_change_only_raw;
