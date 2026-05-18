@@ -11,6 +11,8 @@ meta_did(
   robust_heterogeneity = FALSE,
   design_effects = FALSE,
   hierarchical_rho = TRUE,
+  correlated_effects = FALSE,
+  baseline_imbalance = c("estimated", "fixed_zero"),
   covariates = NULL,
   center_covariates = TRUE,
   priors = set_priors(),
@@ -53,6 +55,36 @@ designs yield systematically different effect estimates.}
 correlation is modelled hierarchically across studies. Studies with a
 reported correlation inform the population distribution; studies without
 one have their correlation imputed.}
+
+\item{correlated_effects}{Logical. If \code{TRUE}, study-level treatment
+effects and time trends are drawn jointly from a bivariate normal
+with a shared correlation parameter, rather than independently. The
+correlation is parameterised via a Cholesky factor of a 2×2 correlation
+matrix with an LKJ prior (see \code{\link[=set_priors]{set_priors()}}). Cannot be combined with
+\code{robust_heterogeneity = TRUE}. Default \code{FALSE}.}
+
+\item{baseline_imbalance}{How to handle the per-study baseline
+difference \eqn{\gamma_i} for \strong{non-DiD} designs. DiD studies
+always estimate \eqn{\gamma_i} per-study because the pre-treatment
+means on both arms identify it directly from the data; this
+argument controls only the RCT branch.
+One of:
+\describe{
+\item{\code{"estimated"}}{(Default) RCT studies also have per-study
+\code{baseline_difference_i} parameters, drawn from a hierarchical
+prior shared with DiD studies. Because RCT data cannot identify
+per-study \eqn{\gamma_i} alone (only one post-treatment
+observation per arm), the hierarchical prior \-\- informed by
+DiD's per-study estimates \-\- is what pins down the
+decomposition into baseline imbalance and treatment effect.
+Priors on the population hyperparameters are set via
+\code{baseline_difference_mean} and \code{baseline_difference_sd} in
+\code{\link[=set_priors]{set_priors()}}.}
+\item{\code{"fixed_zero"}}{Fix \eqn{\gamma_i = 0} for RCT studies. The
+treatment-arm baseline is constrained equal to the control-arm
+baseline. Use when randomisation can be assumed to eliminate
+baseline imbalances. DiD studies are unaffected.}
+}}
 
 \item{covariates}{An optional one-sided formula specifying study-level
 covariates for meta-regression on the treatment effect (e.g.,
