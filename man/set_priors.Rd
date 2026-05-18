@@ -15,7 +15,8 @@ set_priors(
   delta_rct = normal(0, 10),
   delta_pp = normal(0, 10),
   sigma = cauchy(5),
-  beta_cov = normal(0, 10)
+  beta_cov = normal(0, 10),
+  lkj_eta = lkj(2)
 )
 }
 \arguments{
@@ -49,6 +50,11 @@ correlation (only used when \code{hierarchical_rho = TRUE}). Default: \code{norm
 \item{beta_cov}{Prior on the covariate regression coefficients
 (only used when \code{covariates} is specified in \code{\link[=meta_did]{meta_did()}}).
 Default: \code{normal(0, 10)}.}
+
+\item{lkj_eta}{Prior on the Cholesky factor of the correlation matrix
+between treatment effects and time trends (only used when
+\code{correlated_effects = TRUE}). Default: \code{lkj(2)}, which gently
+regularises toward zero correlation.}
 }
 \value{
 A \code{did_priors} object.

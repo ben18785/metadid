@@ -11,6 +11,7 @@ meta_did(
   robust_heterogeneity = FALSE,
   design_effects = FALSE,
   hierarchical_rho = TRUE,
+  correlated_effects = FALSE,
   covariates = NULL,
   center_covariates = TRUE,
   priors = set_priors(),
@@ -53,6 +54,13 @@ designs yield systematically different effect estimates.}
 correlation is modelled hierarchically across studies. Studies with a
 reported correlation inform the population distribution; studies without
 one have their correlation imputed.}
+
+\item{correlated_effects}{Logical. If \code{TRUE}, study-level treatment
+effects and time trends are drawn jointly from a bivariate normal
+with a shared correlation parameter, rather than independently. The
+correlation is parameterised via a Cholesky factor of a 2x2 correlation
+matrix with an LKJ prior (see \code{\link[=set_priors]{set_priors()}}). Cannot be combined with
+\code{robust_heterogeneity = TRUE}. Default \code{FALSE}.}
 
 \item{covariates}{An optional one-sided formula specifying study-level
 covariates for meta-regression on the treatment effect (e.g.,

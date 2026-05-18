@@ -11,11 +11,13 @@ meta_did_general(
   robust_heterogeneity = FALSE,
   design_effects = FALSE,
   hierarchical_rho = TRUE,
+  correlated_effects = FALSE,
   covariates = NULL,
   center_covariates = TRUE,
   priors = set_priors(),
   time_trend = c("pooled", "fixed_zero"),
   baseline_imbalance = c("estimated", "fixed_zero"),
+  pp_likelihood = c("differenced", "bivariate"),
   method = c("sample", "optimize"),
   chains = 4L,
   iter_warmup = 1000L,
@@ -55,6 +57,13 @@ designs yield systematically different effect estimates.}
 correlation is modelled hierarchically across studies. Studies with a
 reported correlation inform the population distribution; studies without
 one have their correlation imputed.}
+
+\item{correlated_effects}{Logical. If \code{TRUE}, study-level treatment
+effects and time trends are drawn jointly from a bivariate normal
+with a shared correlation parameter, rather than independently. The
+correlation is parameterised via a Cholesky factor of a 2x2 correlation
+matrix with an LKJ prior (see \code{\link[=set_priors]{set_priors()}}). Cannot be combined with
+\code{robust_heterogeneity = TRUE}. Default \code{FALSE}.}
 
 \item{covariates}{An optional one-sided formula specifying study-level
 covariates for meta-regression on the treatment effect (e.g.,
@@ -97,6 +106,19 @@ information from DiD studies when baseline-normalised. This is the
 same behaviour as \code{\link[=meta_did]{meta_did()}}.}
 \item{\code{"fixed_zero"}}{Fix \eqn{\gamma_i = 0}, assuming randomisation
 eliminates baseline imbalances. This is the standard RCT assumption.}
+}}
+
+\item{pp_likelihood}{Likelihood form for pre-post studies. One of:
+\describe{
+\item{\code{"differenced"}}{(Default) Use the differenced (post minus pre)
+likelihood. The pre/post correlation \eqn{\rho_i} is not separately
+estimable and the baseline cancels algebraically. This is the same
+behaviour as \code{\link[=meta_did]{meta_did()}}.}
+\item{\code{"bivariate"}}{Use the full bivariate normal likelihood for the
+(pre, post) pair. This retains the pre/post correlation \eqn{\rho_i}
+as an estimable parameter, contributing to the hierarchical
+\eqn{\rho} model, at the cost of estimating additional nuisance
+parameters.}
 }}
 
 \item{method}{Inference method. \code{"sample"} (default) runs full MCMC via
