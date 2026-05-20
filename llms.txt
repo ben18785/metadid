@@ -359,6 +359,8 @@ Specify prior distributions for model parameters.
   Specify a half-Cauchy prior
 - [`gamma()`](https://ben18785.github.io/metadid/reference/gamma.md) :
   Specify a gamma prior
+- [`lkj()`](https://ben18785.github.io/metadid/reference/lkj.md) :
+  Specify an LKJ prior
 
 ## Results
 

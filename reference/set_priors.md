@@ -18,7 +18,10 @@ set_priors(
   delta_rct = normal(0, 10),
   delta_pp = normal(0, 10),
   sigma = cauchy(5),
-  beta_cov = normal(0, 10)
+  beta_cov = normal(0, 10),
+  lkj_eta = lkj(2),
+  baseline_difference_mean = normal(0, 0.5),
+  baseline_difference_sd = cauchy(0.1)
 )
 ```
 
@@ -78,6 +81,25 @@ set_priors(
   [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)).
   Default: `normal(0, 10)`.
 
+- lkj_eta:
+
+  Prior on the Cholesky factor of the correlation matrix between
+  treatment effects and time trends (only used when
+  `correlated_effects = TRUE`). Default: `lkj(2)`, which gently
+  regularises toward zero correlation.
+
+- baseline_difference_mean:
+
+  Prior on the population mean of the per-study baseline imbalance
+  (treatment-arm vs control-arm pre-treatment mean, on the normalised
+  fractional scale). Only used when `baseline_imbalance = "estimated"`.
+  Default: `normal(0, 0.5)`.
+
+- baseline_difference_sd:
+
+  Prior on the between-study SD of the baseline imbalance. Only used
+  when `baseline_imbalance = "estimated"`. Default: `cauchy(0.1)`.
+
 ## Value
 
 A `did_priors` object.
@@ -100,6 +122,8 @@ set_priors()
 #>   sigma ~ cauchy(scale = 5)
 #>   beta_cov ~ normal(mean = 0, sd = 10)
 #>   lkj_eta ~ lkj(eta = 2)
+#>   baseline_difference_mean ~ normal(mean = 0, sd = 0.5)
+#>   baseline_difference_sd ~ cauchy(scale = 0.1)
 
 # Override one prior
 set_priors(treatment_effect_sd = cauchy(2))
@@ -116,4 +140,6 @@ set_priors(treatment_effect_sd = cauchy(2))
 #>   sigma ~ cauchy(scale = 5)
 #>   beta_cov ~ normal(mean = 0, sd = 10)
 #>   lkj_eta ~ lkj(eta = 2)
+#>   baseline_difference_mean ~ normal(mean = 0, sd = 0.5)
+#>   baseline_difference_sd ~ cauchy(scale = 0.1)
 ```

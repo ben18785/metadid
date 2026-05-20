@@ -20,6 +20,7 @@ simulate_meta_did(
   baseline_sd = 0,
   within_sd = 0.12,
   rho = 0.5,
+  rho_effect_trend = 0,
   seed = NULL,
   covariates = NULL,
   beta_cov = NULL
@@ -74,6 +75,13 @@ simulate_meta_did(
   Pre-post correlation within individuals. Directly parameterises the
   off-diagonal of the bivariate normal covariance matrix. Default `0.5`.
 
+- rho_effect_trend:
+
+  Correlation between study-level treatment effects \\\theta_i\\ and
+  time trends \\\beta_i\\. When nonzero (and both `sigma_effect` and
+  `sigma_trend` are positive), the pair is drawn jointly from a
+  bivariate normal. Default `0` (independent draws).
+
 - seed:
 
   Integer random seed for reproducibility. Default `NULL`.
@@ -102,16 +110,18 @@ true study-level parameters are attached as attribute `"true_params"`.
 
 Study-level parameters are drawn hierarchically: \$\$\theta_i \sim
 \text{Normal}(\texttt{true\\effect},\\ \texttt{sigma\\effect}^2)\$\$
-\$\$\gamma_i \sim \text{Normal}(\texttt{true\\trend},\\
+\$\$\beta_i \sim \text{Normal}(\texttt{true\\trend},\\
 \texttt{sigma\\trend}^2)\$\$ \$\$b_i \sim
 \text{Normal}(\texttt{baseline\\mean},\\ \texttt{baseline\\sd}^2)\$\$
+When `rho_effect_trend` is nonzero, \\(\theta_i, \beta_i)\\ are drawn
+jointly from a bivariate normal with correlation `rho_effect_trend`.
 
 Within each study, individual (pre, post) pairs are drawn from a
 bivariate normal distribution with covariance matrix \$\$\Sigma =
 \sigma^2 \begin{pmatrix} 1 & \rho \\ \rho & 1 \end{pmatrix}\$\$ making
 the role of \\\rho\\ as the pre-post correlation explicit. The mean
-vector for the control group is \\(b_i,\\ b_i + \gamma_i)\\ and for the
-treatment group \\(b_i,\\ b_i + \gamma_i + \theta_i)\\.
+vector for the control group is \\(b_i,\\ b_i + \beta_i)\\ and for the
+treatment group \\(b_i,\\ b_i + \beta_i + \theta_i)\\.
 
 ## See also
 
