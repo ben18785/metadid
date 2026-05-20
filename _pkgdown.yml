@@ -10,6 +10,7 @@ navbar:
   components:
     github:
       icon: fa-github
+      aria-label: GitHub
       href: https://github.com/ben18785/metadid
 
 reference:
@@ -26,6 +27,7 @@ reference:
       - normal
       - cauchy
       - gamma
+      - lkj
 
   - title: Results
     desc: Summarise and inspect fitted models.
