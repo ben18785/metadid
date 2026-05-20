@@ -40,6 +40,28 @@
 #'   correlation is parameterised via a Cholesky factor of a 2×2 correlation
 #'   matrix with an LKJ prior (see [set_priors()]). Cannot be combined with
 #'   `robust_heterogeneity = TRUE`. Default `FALSE`.
+#' @param baseline_imbalance How to handle the per-study baseline
+#'   difference \eqn{\gamma_i} for **non-DiD** designs. DiD studies
+#'   always estimate \eqn{\gamma_i} per-study because the pre-treatment
+#'   means on both arms identify it directly from the data; this
+#'   argument controls only the RCT branch.
+#'   One of:
+#'   \describe{
+#'     \item{`"estimated"`}{(Default) RCT studies also have per-study
+#'       `baseline_difference_i` parameters, drawn from a hierarchical
+#'       prior shared with DiD studies. Because RCT data cannot identify
+#'       per-study \eqn{\gamma_i} alone (only one post-treatment
+#'       observation per arm), the hierarchical prior \-\- informed by
+#'       DiD's per-study estimates \-\- is what pins down the
+#'       decomposition into baseline imbalance and treatment effect.
+#'       Priors on the population hyperparameters are set via
+#'       `baseline_difference_mean` and `baseline_difference_sd` in
+#'       [set_priors()].}
+#'     \item{`"fixed_zero"`}{Fix \eqn{\gamma_i = 0} for RCT studies. The
+#'       treatment-arm baseline is constrained equal to the control-arm
+#'       baseline. Use when randomisation can be assumed to eliminate
+#'       baseline imbalances. DiD studies are unaffected.}
+#'   }
 #' @param priors A `did_priors` object from [set_priors()]. Controls the
 #'   prior distributions on all population-level parameters.
 #' @param covariates An optional one-sided formula specifying study-level
@@ -48,6 +70,21 @@
 #'   both `summary_data` and `individual_data` (whichever are provided).
 #'   For individual-level data, covariate values must be constant within
 #'   each study. Default `NULL` (no meta-regression).
+#' @param multiplicative_covariate Optional single column name (character
+#'   of length 1) identifying a binary `{0, 1}` study-level indicator that
+#'   modifies the population treatment effect *multiplicatively* rather
+#'   than additively. With multiplier \eqn{\gamma_{\mathrm{mult}}} the
+#'   per-study mean becomes
+#'   \deqn{\mu_i = \gamma_{\mathrm{mult}}^{m_i}\,(\mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}})}
+#'   where \eqn{m_i \in \{0,1\}}. Useful when some studies represent an
+#'   attenuated (or amplified) version of the underlying effect — e.g.
+#'   real-world vs experimental conditions where real-world effects are
+#'   expected to be a fraction of experimental ones. The column must be
+#'   binary (no `NA`s), constant within study for individual-level data,
+#'   must not also appear in `covariates`, and must vary across studies
+#'   (at least one study with `0` and at least one with `1`) for the
+#'   multiplier to be identified. Default `NULL` (no multiplicative
+#'   structure).
 #' @param center_covariates Logical. If `TRUE` (default), covariates are
 #'   mean-centered across all studies before fitting. This ensures that
 #'   `treatment_effect_mean` is the population treatment effect at the
@@ -105,41 +142,45 @@
 #'   fit <- meta_did(summary_data = studies)
 #' }
 meta_did <- function(
-    summary_data          = NULL,
-    individual_data       = NULL,
-    normalise_by_baseline = TRUE,
-    robust_heterogeneity  = FALSE,
-    design_effects        = FALSE,
-    hierarchical_rho      = TRUE,
-    correlated_effects    = FALSE,
-    covariates            = NULL,
-    center_covariates     = TRUE,
-    priors                = set_priors(),
-    method                = c("sample", "optimize"),
-    chains                = 4L,
-    iter_warmup           = 1000L,
-    iter_sampling         = 1000L,
-    seed                  = NULL,
-    allow_no_did          = FALSE,
+    summary_data             = NULL,
+    individual_data          = NULL,
+    normalise_by_baseline    = TRUE,
+    robust_heterogeneity     = FALSE,
+    design_effects           = FALSE,
+    hierarchical_rho         = TRUE,
+    correlated_effects       = FALSE,
+    baseline_imbalance       = c("estimated", "fixed_zero"),
+    covariates               = NULL,
+    multiplicative_covariate = NULL,
+    center_covariates        = TRUE,
+    priors                   = set_priors(),
+    method                   = c("sample", "optimize"),
+    chains                   = 4L,
+    iter_warmup              = 1000L,
+    iter_sampling            = 1000L,
+    seed                     = NULL,
+    allow_no_did             = FALSE,
     ...
 ) {
   .meta_did_core(
-    summary_data          = summary_data,
-    individual_data       = individual_data,
-    normalise_by_baseline = normalise_by_baseline,
-    robust_heterogeneity  = robust_heterogeneity,
-    design_effects        = design_effects,
-    hierarchical_rho      = hierarchical_rho,
-    correlated_effects    = correlated_effects,
-    covariates            = covariates,
-    center_covariates     = center_covariates,
-    priors                = priors,
-    method                = method,
-    chains                = chains,
-    iter_warmup           = iter_warmup,
-    iter_sampling         = iter_sampling,
-    seed                  = seed,
-    allow_no_did          = allow_no_did,
+    summary_data             = summary_data,
+    individual_data          = individual_data,
+    normalise_by_baseline    = normalise_by_baseline,
+    robust_heterogeneity     = robust_heterogeneity,
+    design_effects           = design_effects,
+    hierarchical_rho         = hierarchical_rho,
+    correlated_effects       = correlated_effects,
+    baseline_imbalance       = baseline_imbalance,
+    covariates               = covariates,
+    multiplicative_covariate = multiplicative_covariate,
+    center_covariates        = center_covariates,
+    priors                   = priors,
+    method                   = method,
+    chains                   = chains,
+    iter_warmup              = iter_warmup,
+    iter_sampling            = iter_sampling,
+    seed                     = seed,
+    allow_no_did             = allow_no_did,
     ...
   )
 }
@@ -171,14 +212,16 @@ meta_did <- function(
 #'       reparameterised time trend correction is bypassed.}
 #'   }
 #' @param baseline_imbalance How to handle the baseline difference
-#'   \eqn{\gamma_i} between treatment and control groups for RCT studies.
+#'   \eqn{\gamma_i} between treatment and control groups for **RCT**
+#'   studies. DiD studies always estimate \eqn{\gamma_i} per-study (the
+#'   pre-treatment means identify it from data).
 #'   One of:
 #'   \describe{
-#'     \item{`"estimated"`}{(Default) Estimate \eqn{\gamma_i}, borrowing
-#'       information from DiD studies when baseline-normalised. This is the
-#'       same behaviour as [meta_did()].}
-#'     \item{`"fixed_zero"`}{Fix \eqn{\gamma_i = 0}, assuming randomisation
-#'       eliminates baseline imbalances. This is the standard RCT assumption.}
+#'     \item{`"estimated"`}{(Default) Estimate per-study \eqn{\gamma_i}
+#'       for RCT, drawing from a hierarchical prior shared with DiD's
+#'       per-study estimates. This is the same behaviour as [meta_did()].}
+#'     \item{`"fixed_zero"`}{Fix \eqn{\gamma_i = 0} for RCT studies,
+#'       assuming randomisation eliminates baseline imbalances.}
 #'   }
 #' @param pp_likelihood Likelihood form for pre-post studies. One of:
 #'   \describe{
@@ -225,25 +268,26 @@ meta_did <- function(
 #'   )
 #' }
 meta_did_general <- function(
-    summary_data          = NULL,
-    individual_data       = NULL,
-    normalise_by_baseline = TRUE,
-    robust_heterogeneity  = FALSE,
-    design_effects        = FALSE,
-    hierarchical_rho      = TRUE,
-    correlated_effects    = FALSE,
-    covariates            = NULL,
-    center_covariates     = TRUE,
-    priors                = set_priors(),
-    time_trend            = c("pooled", "fixed_zero"),
-    baseline_imbalance    = c("estimated", "fixed_zero"),
-    pp_likelihood         = c("differenced", "bivariate"),
-    method                = c("sample", "optimize"),
-    chains                = 4L,
-    iter_warmup           = 1000L,
-    iter_sampling         = 1000L,
-    seed                  = NULL,
-    allow_no_did          = FALSE,
+    summary_data             = NULL,
+    individual_data          = NULL,
+    normalise_by_baseline    = TRUE,
+    robust_heterogeneity     = FALSE,
+    design_effects           = FALSE,
+    hierarchical_rho         = TRUE,
+    correlated_effects       = FALSE,
+    baseline_imbalance       = c("estimated", "fixed_zero"),
+    covariates               = NULL,
+    multiplicative_covariate = NULL,
+    center_covariates        = TRUE,
+    priors                   = set_priors(),
+    time_trend               = c("pooled", "fixed_zero"),
+    pp_likelihood            = c("differenced", "bivariate"),
+    method                   = c("sample", "optimize"),
+    chains                   = 4L,
+    iter_warmup              = 1000L,
+    iter_sampling            = 1000L,
+    seed                     = NULL,
+    allow_no_did             = FALSE,
     ...
 ) {
   time_trend         <- match.arg(time_trend)
@@ -259,26 +303,23 @@ meta_did_general <- function(
     overrides$is_time_trend_rct_summary_zero    <- 1L
   }
 
-  if (baseline_imbalance == "fixed_zero") {
-    overrides$is_baseline_control_equal_treatment_rct         <- 1L
-    overrides$is_baseline_control_equal_treatment_rct_summary <- 1L
-  }
-
   if (pp_likelihood == "bivariate") {
     overrides$is_differenced_likelihood_pp         <- 0L
     overrides$is_differenced_likelihood_pp_summary <- 0L
   }
 
   .meta_did_core(
-    summary_data          = summary_data,
-    individual_data       = individual_data,
-    normalise_by_baseline = normalise_by_baseline,
-    robust_heterogeneity  = robust_heterogeneity,
-    design_effects        = design_effects,
-    hierarchical_rho      = hierarchical_rho,
-    correlated_effects    = correlated_effects,
-    covariates            = covariates,
-    center_covariates     = center_covariates,
+    summary_data             = summary_data,
+    individual_data          = individual_data,
+    normalise_by_baseline    = normalise_by_baseline,
+    robust_heterogeneity     = robust_heterogeneity,
+    design_effects           = design_effects,
+    hierarchical_rho         = hierarchical_rho,
+    correlated_effects       = correlated_effects,
+    baseline_imbalance       = baseline_imbalance,
+    covariates               = covariates,
+    multiplicative_covariate = multiplicative_covariate,
+    center_covariates        = center_covariates,
     priors                = priors,
     method                = method,
     chains                = chains,
@@ -317,21 +358,22 @@ meta_did_general <- function(
 #' @export
 #' @keywords internal
 meta_did_naive <- function(
-    summary_data          = NULL,
-    individual_data       = NULL,
-    normalise_by_baseline = TRUE,
-    robust_heterogeneity  = FALSE,
-    design_effects        = FALSE,
-    hierarchical_rho      = TRUE,
-    covariates            = NULL,
-    center_covariates     = TRUE,
-    priors                = set_priors(),
-    method                = c("sample", "optimize"),
-    chains                = 4L,
-    iter_warmup           = 1000L,
-    iter_sampling         = 1000L,
-    seed                  = NULL,
-    allow_no_did          = FALSE,
+    summary_data             = NULL,
+    individual_data          = NULL,
+    normalise_by_baseline    = TRUE,
+    robust_heterogeneity     = FALSE,
+    design_effects           = FALSE,
+    hierarchical_rho         = TRUE,
+    covariates               = NULL,
+    multiplicative_covariate = NULL,
+    center_covariates        = TRUE,
+    priors                   = set_priors(),
+    method                   = c("sample", "optimize"),
+    chains                   = 4L,
+    iter_warmup              = 1000L,
+    iter_sampling            = 1000L,
+    seed                     = NULL,
+    allow_no_did             = FALSE,
     ...
 ) {
   .Deprecated("meta_did_general",
@@ -341,23 +383,24 @@ meta_did_naive <- function(
                 "baseline_imbalance = \"fixed_zero\") instead."
               ))
   meta_did_general(
-    summary_data          = summary_data,
-    individual_data       = individual_data,
-    normalise_by_baseline = normalise_by_baseline,
-    robust_heterogeneity  = robust_heterogeneity,
-    design_effects        = design_effects,
-    hierarchical_rho      = hierarchical_rho,
-    covariates            = covariates,
-    center_covariates     = center_covariates,
-    priors                = priors,
-    time_trend            = "fixed_zero",
-    baseline_imbalance    = "fixed_zero",
-    method                = method,
-    chains                = chains,
-    iter_warmup           = iter_warmup,
-    iter_sampling         = iter_sampling,
-    seed                  = seed,
-    allow_no_did          = allow_no_did,
+    summary_data             = summary_data,
+    individual_data          = individual_data,
+    normalise_by_baseline    = normalise_by_baseline,
+    robust_heterogeneity     = robust_heterogeneity,
+    design_effects           = design_effects,
+    hierarchical_rho         = hierarchical_rho,
+    covariates               = covariates,
+    multiplicative_covariate = multiplicative_covariate,
+    center_covariates        = center_covariates,
+    priors                   = priors,
+    time_trend               = "fixed_zero",
+    baseline_imbalance       = "fixed_zero",
+    method                   = method,
+    chains                   = chains,
+    iter_warmup              = iter_warmup,
+    iter_sampling            = iter_sampling,
+    seed                     = seed,
+    allow_no_did             = allow_no_did,
     ...
   )
 }
@@ -368,26 +411,29 @@ meta_did_naive <- function(
 # ---------------------------------------------------------------------------
 
 .meta_did_core <- function(
-    summary_data          = NULL,
-    individual_data       = NULL,
-    normalise_by_baseline = TRUE,
-    robust_heterogeneity  = FALSE,
-    design_effects        = FALSE,
-    hierarchical_rho      = TRUE,
-    correlated_effects    = FALSE,
-    covariates            = NULL,
-    center_covariates     = TRUE,
-    priors                = set_priors(),
-    method                = c("sample", "optimize"),
-    chains                = 4L,
-    iter_warmup           = 1000L,
-    iter_sampling         = 1000L,
-    seed                  = NULL,
-    allow_no_did          = FALSE,
-    stan_data_overrides   = NULL,
+    summary_data             = NULL,
+    individual_data          = NULL,
+    normalise_by_baseline    = TRUE,
+    robust_heterogeneity     = FALSE,
+    design_effects           = FALSE,
+    hierarchical_rho         = TRUE,
+    correlated_effects       = FALSE,
+    baseline_imbalance       = c("estimated", "fixed_zero"),
+    covariates               = NULL,
+    multiplicative_covariate = NULL,
+    center_covariates        = TRUE,
+    priors                   = set_priors(),
+    method                   = c("sample", "optimize"),
+    chains                   = 4L,
+    iter_warmup              = 1000L,
+    iter_sampling            = 1000L,
+    seed                     = NULL,
+    allow_no_did             = FALSE,
+    stan_data_overrides      = NULL,
     ...
 ) {
-  method <- match.arg(method)
+  method             <- match.arg(method)
+  baseline_imbalance <- match.arg(baseline_imbalance)
 
   # --- Input checks ---
   if (is.null(summary_data) && is.null(individual_data)) {
@@ -441,6 +487,10 @@ meta_did_naive <- function(
     validate_covariates(covariate_names, summary_data, individual_data)
   }
 
+  # --- Validate multiplicative covariate (single binary column) ---
+  validate_multiplicative_covariate(multiplicative_covariate, covariate_names,
+                                    summary_data, individual_data)
+
   # --- Normalisation ---
   normalisation_factors <- NULL
   if (normalise_by_baseline) {
@@ -492,12 +542,14 @@ meta_did_naive <- function(
     is_correlation_coefficient_hierarchical = as.integer(hierarchical_rho),
     is_student_t_heterogeneity              = as.integer(robust_heterogeneity),
     is_design_effect                        = as.integer(design_effects),
-    is_correlated_effects                   = as.integer(correlated_effects)
+    is_correlated_effects                   = as.integer(correlated_effects),
+    is_baseline_difference_estimated        = as.integer(baseline_imbalance == "estimated")
   )
 
   # --- Stan data ---
   stan_data <- prepare_stan_data(summary_data, individual_data, model_flags, priors,
                                   covariate_names = covariate_names,
+                                  multiplicative_covariate = multiplicative_covariate,
                                   center_covariates = center_covariates)
   cov_centers <- attr(stan_data, "cov_centers")
 
@@ -547,16 +599,17 @@ meta_did_naive <- function(
 
   # --- Return ---
   new_meta_did_fit(
-    fit                   = fit,
-    summary_data          = summary_data,
-    individual_data       = individual_data,
-    model_flags           = model_flags,
-    priors                = priors,
-    normalisation_factors = normalisation_factors,
-    method                = method,
-    covariate_names       = covariate_names,
-    cov_centers           = cov_centers,
-    center_covariates     = center_covariates
+    fit                      = fit,
+    summary_data             = summary_data,
+    individual_data          = individual_data,
+    model_flags              = model_flags,
+    priors                   = priors,
+    normalisation_factors    = normalisation_factors,
+    method                   = method,
+    covariate_names          = covariate_names,
+    multiplicative_covariate = multiplicative_covariate,
+    cov_centers              = cov_centers,
+    center_covariates        = center_covariates
   )
 }
 

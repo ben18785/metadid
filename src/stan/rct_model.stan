@@ -1,18 +1,22 @@
 // rct_model.stan
 
 if(n_studies_rct > 0) {
-  // Construct effective baselines
+  // Construct effective baselines.
+  // When normalised: control = 1; treatment = 1 + baseline_difference (if estimated) else 1.
+  // When unnormalised: treatment baseline is the transformed parameter
+  // baseline_treatment_rct, which itself is baseline_control * (1 + baseline_difference)
+  // when estimated, else baseline_control.
   vector[n_studies_rct] baseline_control_rct_eff;
   vector[n_studies_rct] baseline_treatment_rct_eff;
   if (is_baseline_normalised) {
     baseline_control_rct_eff = rep_vector(1.0, n_studies_rct);
-    baseline_treatment_rct_eff = rep_vector(1.0, n_studies_rct);
+    if (is_baseline_difference_estimated)
+      baseline_treatment_rct_eff = rep_vector(1.0, n_studies_rct) + baseline_difference_rct;
+    else
+      baseline_treatment_rct_eff = rep_vector(1.0, n_studies_rct);
   } else {
     baseline_control_rct_eff = baseline_control_rct;
-    if (is_baseline_control_equal_treatment_rct)
-      baseline_treatment_rct_eff = baseline_control_rct;
-    else
-      baseline_treatment_rct_eff = baseline_treatment_rct;
+    baseline_treatment_rct_eff = baseline_treatment_rct;
   }
 
   // Construct effective time trends (zero when flag is set)
@@ -28,6 +32,14 @@ if(n_studies_rct > 0) {
     L_Sigma_rct = diag_pre_multiply(
       [treatment_effect_sd, time_trend_sd]', L_corr_theta_beta[1]
     );
+  }
+
+  // Multiplicative-covariate factor per study (vector of 1s when feature off)
+  vector[n_studies_rct] mult_rct;
+  if (has_multiplicative_covariate) {
+    for (i in 1:n_studies_rct) mult_rct[i] = pow(gamma_mult[1], x_mult_rct[i]);
+  } else {
+    mult_rct = rep_vector(1.0, n_studies_rct);
   }
 
   for (i in 1:n_studies_rct) {
@@ -49,13 +61,13 @@ if(n_studies_rct > 0) {
       if (is_correlated_effects) {
         target += multi_normal_cholesky_lpdf(
           [treatment_effect_rct_derived[i], time_trend_rct[i]]' |
-          [treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, time_trend_mean]',
+          [mult_rct[i] * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov), time_trend_mean]',
           L_Sigma_rct
         );
       } else if (is_student_t_heterogeneity) {
-        target += student_t_lpdf(treatment_effect_rct_derived[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
+        target += student_t_lpdf(treatment_effect_rct_derived[i] | nu_treatment_vec[1], mult_rct[i] * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov), treatment_effect_sd);
       } else {
-        target += normal_lpdf(treatment_effect_rct_derived[i] | treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
+        target += normal_lpdf(treatment_effect_rct_derived[i] | mult_rct[i] * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov), treatment_effect_sd);
       }
 
       // Jacobian: |d(te)/d(apparent)| = |1 + time_trend|
@@ -81,11 +93,11 @@ if(n_studies_rct > 0) {
       if (is_correlated_effects && !is_time_trend_rct_zero) {
         target += multi_normal_cholesky_lpdf(
           [treatment_effect_rct[i], time_trend_rct[i]]' |
-          [treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, time_trend_mean]',
+          [mult_rct[i] * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov), time_trend_mean]',
           L_Sigma_rct
         );
       } else if (is_student_t_heterogeneity) {
-        target += student_t_lpdf(treatment_effect_rct[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
+        target += student_t_lpdf(treatment_effect_rct[i] | nu_treatment_vec[1], mult_rct[i] * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov), treatment_effect_sd);
       }
       // Normal case: handled by treatment_effect_rct_raw ~ std_normal() below
     }
@@ -93,8 +105,9 @@ if(n_studies_rct > 0) {
   
   if (!is_baseline_normalised) {
     baseline_control_rct_raw ~ std_normal();
-    if (!is_baseline_control_equal_treatment_rct)
-      baseline_treatment_rct_raw ~ std_normal();
+  }
+  if (is_baseline_difference_estimated) {
+    baseline_difference_rct_raw ~ std_normal();
   }
   // Time trend prior (non-centered; when correlated, included in joint prior above)
   if (!is_time_trend_rct_zero && !is_correlated_effects)

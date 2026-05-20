@@ -1,12 +1,16 @@
 // did_model.stan
 
 if(n_studies_did > 0) {
-  // Construct effective baselines (fixed at 1 when normalised)
+  // Construct effective baselines. DiD always estimates baseline_difference
+  // per-study (data identifies it). When normalised: control = 1, treatment =
+  // 1 + baseline_difference. When unnormalised: use the transformed parameters
+  // baseline_control_did and baseline_treatment_did (which already incorporates
+  // baseline_difference).
   vector[n_studies_did] baseline_control_did_eff;
   vector[n_studies_did] baseline_treatment_did_eff;
   if (is_baseline_normalised) {
     baseline_control_did_eff = rep_vector(1.0, n_studies_did);
-    baseline_treatment_did_eff = rep_vector(1.0, n_studies_did);
+    baseline_treatment_did_eff = rep_vector(1.0, n_studies_did) + baseline_difference_did;
   } else {
     baseline_control_did_eff = baseline_control_did;
     baseline_treatment_did_eff = baseline_treatment_did;
@@ -45,12 +49,18 @@ if(n_studies_did > 0) {
 
   if (!is_baseline_normalised) {
     baseline_control_did_raw ~ std_normal();
-    baseline_treatment_did_raw ~ std_normal();
   }
+  baseline_difference_did_raw ~ std_normal();
   sigma_control_before_did ~ cauchy(0, sigma_prior_scale);
   sigma_control_after_did ~ cauchy(0, sigma_prior_scale);
   sigma_treatment_before_did ~ cauchy(0, sigma_prior_scale);
   sigma_treatment_after_did ~ cauchy(0, sigma_prior_scale);
+  vector[n_studies_did] mult_did;
+  if (has_multiplicative_covariate) {
+    for (i in 1:n_studies_did) mult_did[i] = pow(gamma_mult[1], x_mult_did[i]);
+  } else {
+    mult_did = rep_vector(1.0, n_studies_did);
+  }
   if (is_correlated_effects) {
     matrix[2, 2] L_Sigma_did = diag_pre_multiply(
       [treatment_effect_sd, time_trend_sd]', L_corr_theta_beta[1]
@@ -58,14 +68,14 @@ if(n_studies_did > 0) {
     for (i in 1:n_studies_did) {
       target += multi_normal_cholesky_lpdf(
         [treatment_effect_did[i], time_trend_did[i]]' |
-        [treatment_effect_mean + X_cov_did[i] * beta_cov, time_trend_mean]',
+        [mult_did[i] * (treatment_effect_mean + X_cov_did[i] * beta_cov), time_trend_mean]',
         L_Sigma_did
       );
     }
   } else {
     time_trend_did_raw ~ std_normal();
     if (is_student_t_heterogeneity) {
-      treatment_effect_did ~ student_t(nu_treatment_vec[1], treatment_effect_mean + X_cov_did * beta_cov, treatment_effect_sd);
+      treatment_effect_did ~ student_t(nu_treatment_vec[1], mult_did .* (treatment_effect_mean + X_cov_did * beta_cov), treatment_effect_sd);
     } else {
       treatment_effect_did_raw ~ std_normal();
     }

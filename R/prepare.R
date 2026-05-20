@@ -42,7 +42,6 @@ null_stan_data_rct <- function() {
     study_end_treatment_rct     = integer(0),
     x_control_after_rct         = numeric(0),
     x_treatment_after_rct       = numeric(0),
-    is_baseline_control_equal_treatment_rct = 0L,
     is_time_trend_rct_zero = 0L
   )
 }
@@ -103,7 +102,6 @@ null_stan_data_rct_summary <- function() {
     sample_size_treatment_rct_summary               = integer(0),
     sd_control_after_rct_summary                    = numeric(0),
     sd_treatment_after_rct_summary                  = numeric(0),
-    is_baseline_control_equal_treatment_rct_summary = 0L,
     is_time_trend_rct_summary_zero = 0L
   )
 }
@@ -221,7 +219,6 @@ adapt_summary_rct <- function(data) {
     sample_size_treatment_rct_summary               = as.integer(data$n_treatment),
     sd_control_after_rct_summary                    = data$sd_post_control,
     sd_treatment_after_rct_summary                  = data$sd_post_treatment,
-    is_baseline_control_equal_treatment_rct_summary = 0L,
     is_time_trend_rct_summary_zero = 0L
   )
 }
@@ -292,7 +289,6 @@ prepare_individual_rct <- function(df) {
     study_end_treatment_rct     = as.integer(cumsum(n_t)),
     x_control_after_rct         = ctrl$after,
     x_treatment_after_rct       = trt$after,
-    is_baseline_control_equal_treatment_rct = 0L,
     is_time_trend_rct_zero = 0L
   )
 }
@@ -348,11 +344,17 @@ prepare_individual_pp <- function(df) {
 # ---------------------------------------------------------------------------
 
 prepare_stan_data <- function(summary_data, individual_data, model_flags, priors,
-                              covariate_names = NULL, center_covariates = TRUE) {
+                              covariate_names = NULL,
+                              multiplicative_covariate = NULL,
+                              center_covariates = TRUE) {
 
   K_cov <- length(covariate_names)
+  has_mult <- as.integer(!is.null(multiplicative_covariate))
 
   # --- Compute centering values across all studies ---
+  # Only additive covariates are centered. The multiplicative covariate is
+  # never centered (a 0/1 indicator shifted to mean -0.4 has no clean
+  # multiplicative interpretation: gamma^{-0.4} is not what the user wants).
   cov_centers <- NULL
   if (K_cov > 0 && center_covariates) {
     # Collect one row per study from both data sources
@@ -421,8 +423,23 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   stan_rct$X_cov_rct <- .extract_cov_matrix_individual(ind_rct_raw, cov_names)
   stan_pp$X_cov_pp   <- .extract_cov_matrix_individual(ind_pp_raw, cov_names)
 
+  # --- Multiplicative covariate per-design vectors ---
+  # Always pass a vector of length n_studies_<design>. Filled with the
+  # binary column when the feature is on; filled with zeros when off
+  # (in which case gamma_mult isn't sampled and the multiplier helper
+  # short-circuits to 1 regardless of the vector contents).
+  stan_did_summary$x_mult_did_summary             <- .extract_mult_vec_summary(sum_did,        multiplicative_covariate)
+  stan_did_change_only$x_mult_did_change_only     <- .extract_mult_vec_summary(sum_did_change, multiplicative_covariate)
+  stan_rct_summary$x_mult_rct_summary             <- .extract_mult_vec_summary(sum_rct,        multiplicative_covariate)
+  stan_pp_summary$x_mult_pp_summary               <- .extract_mult_vec_summary(sum_pp,         multiplicative_covariate)
+
+  stan_did$x_mult_did <- .extract_mult_vec_individual(ind_did_raw, multiplicative_covariate)
+  stan_rct$x_mult_rct <- .extract_mult_vec_individual(ind_rct_raw, multiplicative_covariate)
+  stan_pp$x_mult_pp   <- .extract_mult_vec_individual(ind_pp_raw,  multiplicative_covariate)
+
   # --- Shared data: flags + prior hyperparameters + covariate info ---
-  shared <- c(model_flags, as_stan_data(priors), list(K_cov = K_cov))
+  shared <- c(model_flags, as_stan_data(priors),
+              list(K_cov = K_cov, has_multiplicative_covariate = has_mult))
 
   # --- Combine ---
   result <- c(
@@ -438,4 +455,31 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
 
   attr(result, "cov_centers") <- cov_centers
   result
+}
+
+# ---------------------------------------------------------------------------
+# .extract_mult_vec_summary() / .extract_mult_vec_individual()
+# Extract a binary vector for the multiplicative covariate. When the feature
+# is off, return a zero vector of the appropriate length; gamma_mult isn't
+# sampled in that case so the values don't matter, but the vector must have
+# the right length to satisfy the Stan data declaration.
+# ---------------------------------------------------------------------------
+
+.extract_mult_vec_summary <- function(data, multiplicative_covariate) {
+  n <- nrow(data)
+  if (is.null(multiplicative_covariate) || n == 0) {
+    return(as.array(rep(0, n)))
+  }
+  as.array(as.numeric(data[[multiplicative_covariate]]))
+}
+
+.extract_mult_vec_individual <- function(data, multiplicative_covariate) {
+  if (nrow(data) == 0) return(as.array(numeric(0)))
+  n_studies <- length(unique(data$study_id))
+  if (is.null(multiplicative_covariate)) {
+    return(as.array(rep(0, n_studies)))
+  }
+  # One value per study (validator ensures constant within study)
+  study_one_row <- data[!duplicated(data$study_id), , drop = FALSE]
+  as.array(as.numeric(study_one_row[[multiplicative_covariate]]))
 }

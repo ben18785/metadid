@@ -1,18 +1,22 @@
 // rct_summary_model.stan
 
 if(n_studies_rct_summary > 0) {
-  // Construct effective baselines
+  // Construct effective baselines.
+  // When normalised: control = 1; treatment = 1 + baseline_difference (if estimated) else 1.
+  // When unnormalised: treatment baseline is the transformed parameter
+  // baseline_treatment_rct_summary, which itself is baseline_control * (1 + baseline_difference)
+  // when estimated, else baseline_control.
   vector[n_studies_rct_summary] baseline_control_rct_summary_eff;
   vector[n_studies_rct_summary] baseline_treatment_rct_summary_eff;
   if (is_baseline_normalised) {
     baseline_control_rct_summary_eff = rep_vector(1.0, n_studies_rct_summary);
-    baseline_treatment_rct_summary_eff = rep_vector(1.0, n_studies_rct_summary);
+    if (is_baseline_difference_estimated)
+      baseline_treatment_rct_summary_eff = rep_vector(1.0, n_studies_rct_summary) + baseline_difference_rct_summary;
+    else
+      baseline_treatment_rct_summary_eff = rep_vector(1.0, n_studies_rct_summary);
   } else {
     baseline_control_rct_summary_eff = baseline_control_rct_summary;
-    if (is_baseline_control_equal_treatment_rct_summary)
-      baseline_treatment_rct_summary_eff = baseline_control_rct_summary;
-    else
-      baseline_treatment_rct_summary_eff = baseline_treatment_rct_summary;
+    baseline_treatment_rct_summary_eff = baseline_treatment_rct_summary;
   }
 
   // Construct effective time trends (zero when flag is set)
@@ -30,6 +34,14 @@ if(n_studies_rct_summary > 0) {
     );
   }
 
+  // Multiplicative-covariate factor per study (vector of 1s when feature off)
+  vector[n_studies_rct_summary] mult_rct_summary;
+  if (has_multiplicative_covariate) {
+    for (i in 1:n_studies_rct_summary) mult_rct_summary[i] = pow(gamma_mult[1], x_mult_rct_summary[i]);
+  } else {
+    mult_rct_summary = rep_vector(1.0, n_studies_rct_summary);
+  }
+
   for (i in 1:n_studies_rct_summary) {
     if (is_baseline_normalised && !is_time_trend_rct_summary_zero) {
       // Reparameterised: apparent_effect is sampled, control mean is 1 by construction.
@@ -44,13 +56,13 @@ if(n_studies_rct_summary > 0) {
       if (is_correlated_effects) {
         target += multi_normal_cholesky_lpdf(
           [treatment_effect_rct_summary_derived[i], time_trend_rct_summary[i]]' |
-          [treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, time_trend_mean]',
+          [mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), time_trend_mean]',
           L_Sigma_rct_summary
         );
       } else if (is_student_t_heterogeneity) {
-        target += student_t_lpdf(treatment_effect_rct_summary_derived[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
+        target += student_t_lpdf(treatment_effect_rct_summary_derived[i] | nu_treatment_vec[1], mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), treatment_effect_sd);
       } else {
-        target += normal_lpdf(treatment_effect_rct_summary_derived[i] | treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
+        target += normal_lpdf(treatment_effect_rct_summary_derived[i] | mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), treatment_effect_sd);
       }
 
       // Jacobian: |d(te)/d(apparent)| = |1 + time_trend|
@@ -75,11 +87,11 @@ if(n_studies_rct_summary > 0) {
       if (is_correlated_effects && !is_time_trend_rct_summary_zero) {
         target += multi_normal_cholesky_lpdf(
           [treatment_effect_rct_summary[i], time_trend_rct_summary[i]]' |
-          [treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, time_trend_mean]',
+          [mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), time_trend_mean]',
           L_Sigma_rct_summary
         );
       } else if (is_student_t_heterogeneity) {
-        target += student_t_lpdf(treatment_effect_rct_summary[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
+        target += student_t_lpdf(treatment_effect_rct_summary[i] | nu_treatment_vec[1], mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), treatment_effect_sd);
       }
       // Normal case: handled by treatment_effect_rct_summary_raw ~ std_normal() below
     }
@@ -87,8 +99,9 @@ if(n_studies_rct_summary > 0) {
 
   if (!is_baseline_normalised) {
     baseline_control_rct_summary_raw ~ std_normal();
-    if (!is_baseline_control_equal_treatment_rct_summary)
-      baseline_treatment_rct_summary_raw ~ std_normal();
+  }
+  if (is_baseline_difference_estimated) {
+    baseline_difference_rct_summary_raw ~ std_normal();
   }
   // Time trend prior (non-centered; when correlated, included in joint prior above)
   if (!is_time_trend_rct_summary_zero && !is_correlated_effects)

@@ -59,7 +59,9 @@ test_that("set_priors() returns a did_priors with all parameters", {
     "time_trend_mean", "time_trend_sd",
     "rho_mean", "rho_sd", "nu",
     "delta_rct", "delta_pp", "sigma",
-    "beta_cov", "lkj_eta"
+    "beta_cov", "lkj_eta",
+    "baseline_difference_mean", "baseline_difference_sd",
+    "multiplier"
   )
   expect_equal(names(p), expected_names)
 })
@@ -113,7 +115,9 @@ test_that("as_stan_data() returns all expected hyperparameters", {
     "tau_z_prior_mean", "tau_z_prior_sd",
     "nu_prior_shape", "nu_prior_rate",
     "delta_rct_prior_sd", "delta_pp_prior_sd",
-    "lkj_eta_prior"
+    "lkj_eta_prior",
+    "baseline_difference_mean_prior_mean", "baseline_difference_mean_prior_sd",
+    "baseline_difference_sd_prior_scale"
   )
   expect_true(all(expected %in% names(sd)))
 })
@@ -134,4 +138,51 @@ test_that("as_stan_data() handles normal prior on treatment_effect_sd", {
   p  <- set_priors(treatment_effect_sd = normal(0, 2))
   sd <- as_stan_data(p)
   expect_equal(sd$treatment_effect_sd_prior_scale, 2)
+})
+
+# ---------------------------------------------------------------------------
+# baseline_difference priors
+# ---------------------------------------------------------------------------
+
+test_that("baseline_difference priors have correct defaults", {
+  p <- set_priors()
+  expect_equal(p$baseline_difference_mean$dist, "normal")
+  expect_equal(p$baseline_difference_mean$mean, 0)
+  expect_equal(p$baseline_difference_mean$sd, 0.5)
+  expect_equal(p$baseline_difference_sd$dist, "cauchy")
+  expect_equal(p$baseline_difference_sd$scale, 0.1)
+})
+
+test_that("set_priors() accepts baseline_difference overrides", {
+  p <- set_priors(
+    baseline_difference_mean = normal(0.1, 1),
+    baseline_difference_sd   = cauchy(0.5)
+  )
+  expect_equal(p$baseline_difference_mean$mean, 0.1)
+  expect_equal(p$baseline_difference_mean$sd, 1)
+  expect_equal(p$baseline_difference_sd$scale, 0.5)
+})
+
+test_that("baseline_difference_sd accepts normal prior", {
+  p  <- set_priors(baseline_difference_sd = normal(0, 0.3))
+  sd <- as_stan_data(p)
+  expect_equal(sd$baseline_difference_sd_prior_scale, 0.3)
+})
+
+test_that("baseline_difference_mean rejects non-normal families", {
+  expect_error(
+    set_priors(baseline_difference_mean = cauchy(0.5)),
+    "must be one of: normal"
+  )
+})
+
+test_that("as_stan_data() maps baseline_difference priors correctly", {
+  p  <- set_priors(
+    baseline_difference_mean = normal(0.05, 1.5),
+    baseline_difference_sd   = cauchy(0.25)
+  )
+  sd <- as_stan_data(p)
+  expect_equal(sd$baseline_difference_mean_prior_mean,  0.05)
+  expect_equal(sd$baseline_difference_mean_prior_sd,    1.5)
+  expect_equal(sd$baseline_difference_sd_prior_scale,   0.25)
 })

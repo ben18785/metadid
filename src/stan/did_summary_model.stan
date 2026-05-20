@@ -9,12 +9,18 @@ if(n_studies_did_summary > 0) {
   for (k in 1:n_rho_missing_did_summary)
     rho_eff_did_summary[idx_rho_missing_did_summary[k]] = tanh(z_rho_missing_did_summary[k]);
 
-  // Construct effective baselines (fixed at 1 when normalised)
+  // Construct effective baselines. DiD always uses baseline_difference (data
+  // identifies it per-study). The !is_differenced_likelihood_did_summary guard
+  // ensures baseline_difference_did_summary (size 0 under differenced
+  // likelihood) is only consulted when it has the expected size.
   vector[n_studies_did_summary] baseline_control_did_summary_eff;
   vector[n_studies_did_summary] baseline_treatment_did_summary_eff;
   if (is_baseline_normalised) {
     baseline_control_did_summary_eff = rep_vector(1.0, n_studies_did_summary);
-    baseline_treatment_did_summary_eff = rep_vector(1.0, n_studies_did_summary);
+    if (!is_differenced_likelihood_did_summary)
+      baseline_treatment_did_summary_eff = rep_vector(1.0, n_studies_did_summary) + baseline_difference_did_summary;
+    else
+      baseline_treatment_did_summary_eff = rep_vector(1.0, n_studies_did_summary);
   } else {
     baseline_control_did_summary_eff = baseline_control_did_summary;
     baseline_treatment_did_summary_eff = baseline_treatment_did_summary;
@@ -74,7 +80,15 @@ if(n_studies_did_summary > 0) {
 
   if (!is_baseline_normalised) {
     baseline_control_did_summary_raw ~ std_normal();
-    baseline_treatment_did_summary_raw ~ std_normal();
+  }
+  if (!is_differenced_likelihood_did_summary) {
+    baseline_difference_did_summary_raw ~ std_normal();
+  }
+  vector[n_studies_did_summary] mult_did_summary;
+  if (has_multiplicative_covariate) {
+    for (i in 1:n_studies_did_summary) mult_did_summary[i] = pow(gamma_mult[1], x_mult_did_summary[i]);
+  } else {
+    mult_did_summary = rep_vector(1.0, n_studies_did_summary);
   }
   if (is_correlated_effects) {
     matrix[2, 2] L_Sigma_did_summary = diag_pre_multiply(
@@ -83,14 +97,14 @@ if(n_studies_did_summary > 0) {
     for (i in 1:n_studies_did_summary) {
       target += multi_normal_cholesky_lpdf(
         [treatment_effect_did_summary[i], time_trend_did_summary[i]]' |
-        [treatment_effect_mean + X_cov_did_summary[i] * beta_cov, time_trend_mean]',
+        [mult_did_summary[i] * (treatment_effect_mean + X_cov_did_summary[i] * beta_cov), time_trend_mean]',
         L_Sigma_did_summary
       );
     }
   } else {
     time_trend_did_summary_raw ~ std_normal();
     if (is_student_t_heterogeneity) {
-      treatment_effect_did_summary ~ student_t(nu_treatment_vec[1], treatment_effect_mean + X_cov_did_summary * beta_cov, treatment_effect_sd);
+      treatment_effect_did_summary ~ student_t(nu_treatment_vec[1], mult_did_summary .* (treatment_effect_mean + X_cov_did_summary * beta_cov), treatment_effect_sd);
     } else {
       treatment_effect_did_summary_raw ~ std_normal();
     }
@@ -112,7 +126,13 @@ if (n_studies_did_change_only > 0) {
     );
   }
   if (is_student_t_heterogeneity) {
-    treatment_effect_did_change_only ~ student_t(nu_treatment_vec[1], treatment_effect_mean + X_cov_did_change_only * beta_cov, treatment_effect_sd);
+    vector[n_studies_did_change_only] mult_did_change_only;
+    if (has_multiplicative_covariate) {
+      for (i in 1:n_studies_did_change_only) mult_did_change_only[i] = pow(gamma_mult[1], x_mult_did_change_only[i]);
+    } else {
+      mult_did_change_only = rep_vector(1.0, n_studies_did_change_only);
+    }
+    treatment_effect_did_change_only ~ student_t(nu_treatment_vec[1], mult_did_change_only .* (treatment_effect_mean + X_cov_did_change_only * beta_cov), treatment_effect_sd);
   } else {
     treatment_effect_did_change_only_raw ~ std_normal();
   }
