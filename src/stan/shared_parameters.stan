@@ -35,6 +35,11 @@ vector[is_design_effect] delta_pp_raw;
 // Length K_cov; when K_cov == 0, not sampled.
 vector[K_cov] beta_cov;
 
+// Multiplicative covariate factor. Length 1 when has_multiplicative_covariate == 1,
+// length 0 otherwise (not sampled). Bounds are read from data so users can
+// configure them via set_priors(multiplier = normal(mean, sd, lower, upper)).
+vector<lower=gamma_mult_lower, upper=gamma_mult_upper>[has_multiplicative_covariate] gamma_mult;
+
 // Cholesky factor of the 2x2 correlation matrix between treatment effects
 // and time trends. Zero-length array when is_correlated_effects == 0 (not sampled).
 array[is_correlated_effects] cholesky_factor_corr[2] L_corr_theta_beta;

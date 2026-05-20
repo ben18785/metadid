@@ -30,6 +30,10 @@ baseline_difference_sd   ~ cauchy(0, baseline_difference_sd_prior_scale);
 
 beta_cov ~ normal(0, beta_cov_prior_sd);
 
+if (has_multiplicative_covariate) {
+  gamma_mult ~ normal(gamma_mult_prior_mean, gamma_mult_prior_sd);
+}
+
 if (is_correlated_effects) {
   L_corr_theta_beta[1] ~ lkj_corr_cholesky(lkj_eta_prior);
 }

@@ -56,6 +56,17 @@ real<lower=0> sigma_prior_scale;
 int<lower=0> K_cov;               // number of covariates (0 = no meta-regression)
 real<lower=0> beta_cov_prior_sd;   // prior SD for covariate coefficients
 
+// Optional multiplicative covariate. When has_multiplicative_covariate == 0
+// the entire feature is off (gamma_mult stays at the prior, multiplier = 1
+// for every study). When 1, each design block carries a length-n vector
+// x_mult_<design> of binary {0, 1} values, and a single scalar gamma_mult
+// is estimated. The per-study mean is multiplied by gamma_mult^x.
+int<lower=0, upper=1> has_multiplicative_covariate;
+real gamma_mult_prior_mean;            // prior mean for gamma_mult
+real<lower=0> gamma_mult_prior_sd;     // prior SD for gamma_mult
+real gamma_mult_lower;                 // hard lower bound (>= 0)
+real gamma_mult_upper;                 // hard upper bound (large = effectively unbounded)
+
 // When is_student_t_heterogeneity == 1, study-level treatment effects are
 // drawn from a Student-t rather than a normal. The degrees-of-freedom
 // parameter nu_treatment (declared as a length-1 vector in the parameters
