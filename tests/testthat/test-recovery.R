@@ -661,3 +661,71 @@ test_that("Fit 6b: unnormalised recovers baseline, treatment effect, and time tr
   res_tt <- covers(fit, "time_trend_mean", TRUE_TREND_RAW)
   expect_true(res_tt$covers, label = ci_label(res_tt$ci, TRUE_TREND_RAW))
 })
+
+# ---------------------------------------------------------------------------
+# Fit 7: DiD summary with non-zero baseline imbalance, baseline_imbalance="estimated"
+# ---------------------------------------------------------------------------
+# Checks: treatment effect recovered when DiD studies have systematic imbalance,
+#         baseline_difference_mean is non-zero and in the right direction.
+
+test_that("Fit 7: estimated baseline imbalance recovers treatment effect under DiD imbalance", {
+  skip_if_no_stan()
+  skip_if_not_installed("MASS")
+
+  # Simulate DiD studies where the treatment arm starts systematically higher
+  # than control (gamma_raw = 0.05 on a baseline_mean = 0.45 scale →
+  # baseline_difference_normalised ~ 0.111).
+  set.seed(8471L)
+  n_studies     <- 30L
+  did_thetas    <- rnorm(n_studies, TRUE_EFFECT_RAW,    TRUE_SIGMA_EFFECT_RAW)
+  did_betas     <- rnorm(n_studies, TRUE_TREND_RAW,     TRUE_SIGMA_TREND_RAW)
+  did_baselines <- rnorm(n_studies, MEAN_BASELINE,      TRUE_BASELINE_SD)
+  did_gammas    <- rnorm(n_studies, 0.05, 0.01)   # systematic imbalance
+  within_sd     <- 0.12
+  rho           <- 0.5
+  n_per_arm     <- 100L
+
+  sim_rows <- lapply(seq_len(n_studies), function(i) {
+    Sigma <- within_sd^2 * matrix(c(1, rho, rho, 1), 2, 2)
+    ctrl  <- MASS::mvrnorm(n_per_arm,
+                           c(did_baselines[i], did_baselines[i] + did_betas[i]),
+                           Sigma)
+    trt   <- MASS::mvrnorm(n_per_arm,
+                           c(did_baselines[i] + did_gammas[i],
+                             did_baselines[i] + did_gammas[i] + did_betas[i] + did_thetas[i]),
+                           Sigma)
+    data.frame(
+      study_id            = paste0("study_", i),
+      design              = "did",
+      n_control           = n_per_arm,
+      n_treatment         = n_per_arm,
+      mean_pre_control    = mean(ctrl[, 1]),
+      mean_post_control   = mean(ctrl[, 2]),
+      sd_pre_control      = sd(ctrl[, 1]),
+      sd_post_control     = sd(ctrl[, 2]),
+      mean_pre_treatment  = mean(trt[, 1]),
+      mean_post_treatment = mean(trt[, 2]),
+      sd_pre_treatment    = sd(trt[, 1]),
+      sd_post_treatment   = sd(trt[, 2]),
+      rho                 = rho
+    )
+  })
+  imbalance_data <- do.call(rbind, sim_rows)
+
+  fit_est <- recovery_fit(
+    summary_data       = imbalance_data,
+    baseline_imbalance = "estimated"
+  )
+
+  # Treatment effect should be recovered (within CI) despite baseline imbalance
+  te <- covers(fit_est, "treatment_effect_mean", TRUE_EFFECT_NORMALISED)
+  expect_true(te$covers, info = ci_label(te$ci, TRUE_EFFECT_NORMALISED))
+
+  # baseline_difference_mean should be non-zero and positive
+  # (truth ≈ 0.05 / 0.45 ≈ 0.111 on normalised scale)
+  bd <- posterior_ci(fit_est, "baseline_difference_mean", prob = 0.9)
+  expect_true(bd$lo > 0,
+              info = sprintf("baseline_difference_mean 90%% CI [%.4f, %.4f] excludes zero",
+                             bd$lo, bd$hi))
+  expect_lt(abs(bd$mean - 0.05 / MEAN_BASELINE), 0.05)
+})

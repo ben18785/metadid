@@ -8,6 +8,13 @@ vector<lower=0>[1 - is_baseline_normalised] baseline_control_sd;
 vector[1 - is_baseline_normalised] baseline_treatment_mean;
 vector<lower=0>[1 - is_baseline_normalised] baseline_treatment_sd;
 
+// Population-level baseline imbalance (treatment vs control) on the normalised
+// fractional scale. DiD studies always contribute (per-study identification);
+// RCT studies contribute only when is_baseline_difference_estimated == 1. PP
+// does not contribute (no control arm).
+real baseline_difference_mean;
+real<lower=0> baseline_difference_sd;
+
 real treatment_effect_mean;
 real<lower=0> treatment_effect_sd;
 

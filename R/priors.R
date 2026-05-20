@@ -80,18 +80,20 @@ print.did_prior <- function(x, ...) {
 # ---------------------------------------------------------------------------
 
 .allowed_families <- list(
-  treatment_effect_mean = c("normal"),
-  treatment_effect_sd   = c("cauchy", "normal"),
-  time_trend_mean       = c("normal"),
-  time_trend_sd         = c("cauchy", "normal"),
-  rho_mean              = c("normal"),
-  rho_sd                = c("normal"),
-  nu                    = c("gamma"),
-  delta_rct             = c("normal"),
-  delta_pp              = c("normal"),
-  sigma                 = c("cauchy"),
-  beta_cov              = c("normal"),
-  lkj_eta               = c("lkj")
+  treatment_effect_mean    = c("normal"),
+  treatment_effect_sd      = c("cauchy", "normal"),
+  time_trend_mean          = c("normal"),
+  time_trend_sd            = c("cauchy", "normal"),
+  rho_mean                 = c("normal"),
+  rho_sd                   = c("normal"),
+  nu                       = c("gamma"),
+  delta_rct                = c("normal"),
+  delta_pp                 = c("normal"),
+  sigma                    = c("cauchy"),
+  beta_cov                 = c("normal"),
+  lkj_eta                  = c("lkj"),
+  baseline_difference_mean = c("normal"),
+  baseline_difference_sd   = c("cauchy", "normal")
 )
 
 # ---------------------------------------------------------------------------
@@ -127,6 +129,13 @@ print.did_prior <- function(x, ...) {
 #'   between treatment effects and time trends (only used when
 #'   `correlated_effects = TRUE`). Default: `lkj(2)`, which gently
 #'   regularises toward zero correlation.
+#' @param baseline_difference_mean Prior on the population mean of the
+#'   per-study baseline imbalance (treatment-arm vs control-arm pre-treatment
+#'   mean, on the normalised fractional scale). Only used when
+#'   `baseline_imbalance = "estimated"`. Default: `normal(0, 0.5)`.
+#' @param baseline_difference_sd Prior on the between-study SD of the
+#'   baseline imbalance. Only used when `baseline_imbalance = "estimated"`.
+#'   Default: `cauchy(0.1)`.
 #'
 #' @return A `did_priors` object.
 #' @export
@@ -138,32 +147,36 @@ print.did_prior <- function(x, ...) {
 #' # Override one prior
 #' set_priors(treatment_effect_sd = cauchy(2))
 set_priors <- function(
-    treatment_effect_mean = normal(0, 10),
-    treatment_effect_sd   = cauchy(5),
-    time_trend_mean       = normal(0, 10),
-    time_trend_sd         = cauchy(5),
-    rho_mean              = normal(0, 1),
-    rho_sd                = normal(0, 0.5),
-    nu                    = gamma(2, 0.1),
-    delta_rct             = normal(0, 10),
-    delta_pp              = normal(0, 10),
-    sigma                 = cauchy(5),
-    beta_cov              = normal(0, 10),
-    lkj_eta               = lkj(2)
+    treatment_effect_mean    = normal(0, 10),
+    treatment_effect_sd      = cauchy(5),
+    time_trend_mean          = normal(0, 10),
+    time_trend_sd            = cauchy(5),
+    rho_mean                 = normal(0, 1),
+    rho_sd                   = normal(0, 0.5),
+    nu                       = gamma(2, 0.1),
+    delta_rct                = normal(0, 10),
+    delta_pp                 = normal(0, 10),
+    sigma                    = cauchy(5),
+    beta_cov                 = normal(0, 10),
+    lkj_eta                  = lkj(2),
+    baseline_difference_mean = normal(0, 0.5),
+    baseline_difference_sd   = cauchy(0.1)
 ) {
   priors <- list(
-    treatment_effect_mean = treatment_effect_mean,
-    treatment_effect_sd   = treatment_effect_sd,
-    time_trend_mean       = time_trend_mean,
-    time_trend_sd         = time_trend_sd,
-    rho_mean              = rho_mean,
-    rho_sd                = rho_sd,
-    nu                    = nu,
-    delta_rct             = delta_rct,
-    delta_pp              = delta_pp,
-    sigma                 = sigma,
-    beta_cov              = beta_cov,
-    lkj_eta               = lkj_eta
+    treatment_effect_mean    = treatment_effect_mean,
+    treatment_effect_sd      = treatment_effect_sd,
+    time_trend_mean          = time_trend_mean,
+    time_trend_sd            = time_trend_sd,
+    rho_mean                 = rho_mean,
+    rho_sd                   = rho_sd,
+    nu                       = nu,
+    delta_rct                = delta_rct,
+    delta_pp                 = delta_pp,
+    sigma                    = sigma,
+    beta_cov                 = beta_cov,
+    lkj_eta                  = lkj_eta,
+    baseline_difference_mean = baseline_difference_mean,
+    baseline_difference_sd   = baseline_difference_sd
   )
   validate_priors(priors)
   structure(priors, class = "did_priors")
@@ -246,7 +259,13 @@ as_stan_data.did_priors <- function(priors) {
     # beta_cov ~ normal(0, sd) — covariate regression coefficients
     beta_cov_prior_sd                = priors$beta_cov$sd,
     # LKJ prior on correlation between treatment effects and time trends
-    lkj_eta_prior                    = priors$lkj_eta$eta
+    lkj_eta_prior                    = priors$lkj_eta$eta,
+    # Baseline imbalance: population mean and SD on normalised fractional scale.
+    # Only used when is_baseline_difference_estimated == 1.
+    baseline_difference_mean_prior_mean = priors$baseline_difference_mean$mean,
+    baseline_difference_mean_prior_sd   = priors$baseline_difference_mean$sd,
+    baseline_difference_sd_prior_scale  = priors$baseline_difference_sd$scale %||%
+                                          priors$baseline_difference_sd$sd
   )
 }
 
