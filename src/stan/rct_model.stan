@@ -34,6 +34,14 @@ if(n_studies_rct > 0) {
     );
   }
 
+  // Multiplicative-covariate factor per study (vector of 1s when feature off)
+  vector[n_studies_rct] mult_rct;
+  if (has_multiplicative_covariate) {
+    for (i in 1:n_studies_rct) mult_rct[i] = pow(gamma_mult[1], x_mult_rct[i]);
+  } else {
+    mult_rct = rep_vector(1.0, n_studies_rct);
+  }
+
   for (i in 1:n_studies_rct) {
     if (is_baseline_normalised && !is_time_trend_rct_zero) {
       // Reparameterised: apparent_effect_rct[i] is theta/(alpha+beta),
@@ -53,13 +61,13 @@ if(n_studies_rct > 0) {
       if (is_correlated_effects) {
         target += multi_normal_cholesky_lpdf(
           [treatment_effect_rct_derived[i], time_trend_rct[i]]' |
-          [treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, time_trend_mean]',
+          [mult_rct[i] * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov), time_trend_mean]',
           L_Sigma_rct
         );
       } else if (is_student_t_heterogeneity) {
-        target += student_t_lpdf(treatment_effect_rct_derived[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
+        target += student_t_lpdf(treatment_effect_rct_derived[i] | nu_treatment_vec[1], mult_rct[i] * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov), treatment_effect_sd);
       } else {
-        target += normal_lpdf(treatment_effect_rct_derived[i] | treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
+        target += normal_lpdf(treatment_effect_rct_derived[i] | mult_rct[i] * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov), treatment_effect_sd);
       }
 
       // Jacobian: |d(te)/d(apparent)| = |1 + time_trend|
@@ -85,11 +93,11 @@ if(n_studies_rct > 0) {
       if (is_correlated_effects && !is_time_trend_rct_zero) {
         target += multi_normal_cholesky_lpdf(
           [treatment_effect_rct[i], time_trend_rct[i]]' |
-          [treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, time_trend_mean]',
+          [mult_rct[i] * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov), time_trend_mean]',
           L_Sigma_rct
         );
       } else if (is_student_t_heterogeneity) {
-        target += student_t_lpdf(treatment_effect_rct[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
+        target += student_t_lpdf(treatment_effect_rct[i] | nu_treatment_vec[1], mult_rct[i] * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov), treatment_effect_sd);
       }
       // Normal case: handled by treatment_effect_rct_raw ~ std_normal() below
     }

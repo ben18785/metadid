@@ -12,3 +12,4 @@ vector[sum(sample_size_control_rct)] x_control_after_rct;
 vector[sum(sample_size_treatment_rct)] x_treatment_after_rct;
 int<lower=0, upper=1> is_time_trend_rct_zero;
 matrix[n_studies_rct, K_cov] X_cov_rct;
+vector<lower=0, upper=1>[n_studies_rct] x_mult_rct;

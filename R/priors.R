@@ -12,12 +12,26 @@
 #'
 #' @param mean Prior mean.
 #' @param sd Prior standard deviation (must be positive).
+#' @param lower Optional hard lower bound on the parameter (default `-Inf`).
+#'   When finite, propagates to a `<lower=...>` constraint on the corresponding
+#'   Stan parameter declaration. Currently honoured only by parameters whose
+#'   Stan declaration reads bounds from data (e.g. the `multiplier` prior).
+#' @param upper Optional hard upper bound on the parameter (default `Inf`).
+#'   See `lower`.
 #' @return A `did_prior` object.
 #' @export
-normal <- function(mean, sd) {
+normal <- function(mean, sd, lower = -Inf, upper = Inf) {
   stopifnot(is.numeric(mean), length(mean) == 1)
   stopifnot(is.numeric(sd), length(sd) == 1, sd > 0)
-  structure(list(dist = "normal", mean = mean, sd = sd), class = "did_prior")
+  stopifnot(is.numeric(lower), length(lower) == 1)
+  stopifnot(is.numeric(upper), length(upper) == 1)
+  if (upper <= lower) {
+    stop("normal(): `upper` must be strictly greater than `lower`.", call. = FALSE)
+  }
+  structure(
+    list(dist = "normal", mean = mean, sd = sd, lower = lower, upper = upper),
+    class = "did_prior"
+  )
 }
 
 #' Specify a half-Cauchy prior
@@ -66,7 +80,15 @@ lkj <- function(eta) {
 #' @export
 print.did_prior <- function(x, ...) {
   params <- switch(x$dist,
-    normal = paste0("mean = ", x$mean, ", sd = ", x$sd),
+    normal = {
+      base <- paste0("mean = ", x$mean, ", sd = ", x$sd)
+      lo <- x[["lower"]]
+      up <- x[["upper"]]
+      bnds <- character()
+      if (!is.null(lo) && is.finite(lo)) bnds <- c(bnds, paste0("lower = ", lo))
+      if (!is.null(up) && is.finite(up)) bnds <- c(bnds, paste0("upper = ", up))
+      if (length(bnds) > 0) paste(c(base, bnds), collapse = ", ") else base
+    },
     cauchy = paste0("scale = ", x$scale),
     gamma  = paste0("shape = ", x$shape, ", rate = ", x$rate),
     lkj    = paste0("eta = ", x$eta)
@@ -91,6 +113,7 @@ print.did_prior <- function(x, ...) {
   delta_pp                 = c("normal"),
   sigma                    = c("cauchy"),
   beta_cov                 = c("normal"),
+  multiplier               = c("normal"),
   lkj_eta                  = c("lkj"),
   baseline_difference_mean = c("normal"),
   baseline_difference_sd   = c("cauchy", "normal")
@@ -136,6 +159,12 @@ print.did_prior <- function(x, ...) {
 #' @param baseline_difference_sd Prior on the between-study SD of the
 #'   baseline imbalance. Only used when `baseline_imbalance = "estimated"`.
 #'   Default: `cauchy(0.1)`.
+#' @param multiplier Prior on the multiplicative-covariate factor `gamma_mult`
+#'   (only used when `multiplicative_covariate` is specified in [meta_did()]).
+#'   Default: `normal(1, 0.5, lower = 0)` — centred at 1 (no multiplicative
+#'   effect) with positive support. Pass an explicit `upper` for additional
+#'   MCMC stability when the prior is tight, e.g.
+#'   `normal(1, 0.5, lower = 0, upper = 5)`.
 #'
 #' @return A `did_priors` object.
 #' @export
@@ -160,7 +189,8 @@ set_priors <- function(
     beta_cov                 = normal(0, 10),
     lkj_eta                  = lkj(2),
     baseline_difference_mean = normal(0, 0.5),
-    baseline_difference_sd   = cauchy(0.1)
+    baseline_difference_sd   = cauchy(0.1),
+    multiplier               = normal(1, 0.5, lower = 0)
 ) {
   priors <- list(
     treatment_effect_mean    = treatment_effect_mean,
@@ -176,7 +206,8 @@ set_priors <- function(
     beta_cov                 = beta_cov,
     lkj_eta                  = lkj_eta,
     baseline_difference_mean = baseline_difference_mean,
-    baseline_difference_sd   = baseline_difference_sd
+    baseline_difference_sd   = baseline_difference_sd,
+    multiplier               = multiplier
   )
   validate_priors(priors)
   structure(priors, class = "did_priors")
@@ -214,6 +245,21 @@ validate_priors <- function(priors) {
       )
     }
   }
+
+  # The multiplier must have non-negative support — gamma_mult^x makes no sense
+  # below zero, and Stan would reject a parameter declaration with lower < 0.
+  mp <- priors$multiplier
+  if (!is.null(mp)) {
+    lo <- mp[["lower"]] %||% -Inf
+    if (lo < 0) {
+      stop(
+        "Prior for 'multiplier' must have lower >= 0 (multipliers are non-negative). ",
+        "Got lower = ", lo, ".",
+        call. = FALSE
+      )
+    }
+  }
+
   invisible(priors)
 }
 
@@ -230,6 +276,15 @@ as_stan_data <- function(priors) UseMethod("as_stan_data")
 
 #' @exportS3Method
 as_stan_data.did_priors <- function(priors) {
+  # Stan parameter declarations require finite bounds; passing a very large
+  # number is the standard workaround for "effectively unbounded".
+  .finite_bound <- function(x, default) {
+    if (is.null(x) || !is.finite(x)) default else x
+  }
+  mp <- priors$multiplier
+  gamma_lo <- .finite_bound(mp[["lower"]], -1e6)
+  gamma_up <- .finite_bound(mp[["upper"]],  1e6)
+
   list(
     # treatment_effect_mean ~ normal(mean, sd)
     treatment_effect_mean_prior_mean = priors$treatment_effect_mean$mean,
@@ -265,7 +320,14 @@ as_stan_data.did_priors <- function(priors) {
     baseline_difference_mean_prior_mean = priors$baseline_difference_mean$mean,
     baseline_difference_mean_prior_sd   = priors$baseline_difference_mean$sd,
     baseline_difference_sd_prior_scale  = priors$baseline_difference_sd$scale %||%
-                                          priors$baseline_difference_sd$sd
+                                          priors$baseline_difference_sd$sd,
+    # gamma_mult ~ normal(mean, sd) bounded [lower, upper] — only active when
+    # multiplicative_covariate is non-NULL (has_multiplicative_covariate == 1).
+    # Bounds are required by the Stan parameter declaration even when off.
+    gamma_mult_prior_mean            = priors$multiplier$mean,
+    gamma_mult_prior_sd              = priors$multiplier$sd,
+    gamma_mult_lower                 = gamma_lo,
+    gamma_mult_upper                 = gamma_up
   )
 }
 

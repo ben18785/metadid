@@ -10,7 +10,7 @@ vector[n_studies_rct_summary * (1 - is_baseline_normalised)] baseline_treatment_
 
 if (!is_student_t_heterogeneity && !is_correlated_effects) {
   for (i in 1:size(treatment_effect_rct_summary_raw))
-    treatment_effect_rct_summary[i] = treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov + treatment_effect_sd * treatment_effect_rct_summary_raw[i];
+    treatment_effect_rct_summary[i] = mult_factor(has_multiplicative_covariate, gamma_mult, x_mult_rct_summary[i]) * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov) + treatment_effect_sd * treatment_effect_rct_summary_raw[i];
 } else {
   treatment_effect_rct_summary = treatment_effect_rct_summary_raw;
 }

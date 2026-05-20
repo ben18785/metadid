@@ -84,6 +84,12 @@ if(n_studies_did_summary > 0) {
   if (!is_differenced_likelihood_did_summary) {
     baseline_difference_did_summary_raw ~ std_normal();
   }
+  vector[n_studies_did_summary] mult_did_summary;
+  if (has_multiplicative_covariate) {
+    for (i in 1:n_studies_did_summary) mult_did_summary[i] = pow(gamma_mult[1], x_mult_did_summary[i]);
+  } else {
+    mult_did_summary = rep_vector(1.0, n_studies_did_summary);
+  }
   if (is_correlated_effects) {
     matrix[2, 2] L_Sigma_did_summary = diag_pre_multiply(
       [treatment_effect_sd, time_trend_sd]', L_corr_theta_beta[1]
@@ -91,14 +97,14 @@ if(n_studies_did_summary > 0) {
     for (i in 1:n_studies_did_summary) {
       target += multi_normal_cholesky_lpdf(
         [treatment_effect_did_summary[i], time_trend_did_summary[i]]' |
-        [treatment_effect_mean + X_cov_did_summary[i] * beta_cov, time_trend_mean]',
+        [mult_did_summary[i] * (treatment_effect_mean + X_cov_did_summary[i] * beta_cov), time_trend_mean]',
         L_Sigma_did_summary
       );
     }
   } else {
     time_trend_did_summary_raw ~ std_normal();
     if (is_student_t_heterogeneity) {
-      treatment_effect_did_summary ~ student_t(nu_treatment_vec[1], treatment_effect_mean + X_cov_did_summary * beta_cov, treatment_effect_sd);
+      treatment_effect_did_summary ~ student_t(nu_treatment_vec[1], mult_did_summary .* (treatment_effect_mean + X_cov_did_summary * beta_cov), treatment_effect_sd);
     } else {
       treatment_effect_did_summary_raw ~ std_normal();
     }
@@ -120,7 +126,13 @@ if (n_studies_did_change_only > 0) {
     );
   }
   if (is_student_t_heterogeneity) {
-    treatment_effect_did_change_only ~ student_t(nu_treatment_vec[1], treatment_effect_mean + X_cov_did_change_only * beta_cov, treatment_effect_sd);
+    vector[n_studies_did_change_only] mult_did_change_only;
+    if (has_multiplicative_covariate) {
+      for (i in 1:n_studies_did_change_only) mult_did_change_only[i] = pow(gamma_mult[1], x_mult_did_change_only[i]);
+    } else {
+      mult_did_change_only = rep_vector(1.0, n_studies_did_change_only);
+    }
+    treatment_effect_did_change_only ~ student_t(nu_treatment_vec[1], mult_did_change_only .* (treatment_effect_mean + X_cov_did_change_only * beta_cov), treatment_effect_sd);
   } else {
     treatment_effect_did_change_only_raw ~ std_normal();
   }
