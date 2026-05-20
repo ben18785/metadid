@@ -42,7 +42,6 @@ null_stan_data_rct <- function() {
     study_end_treatment_rct     = integer(0),
     x_control_after_rct         = numeric(0),
     x_treatment_after_rct       = numeric(0),
-    is_baseline_control_equal_treatment_rct = 0L,
     is_time_trend_rct_zero = 0L
   )
 }
@@ -103,7 +102,6 @@ null_stan_data_rct_summary <- function() {
     sample_size_treatment_rct_summary               = integer(0),
     sd_control_after_rct_summary                    = numeric(0),
     sd_treatment_after_rct_summary                  = numeric(0),
-    is_baseline_control_equal_treatment_rct_summary = 0L,
     is_time_trend_rct_summary_zero = 0L
   )
 }
@@ -221,7 +219,6 @@ adapt_summary_rct <- function(data) {
     sample_size_treatment_rct_summary               = as.integer(data$n_treatment),
     sd_control_after_rct_summary                    = data$sd_post_control,
     sd_treatment_after_rct_summary                  = data$sd_post_treatment,
-    is_baseline_control_equal_treatment_rct_summary = 0L,
     is_time_trend_rct_summary_zero = 0L
   )
 }
@@ -292,7 +289,6 @@ prepare_individual_rct <- function(df) {
     study_end_treatment_rct     = as.integer(cumsum(n_t)),
     x_control_after_rct         = ctrl$after,
     x_treatment_after_rct       = trt$after,
-    is_baseline_control_equal_treatment_rct = 0L,
     is_time_trend_rct_zero = 0L
   )
 }

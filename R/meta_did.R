@@ -40,6 +40,28 @@
 #'   correlation is parameterised via a Cholesky factor of a 2×2 correlation
 #'   matrix with an LKJ prior (see [set_priors()]). Cannot be combined with
 #'   `robust_heterogeneity = TRUE`. Default `FALSE`.
+#' @param baseline_imbalance How to handle the per-study baseline
+#'   difference \eqn{\gamma_i} for **non-DiD** designs. DiD studies
+#'   always estimate \eqn{\gamma_i} per-study because the pre-treatment
+#'   means on both arms identify it directly from the data; this
+#'   argument controls only the RCT branch.
+#'   One of:
+#'   \describe{
+#'     \item{`"estimated"`}{(Default) RCT studies also have per-study
+#'       `baseline_difference_i` parameters, drawn from a hierarchical
+#'       prior shared with DiD studies. Because RCT data cannot identify
+#'       per-study \eqn{\gamma_i} alone (only one post-treatment
+#'       observation per arm), the hierarchical prior \-\- informed by
+#'       DiD's per-study estimates \-\- is what pins down the
+#'       decomposition into baseline imbalance and treatment effect.
+#'       Priors on the population hyperparameters are set via
+#'       `baseline_difference_mean` and `baseline_difference_sd` in
+#'       [set_priors()].}
+#'     \item{`"fixed_zero"`}{Fix \eqn{\gamma_i = 0} for RCT studies. The
+#'       treatment-arm baseline is constrained equal to the control-arm
+#'       baseline. Use when randomisation can be assumed to eliminate
+#'       baseline imbalances. DiD studies are unaffected.}
+#'   }
 #' @param priors A `did_priors` object from [set_priors()]. Controls the
 #'   prior distributions on all population-level parameters.
 #' @param covariates An optional one-sided formula specifying study-level
@@ -112,6 +134,7 @@ meta_did <- function(
     design_effects        = FALSE,
     hierarchical_rho      = TRUE,
     correlated_effects    = FALSE,
+    baseline_imbalance    = c("estimated", "fixed_zero"),
     covariates            = NULL,
     center_covariates     = TRUE,
     priors                = set_priors(),
@@ -131,6 +154,7 @@ meta_did <- function(
     design_effects        = design_effects,
     hierarchical_rho      = hierarchical_rho,
     correlated_effects    = correlated_effects,
+    baseline_imbalance    = baseline_imbalance,
     covariates            = covariates,
     center_covariates     = center_covariates,
     priors                = priors,
@@ -171,14 +195,16 @@ meta_did <- function(
 #'       reparameterised time trend correction is bypassed.}
 #'   }
 #' @param baseline_imbalance How to handle the baseline difference
-#'   \eqn{\gamma_i} between treatment and control groups for RCT studies.
+#'   \eqn{\gamma_i} between treatment and control groups for **RCT**
+#'   studies. DiD studies always estimate \eqn{\gamma_i} per-study (the
+#'   pre-treatment means identify it from data).
 #'   One of:
 #'   \describe{
-#'     \item{`"estimated"`}{(Default) Estimate \eqn{\gamma_i}, borrowing
-#'       information from DiD studies when baseline-normalised. This is the
-#'       same behaviour as [meta_did()].}
-#'     \item{`"fixed_zero"`}{Fix \eqn{\gamma_i = 0}, assuming randomisation
-#'       eliminates baseline imbalances. This is the standard RCT assumption.}
+#'     \item{`"estimated"`}{(Default) Estimate per-study \eqn{\gamma_i}
+#'       for RCT, drawing from a hierarchical prior shared with DiD's
+#'       per-study estimates. This is the same behaviour as [meta_did()].}
+#'     \item{`"fixed_zero"`}{Fix \eqn{\gamma_i = 0} for RCT studies,
+#'       assuming randomisation eliminates baseline imbalances.}
 #'   }
 #' @param pp_likelihood Likelihood form for pre-post studies. One of:
 #'   \describe{
@@ -232,11 +258,11 @@ meta_did_general <- function(
     design_effects        = FALSE,
     hierarchical_rho      = TRUE,
     correlated_effects    = FALSE,
+    baseline_imbalance    = c("estimated", "fixed_zero"),
     covariates            = NULL,
     center_covariates     = TRUE,
     priors                = set_priors(),
     time_trend            = c("pooled", "fixed_zero"),
-    baseline_imbalance    = c("estimated", "fixed_zero"),
     pp_likelihood         = c("differenced", "bivariate"),
     method                = c("sample", "optimize"),
     chains                = 4L,
@@ -259,11 +285,6 @@ meta_did_general <- function(
     overrides$is_time_trend_rct_summary_zero    <- 1L
   }
 
-  if (baseline_imbalance == "fixed_zero") {
-    overrides$is_baseline_control_equal_treatment_rct         <- 1L
-    overrides$is_baseline_control_equal_treatment_rct_summary <- 1L
-  }
-
   if (pp_likelihood == "bivariate") {
     overrides$is_differenced_likelihood_pp         <- 0L
     overrides$is_differenced_likelihood_pp_summary <- 0L
@@ -277,6 +298,7 @@ meta_did_general <- function(
     design_effects        = design_effects,
     hierarchical_rho      = hierarchical_rho,
     correlated_effects    = correlated_effects,
+    baseline_imbalance    = baseline_imbalance,
     covariates            = covariates,
     center_covariates     = center_covariates,
     priors                = priors,
@@ -375,6 +397,7 @@ meta_did_naive <- function(
     design_effects        = FALSE,
     hierarchical_rho      = TRUE,
     correlated_effects    = FALSE,
+    baseline_imbalance    = c("estimated", "fixed_zero"),
     covariates            = NULL,
     center_covariates     = TRUE,
     priors                = set_priors(),
@@ -387,7 +410,8 @@ meta_did_naive <- function(
     stan_data_overrides   = NULL,
     ...
 ) {
-  method <- match.arg(method)
+  method             <- match.arg(method)
+  baseline_imbalance <- match.arg(baseline_imbalance)
 
   # --- Input checks ---
   if (is.null(summary_data) && is.null(individual_data)) {
@@ -492,7 +516,8 @@ meta_did_naive <- function(
     is_correlation_coefficient_hierarchical = as.integer(hierarchical_rho),
     is_student_t_heterogeneity              = as.integer(robust_heterogeneity),
     is_design_effect                        = as.integer(design_effects),
-    is_correlated_effects                   = as.integer(correlated_effects)
+    is_correlated_effects                   = as.integer(correlated_effects),
+    is_baseline_difference_estimated        = as.integer(baseline_imbalance == "estimated")
   )
 
   # --- Stan data ---

@@ -1,18 +1,22 @@
 // rct_model.stan
 
 if(n_studies_rct > 0) {
-  // Construct effective baselines
+  // Construct effective baselines.
+  // When normalised: control = 1; treatment = 1 + baseline_difference (if estimated) else 1.
+  // When unnormalised: treatment baseline is the transformed parameter
+  // baseline_treatment_rct, which itself is baseline_control * (1 + baseline_difference)
+  // when estimated, else baseline_control.
   vector[n_studies_rct] baseline_control_rct_eff;
   vector[n_studies_rct] baseline_treatment_rct_eff;
   if (is_baseline_normalised) {
     baseline_control_rct_eff = rep_vector(1.0, n_studies_rct);
-    baseline_treatment_rct_eff = rep_vector(1.0, n_studies_rct);
+    if (is_baseline_difference_estimated)
+      baseline_treatment_rct_eff = rep_vector(1.0, n_studies_rct) + baseline_difference_rct;
+    else
+      baseline_treatment_rct_eff = rep_vector(1.0, n_studies_rct);
   } else {
     baseline_control_rct_eff = baseline_control_rct;
-    if (is_baseline_control_equal_treatment_rct)
-      baseline_treatment_rct_eff = baseline_control_rct;
-    else
-      baseline_treatment_rct_eff = baseline_treatment_rct;
+    baseline_treatment_rct_eff = baseline_treatment_rct;
   }
 
   // Construct effective time trends (zero when flag is set)
@@ -93,8 +97,9 @@ if(n_studies_rct > 0) {
   
   if (!is_baseline_normalised) {
     baseline_control_rct_raw ~ std_normal();
-    if (!is_baseline_control_equal_treatment_rct)
-      baseline_treatment_rct_raw ~ std_normal();
+  }
+  if (is_baseline_difference_estimated) {
+    baseline_difference_rct_raw ~ std_normal();
   }
   // Time trend prior (non-centered; when correlated, included in joint prior above)
   if (!is_time_trend_rct_zero && !is_correlated_effects)
