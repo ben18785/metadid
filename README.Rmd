@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 [![tests](https://github.com/ben18785/metadid/actions/workflows/tests.yaml/badge.svg)](https://github.com/ben18785/metadid/actions)
 [![Codecov test coverage](https://codecov.io/gh/ben18785/metadid/graph/badge.svg)](https://app.codecov.io/gh/ben18785/metadid)
 
-**metadid** is an R package for Bayesian meta-analysis that synthesises treatment effects across studies with different designs: difference-in-differences (DiD), post-only randomised controlled trials (RCT), and pre-post studies. It uses a hierarchical Stan model that accounts for design-specific information and heterogeneity across studies, with optional baseline normalisation to place outcomes on a common fractional scale.
+**metadid** is an R package for Bayesian meta-analysis that synthesises treatment effects across studies with different designs: difference-in-differences (DiD), post-only randomised controlled trials (RCT), and pre-post studies. It uses a hierarchical Stan model that accounts for design-specific information and heterogeneity across studies, and by default expresses treatment effects as fractions of each study's treatment-arm pre-treatment baseline — a scale that is comparable across studies even when raw outcomes are on incommensurable units. The per-study baseline is inferred as a latent parameter inside the Stan model rather than plugged in from sample means, which correctly propagates baseline uncertainty into the posterior of the relative effect.
 
 ## Model assumptions
 
@@ -182,7 +182,7 @@ sim <- simulate_meta_did(
 )
 ```
 
-The true population treatment effect is `-0.15` on the raw scale, or approximately `-0.333` after normalising by the baseline mean of `0.45`.
+The true population treatment effect is `-0.15` on the raw scale, or approximately `-0.333` when expressed as a fraction of the treatment-arm pre-treatment baseline (≈ 0.45 here, since the simulation has no baseline imbalance). The fractional scale is what `meta_did()` reports by default; see `vignette("model-details")` for the precise definition.
 
 ### 2. Two scenarios from the same data
 

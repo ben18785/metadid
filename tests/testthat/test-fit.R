@@ -67,7 +67,7 @@ mock_meta_did_fit <- function(
     summary_data = NULL,
     individual_data = NULL,
     model_flags = list(
-      is_baseline_normalised = 1L,
+      baseline_latent_mode                     = 1L,
       is_correlation_coefficient_hierarchical = 0L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 0L
@@ -125,7 +125,7 @@ test_that("print (sample): shows Student-t df when robust_heterogeneity on", {
     method = "sample",
     summary_data = did_summary,
     model_flags = list(
-      is_baseline_normalised = 1L,
+      baseline_latent_mode                     = 1L,
       is_correlation_coefficient_hierarchical = 0L,
       is_student_t_heterogeneity = 1L,
       is_design_effect = 0L
@@ -147,7 +147,7 @@ test_that("print (sample): shows design offsets when design_effects on", {
     method = "sample",
     summary_data = did_summary,
     model_flags = list(
-      is_baseline_normalised = 1L,
+      baseline_latent_mode                     = 1L,
       is_correlation_coefficient_hierarchical = 0L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 1L
@@ -196,7 +196,7 @@ test_that("print (optimize): shows design offsets when design_effects on", {
     method = "optimize",
     summary_data = did_summary,
     model_flags = list(
-      is_baseline_normalised = 1L,
+      baseline_latent_mode                     = 1L,
       is_correlation_coefficient_hierarchical = 0L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 1L
@@ -259,7 +259,7 @@ test_that("summary (sample): includes design effects when enabled", {
     method = "sample",
     summary_data = did_summary,
     model_flags = list(
-      is_baseline_normalised = 1L,
+      baseline_latent_mode                     = 1L,
       is_correlation_coefficient_hierarchical = 0L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 1L
