@@ -18,7 +18,8 @@ set_priors(
   beta_cov = normal(0, 10),
   lkj_eta = lkj(2),
   baseline_difference_mean = normal(0, 0.5),
-  baseline_difference_sd = cauchy(0.1)
+  baseline_difference_sd = cauchy(0.1),
+  baseline_per_study = NULL
 )
 }
 \arguments{

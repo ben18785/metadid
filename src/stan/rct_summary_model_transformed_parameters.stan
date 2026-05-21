@@ -1,15 +1,35 @@
 // rct_summary_model_transformed_parameters.stan
-// Non-centered parameterization for study-level RCT summary parameters,
-// plus derivation of treatment_effect from apparent_effect when normalised.
+//
+// Reconstructs per-study RCT parameters from non-centered raws and (in
+// modelled modes) from the per-study latent baseline.
+//
+// As in the DiD summary path:
+//   * The likelihood operates on the **absolute** (user-units) scale; the
+//     post-period observations are passed to Stan raw and the per-study
+//     baselines are in absolute units.
+//   * The hierarchical pooling layer in modelled modes lives on the
+//     canonical fractional scale (fractions of treatment-pre baseline);
+//     per-study θ_T, γ_T, δ are bridged to absolute units at the likelihood
+//     call site in rct_summary_model.stan.
+//   * In none mode the canonical and absolute scales coincide, preserving
+//     the existing absolute-scale behaviour of that mode.
+//
+// NOTE: while RCT has been migrated, δ retains the legacy
+// (b_T - b_C) / b_C convention internally for cross-design consistency
+// with PP (which still uses it). The switch to the canonical
+// (b_T - b_C) / b_T convention will happen once PP is migrated too.
+//
+// The legacy `apparent_effect` reparameterisation has been removed — it was
+// only needed under the legacy plug-in normalised mode where the data
+// itself was on the fractional scale. With per-study latent baselines and
+// raw data flowing in, the absolute-scale parameterisation handles all
+// cases uniformly.
 
-vector[n_studies_rct_summary * (1 - is_baseline_normalised * (1 - is_time_trend_rct_summary_zero))] treatment_effect_rct_summary;
+vector[n_studies_rct_summary] treatment_effect_rct_summary;
 vector[n_studies_rct_summary * (1 - is_time_trend_rct_summary_zero)] time_trend_rct_summary;
-vector[n_studies_rct_summary * (1 - is_baseline_normalised)] baseline_control_rct_summary;
-vector[n_studies_rct_summary * is_baseline_difference_estimated] baseline_difference_rct_summary;
-vector[n_studies_rct_summary * (1 - is_baseline_normalised)] baseline_treatment_rct_summary;
 
 if (!is_student_t_heterogeneity && !is_correlated_effects) {
-  for (i in 1:size(treatment_effect_rct_summary_raw))
+  for (i in 1:n_studies_rct_summary)
     treatment_effect_rct_summary[i] = treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov + treatment_effect_sd * treatment_effect_rct_summary_raw[i];
 } else {
   treatment_effect_rct_summary = treatment_effect_rct_summary_raw;
@@ -22,37 +42,43 @@ if (!is_correlated_effects) {
   time_trend_rct_summary = time_trend_rct_summary_raw;
 }
 
-for (i in 1:size(baseline_control_rct_summary_raw))
-  baseline_control_rct_summary[i] = baseline_control_mean[1] + baseline_control_sd[1] * baseline_control_rct_summary_raw[i];
+// baseline_difference_rct_summary is sampled directly with <lower=-1>
+// constraint (see rct_summary_model_parameters.stan).
 
-for (i in 1:size(baseline_difference_rct_summary_raw))
-  baseline_difference_rct_summary[i] = baseline_difference_mean + baseline_difference_sd * baseline_difference_rct_summary_raw[i];
+// ---- Per-study absolute baselines -----------------------------------------
+vector[n_studies_rct_summary] baseline_control_rct_summary;
+vector[n_studies_rct_summary] baseline_treatment_rct_summary;
 
-// baseline_treatment_rct_summary exists only in unnormalised mode. When the
-// imbalance is estimated it equals baseline_control * (1 + baseline_difference);
-// otherwise it is constrained equal to baseline_control.
-for (i in 1:size(baseline_treatment_rct_summary)) {
-  if (is_baseline_difference_estimated)
-    baseline_treatment_rct_summary[i] = baseline_control_rct_summary[i] * (1 + baseline_difference_rct_summary[i]);
-  else
-    baseline_treatment_rct_summary[i] = baseline_control_rct_summary[i];
-}
-
-// Derive true treatment effect.
-// In the normalised + non-zero time-trend branch: the data measures the apparent
-// jump (gamma + theta) / (b_c + beta). apparent_total = apparent * (1 + time_trend)
-// recovers gamma + theta on the normalised scale; subtracting baseline_difference
-// isolates theta.
-// In all other branches, treatment_effect_rct_summary is sampled directly.
-vector[n_studies_rct_summary] treatment_effect_rct_summary_derived;
-if (is_baseline_normalised && !is_time_trend_rct_summary_zero) {
-  for (i in 1:n_studies_rct_summary) {
-    real apparent_total = apparent_effect_rct_summary[i] * (1 + time_trend_rct_summary[i]);
-    if (is_baseline_difference_estimated)
-      treatment_effect_rct_summary_derived[i] = apparent_total - baseline_difference_rct_summary[i];
-    else
-      treatment_effect_rct_summary_derived[i] = apparent_total;
+if (is_modelled) {
+  if (is_modelled_treatment) {
+    for (i in 1:n_studies_rct_summary) {
+      baseline_treatment_rct_summary[i] = baseline_per_study_latent_rct_summary[i];
+      if (is_baseline_difference_estimated) {
+        baseline_control_rct_summary[i] = baseline_treatment_rct_summary[i] /
+                                          (1 + baseline_difference_rct_summary[i]);
+      } else {
+        baseline_control_rct_summary[i] = baseline_treatment_rct_summary[i];
+      }
+    }
+  } else {
+    for (i in 1:n_studies_rct_summary) {
+      baseline_control_rct_summary[i] = baseline_per_study_latent_rct_summary[i];
+      if (is_baseline_difference_estimated) {
+        baseline_treatment_rct_summary[i] = baseline_control_rct_summary[i] *
+                                            (1 + baseline_difference_rct_summary[i]);
+      } else {
+        baseline_treatment_rct_summary[i] = baseline_control_rct_summary[i];
+      }
+    }
   }
 } else {
-  treatment_effect_rct_summary_derived = treatment_effect_rct_summary;
+  for (i in 1:n_studies_rct_summary) {
+    baseline_control_rct_summary[i] = baseline_control_mean[1] + baseline_control_sd[1] * baseline_control_rct_summary_raw[i];
+    if (is_baseline_difference_estimated) {
+      baseline_treatment_rct_summary[i] = baseline_control_rct_summary[i] *
+                                          (1 + baseline_difference_rct_summary[i]);
+    } else {
+      baseline_treatment_rct_summary[i] = baseline_control_rct_summary[i];
+    }
+  }
 }

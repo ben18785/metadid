@@ -26,7 +26,7 @@ mock_fit_sample <- structure(
     summary_data = mock_summary_data,
     individual_data = NULL,
     model_flags = list(
-      is_baseline_normalised = 1L,
+      baseline_latent_mode                     = 1L,
       is_correlation_coefficient_hierarchical = 1L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 0L

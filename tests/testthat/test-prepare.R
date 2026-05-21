@@ -387,7 +387,7 @@ test_that("prepare_stan_data() includes shared flags and priors", {
     sd_post_treatment   = 0.10
   )
   flags  <- list(
-    is_baseline_normalised                  = 1L,
+    baseline_latent_mode                     = 1L,
     is_correlation_coefficient_hierarchical = 1L,
     is_student_t_heterogeneity              = 0L,
     is_design_effect                        = 0L
@@ -396,7 +396,7 @@ test_that("prepare_stan_data() includes shared flags and priors", {
   result <- prepare_stan_data(df, NULL, flags, priors)
 
   # Flags present
-  expect_equal(result$is_baseline_normalised, 1L)
+  expect_equal(result$baseline_latent_mode, 1L)
   expect_equal(result$is_student_t_heterogeneity, 0L)
 
   # Prior hyperparameters present
@@ -435,7 +435,7 @@ test_that("prepare_stan_data() handles mixed summary and individual", {
     value      = c(10, 12, 11, 8)
   )
   flags  <- list(
-    is_baseline_normalised                  = 0L,
+    baseline_latent_mode                     = 3L,
     is_correlation_coefficient_hierarchical = 0L,
     is_student_t_heterogeneity              = 0L,
     is_design_effect                        = 0L

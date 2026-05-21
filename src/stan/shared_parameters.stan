@@ -2,11 +2,15 @@
 real time_trend_mean;
 real<lower=0> time_trend_sd;
 
-vector[1 - is_baseline_normalised] baseline_control_mean;
-vector<lower=0>[1 - is_baseline_normalised] baseline_control_sd;
+// Pop-level baselines used only in "none" mode for the hierarchical pooling
+// of per-study baselines on the absolute scale. In modelled modes (1 and 2)
+// these are sized 0 — per-study baselines are inferred as latent parameters
+// in each design's parameters file instead.
+vector[is_none_mode] baseline_control_mean;
+vector<lower=0>[is_none_mode] baseline_control_sd;
 
-vector[1 - is_baseline_normalised] baseline_treatment_mean;
-vector<lower=0>[1 - is_baseline_normalised] baseline_treatment_sd;
+vector[is_none_mode] baseline_treatment_mean;
+vector<lower=0>[is_none_mode] baseline_treatment_sd;
 
 // Population-level baseline imbalance (treatment vs control) on the normalised
 // fractional scale. DiD studies always contribute (per-study identification);
