@@ -8,12 +8,14 @@ vector[n_studies_did_summary * (1 - is_differenced_likelihood_did_summary)] time
 // uniform-prior latent declared below.
 vector[n_studies_did_summary * (1 - is_differenced_likelihood_did_summary) * is_none_mode] baseline_control_did_summary_raw;
 
-// Per-study baseline imbalance δ = (b_T - b_C) / b_C, directly sampled with
-// a lower bound of -1 so that the derived control baseline in treatment-latent
-// mode (b_C = b_T / (1 + δ)) cannot diverge through the singularity at δ = -1.
-// The lower bound is functionally a hard physical constraint (negative
-// baselines are not meaningful), and the bulk of the prior + likelihood mass
-// sits well away from it, so the constraint doesn't bind in practice.
+// Per-study baseline imbalance γ = (b_T - b_C) / b_C (control-pre reference
+// convention). Directly sampled with a lower bound of -1 so the derived
+// control baseline in treatment-latent mode (b_C = b_T / (1 + γ)) and the
+// derived treatment baseline in control-latent / none mode
+// (b_T = b_C * (1 + γ)) both remain positive. The lower bound is
+// functionally a hard physical constraint (negative baselines are not
+// meaningful), and the bulk of the prior + likelihood mass sits well away
+// from it, so the constraint doesn't bind in practice.
 vector<lower=-1>[n_studies_did_summary * (1 - is_differenced_likelihood_did_summary)] baseline_difference_did_summary;
 
 // Per-study latent baseline parameter for the modelled normalisation modes.

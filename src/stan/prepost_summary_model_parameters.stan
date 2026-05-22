@@ -25,7 +25,7 @@ vector[n_studies_pp_summary * (1 - is_differenced_likelihood_pp_summary) * is_no
 // is still needed to bridge from the canonical fractional scale that
 // hierarchical pooling lives on to the absolute scale of the data — the
 // differenced likelihood doesn't see the baseline, but the
-// canonical-to-absolute multiplication of θ_T and γ_T does.
+// canonical-to-absolute multiplication of θ_T and β_T does.
 //
 // The clinically natural choice for PP is `normalise = TRUE,
 // baseline_latent_arm = "treatment"`; selecting control-latent for PP is

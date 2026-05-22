@@ -12,12 +12,12 @@ vector[n_studies_rct * is_none_mode] baseline_control_rct_raw;
 // Sized > 0 only when is_modelled == 1. Holds b_T_pre[i] in treatment-latent
 // mode and b_C_pre[i] in control-latent mode. For RCT studies neither pre
 // baseline is directly observed (no pre period); the latent is informed
-// jointly with the per-study θ, γ, and δ via the post-period observations
+// jointly with the per-study θ, β, and γ via the post-period observations
 // and the hierarchical priors from the rest of the meta-analysis.
 vector<lower=0, upper=baseline_prior_upper>[n_studies_rct * is_modelled] baseline_per_study_latent_rct;
 
-// Per-study δ directly sampled with <lower=-1> constraint (avoids the
-// (1 + δ) singularity in treatment-latent mode).
+// Per-study γ = (b_T - b_C) / b_C on the control-pre reference convention.
+// <lower=-1> keeps (1 + γ) positive in both parameterisations.
 vector<lower=-1>[n_studies_rct * is_baseline_difference_estimated] baseline_difference_rct;
 vector<lower=0>[n_studies_rct] sigma_control_after_rct;
 vector<lower=0>[n_studies_rct] sigma_treatment_after_rct;

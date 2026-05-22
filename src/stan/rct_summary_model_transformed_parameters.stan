@@ -9,15 +9,15 @@
 //     baselines are in absolute units.
 //   * The hierarchical pooling layer in modelled modes lives on the
 //     canonical fractional scale (fractions of treatment-pre baseline);
-//     per-study θ_T, γ_T, δ are bridged to absolute units at the likelihood
+//     per-study θ_T, β_T, γ are bridged to absolute units at the likelihood
 //     call site in rct_summary_model.stan.
 //   * In none mode the canonical and absolute scales coincide, preserving
 //     the existing absolute-scale behaviour of that mode.
 //
-// NOTE: while RCT has been migrated, δ retains the legacy
-// (b_T - b_C) / b_C convention internally for cross-design consistency
-// with PP (which still uses it). The switch to the canonical
-// (b_T - b_C) / b_T convention will happen once PP is migrated too.
+// γ = baseline_difference uses the control-pre reference convention
+// (b_T - b_C) / b_C. The derivation formulas are b_T = b_C * (1 + γ) and
+// b_C = b_T / (1 + γ). The lower bound γ > -1 keeps (1 + γ) positive in
+// either parameterisation.
 //
 // The legacy `apparent_effect` reparameterisation has been removed — it was
 // only needed under the legacy plug-in normalised mode where the data

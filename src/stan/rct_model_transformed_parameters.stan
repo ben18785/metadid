@@ -36,6 +36,9 @@ if (!is_correlated_effects) {
 vector[n_studies_rct] baseline_control_rct;
 vector[n_studies_rct] baseline_treatment_rct;
 
+// γ = baseline_difference uses the control-pre reference convention
+// (b_T - b_C) / b_C. b_T = b_C * (1 + γ); b_C = b_T / (1 + γ). The lower
+// bound γ > -1 keeps (1 + γ) positive in either parameterisation.
 if (is_modelled) {
   if (is_modelled_treatment) {
     for (i in 1:n_studies_rct) {

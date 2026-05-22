@@ -33,12 +33,14 @@ pp_check_effects <- function(fit, study_id = NULL, prob = 0.9) {
   n_studies <- nrow(obs)
 
   # Population mean and SD per draw
-  mu_mat <- build_pop_mean_matrix(obs, draws)
-  sigma_draws <- as.numeric(draws[, "treatment_effect_sd"])
-  sigma_mat <- matrix(sigma_draws, nrow = n_draws, ncol = n_studies)
+  mu_mat <- build_pop_mean_matrix(obs, draws, fit$model_flags)
+  sigma_mat <- build_between_study_sd_matrix(obs, draws, n_draws, n_studies)
 
-  # Study-level SE per draw
+  # Study-level SE per draw, normalised by each study's baseline
   se_mat <- compute_se_matrix(fit, obs, draws)
+  baseline_mat <- matrix(obs$baseline, nrow = n_draws, ncol = n_studies,
+                         byrow = TRUE)
+  se_mat <- se_mat / baseline_mat
 
   # Replicated study effects from population distribution
   if (as.logical(fit$model_flags$is_student_t_heterogeneity)) {
@@ -146,7 +148,10 @@ pp_check_cdf_individual <- function(fit, study_id, prob) {
 
   draws <- fit$fit$draws(format = "draws_matrix")
   n_draws <- nrow(draws)
-  is_normalised <- as.logical(fit$model_flags$is_baseline_normalised)
+  # Plug-in normalisation has been removed (replaced by per-study latent
+  # baselines under baseline_latent_mode). Baseline parameters are now always
+  # available on the absolute scale, so is_normalised is always FALSE.
+  is_normalised <- FALSE
   n_grid <- 200
   lo_q <- (1 - prob) / 2
   hi_q <- 1 - lo_q
@@ -241,12 +246,14 @@ pp_check_cdf_summary <- function(fit, study_id, prob) {
   n_studies <- nrow(obs)
 
   # Population mean and SD per draw
-  mu_mat <- build_pop_mean_matrix(obs, draws)
-  sigma_draws <- as.numeric(draws[, "treatment_effect_sd"])
-  sigma_mat <- matrix(sigma_draws, nrow = n_draws, ncol = n_studies)
+  mu_mat <- build_pop_mean_matrix(obs, draws, fit$model_flags)
+  sigma_mat <- build_between_study_sd_matrix(obs, draws, n_draws, n_studies)
 
-  # Study-level SE per draw
+  # Study-level SE per draw, normalised by each study's baseline
   se_mat <- compute_se_matrix(fit, obs, draws)
+  baseline_mat <- matrix(obs$baseline, nrow = n_draws, ncol = n_studies,
+                         byrow = TRUE)
+  se_mat <- se_mat / baseline_mat
 
   # Replicated study effects from population distribution
   if (as.logical(fit$model_flags$is_student_t_heterogeneity)) {
@@ -315,60 +322,83 @@ pp_check_cdf_summary <- function(fit, study_id, prob) {
 # ============================================================
 
 #' Compute observed naive treatment effects for each study
+#'
+#' When the model is in normalised mode (baseline_latent_mode != 3), raw naive
+#' effects are divided by an observable baseline proxy so that they are on the
+#' same scale as the model's normalised parameters. The baseline used for each
+#' study is returned in the `baseline` column so that callers can also normalise
+#' standard errors.
+#'
 #' @noRd
 compute_observed_effects <- function(fit) {
   results <- list()
   sdata <- fit$summary_data
   idata <- fit$individual_data
+  is_normalised <- !identical(fit$model_flags$baseline_latent_mode, 3L)
 
   # ---- Summary data ----
   if (!is.null(sdata) && nrow(sdata) > 0) {
 
     did <- sdata[sdata$design == "did", , drop = FALSE]
     if (nrow(did) > 0) {
+      raw <- (did$mean_post_treatment - did$mean_pre_treatment) -
+             (did$mean_post_control - did$mean_pre_control)
+      baseline <- if (is_normalised) did$mean_pre_treatment else rep(1, nrow(did))
       results$did_summary <- data.frame(
         study_id = did$study_id,
         design_family = "did",
         design_type = "did_summary",
         design_index = seq_len(nrow(did)),
-        y_obs = (did$mean_post_treatment - did$mean_pre_treatment) -
-                (did$mean_post_control - did$mean_pre_control),
+        y_obs = raw / baseline,
+        baseline = baseline,
         stringsAsFactors = FALSE
       )
     }
 
     chg <- sdata[sdata$design == "did_change", , drop = FALSE]
     if (nrow(chg) > 0) {
+      raw <- chg$mean_change_treatment - chg$mean_change_control
+      # did_change has no pre-treatment mean; use 1 (no normalisation possible)
+      baseline <- rep(1, nrow(chg))
       results$did_change <- data.frame(
         study_id = chg$study_id,
         design_family = "did",
         design_type = "did_change",
         design_index = seq_len(nrow(chg)),
-        y_obs = chg$mean_change_treatment - chg$mean_change_control,
+        y_obs = raw / baseline,
+        baseline = baseline,
         stringsAsFactors = FALSE
       )
     }
 
     rct <- sdata[sdata$design == "rct", , drop = FALSE]
     if (nrow(rct) > 0) {
+      raw <- rct$mean_post_treatment - rct$mean_post_control
+      # RCTs lack a pre-treatment measure; use mean_post_control as a proxy
+      # (on the normalised scale, post_control ≈ baseline + time_trend)
+      baseline <- if (is_normalised) rct$mean_post_control else rep(1, nrow(rct))
       results$rct_summary <- data.frame(
         study_id = rct$study_id,
         design_family = "rct",
         design_type = "rct_summary",
         design_index = seq_len(nrow(rct)),
-        y_obs = rct$mean_post_treatment - rct$mean_post_control,
+        y_obs = raw / baseline,
+        baseline = baseline,
         stringsAsFactors = FALSE
       )
     }
 
     pp <- sdata[sdata$design == "pp", , drop = FALSE]
     if (nrow(pp) > 0) {
+      raw <- pp$mean_post_treatment - pp$mean_pre_treatment
+      baseline <- if (is_normalised) pp$mean_pre_treatment else rep(1, nrow(pp))
       results$pp_summary <- data.frame(
         study_id = pp$study_id,
         design_family = "pp",
         design_type = "pp_summary",
         design_index = seq_len(nrow(pp)),
-        y_obs = pp$mean_post_treatment - pp$mean_pre_treatment,
+        y_obs = raw / baseline,
+        baseline = baseline,
         stringsAsFactors = FALSE
       )
     }
@@ -382,6 +412,7 @@ compute_observed_effects <- function(fit) {
 
       study_ids <- unique(ind_d$study_id)
       y_obs <- numeric(length(study_ids))
+      baselines <- numeric(length(study_ids))
 
       for (j in seq_along(study_ids)) {
         s <- ind_d[ind_d$study_id == study_ids[j], ]
@@ -390,12 +421,18 @@ compute_observed_effects <- function(fit) {
                        mean(s$value[s$group == "treatment" & s$time == "pre"])) -
                       (mean(s$value[s$group == "control" & s$time == "post"]) -
                        mean(s$value[s$group == "control" & s$time == "pre"]))
+          baselines[j] <- if (is_normalised)
+            mean(s$value[s$group == "treatment" & s$time == "pre"]) else 1
         } else if (design == "rct") {
           y_obs[j] <- mean(s$value[s$group == "treatment" & s$time == "post"]) -
                       mean(s$value[s$group == "control" & s$time == "post"])
+          baselines[j] <- if (is_normalised)
+            mean(s$value[s$group == "control" & s$time == "post"]) else 1
         } else {
           y_obs[j] <- mean(s$value[s$group == "treatment" & s$time == "post"]) -
                       mean(s$value[s$group == "treatment" & s$time == "pre"])
+          baselines[j] <- if (is_normalised)
+            mean(s$value[s$group == "treatment" & s$time == "pre"]) else 1
         }
       }
 
@@ -404,7 +441,8 @@ compute_observed_effects <- function(fit) {
         design_family = design,
         design_type = paste0(design, "_individual"),
         design_index = seq_along(study_ids),
-        y_obs = y_obs,
+        y_obs = y_obs / baselines,
+        baseline = baselines,
         stringsAsFactors = FALSE
       )
     }
@@ -415,22 +453,71 @@ compute_observed_effects <- function(fit) {
 
 
 #' Build matrix of population-mean draws (n_draws x n_studies)
+#'
+#' Returns the expected value of each study's naive observable on the model
+#' scale. For DiD studies, this is just the treatment effect mean. For PP
+#' studies, the naive observable also includes the time trend. For RCT
+#' studies, it also includes the baseline difference (when estimated).
 #' @noRd
-build_pop_mean_matrix <- function(obs, draws) {
+build_pop_mean_matrix <- function(obs, draws, model_flags = NULL) {
   n_draws <- nrow(draws)
   n_studies <- nrow(obs)
   mu_mat <- matrix(NA_real_, nrow = n_draws, ncol = n_studies)
 
+  has_time_trend <- "time_trend_mean" %in% colnames(draws)
+  has_baseline_diff <- !is.null(model_flags) &&
+    as.logical(model_flags$is_baseline_difference_estimated) &&
+    "baseline_difference_mean" %in% colnames(draws)
+
   for (i in seq_len(n_studies)) {
-    param <- switch(obs$design_family[i],
+    te_param <- switch(obs$design_family[i],
       did = "treatment_effect_mean",
       rct = "treatment_effect_mean_rct",
       pp  = "treatment_effect_mean_pp"
     )
-    mu_mat[, i] <- as.numeric(draws[, param])
+    mu_mat[, i] <- as.numeric(draws[, te_param])
+
+    # PP naive effect = treatment_effect + time_trend
+    if (obs$design_family[i] == "pp" && has_time_trend) {
+      mu_mat[, i] <- mu_mat[, i] + as.numeric(draws[, "time_trend_mean"])
+    }
+
+    # RCT naive effect = treatment_effect + baseline_difference (when estimated)
+    if (obs$design_family[i] == "rct" && has_baseline_diff) {
+      mu_mat[, i] <- mu_mat[, i] + as.numeric(draws[, "baseline_difference_mean"])
+    }
   }
 
   mu_mat
+}
+
+
+#' Build between-study SD matrix (n_draws x n_studies)
+#'
+#' For DiD studies, the between-study SD is just treatment_effect_sd. For PP
+#' studies, the naive observable varies with both the treatment effect and the
+#' time trend, so the effective between-study SD is approximately
+#' sqrt(treatment_effect_sd^2 + time_trend_sd^2). For RCT studies with
+#' estimated baseline imbalance, it includes baseline_difference_sd similarly.
+#' @noRd
+build_between_study_sd_matrix <- function(obs, draws, n_draws, n_studies) {
+  te_sd <- as.numeric(draws[, "treatment_effect_sd"])
+  has_tt_sd <- "time_trend_sd" %in% colnames(draws)
+  has_bd_sd <- "baseline_difference_sd" %in% colnames(draws)
+
+  sigma_mat <- matrix(NA_real_, nrow = n_draws, ncol = n_studies)
+  for (i in seq_len(n_studies)) {
+    if (obs$design_family[i] == "pp" && has_tt_sd) {
+      tt_sd <- as.numeric(draws[, "time_trend_sd"])
+      sigma_mat[, i] <- sqrt(te_sd^2 + tt_sd^2)
+    } else if (obs$design_family[i] == "rct" && has_bd_sd) {
+      bd_sd <- as.numeric(draws[, "baseline_difference_sd"])
+      sigma_mat[, i] <- sqrt(te_sd^2 + bd_sd^2)
+    } else {
+      sigma_mat[, i] <- te_sd
+    }
+  }
+  sigma_mat
 }
 
 

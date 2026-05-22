@@ -6,7 +6,7 @@
 //   * Likelihood operates on absolute (user-units) scale.
 //   * Hierarchical pooling in modelled modes lives on the canonical
 //     fractional scale (fractions of treatment-pre baseline); per-study
-//     θ_T, γ_T, δ are bridged to absolute units at the likelihood call site.
+//     θ_T, β_T, γ are bridged to absolute units at the likelihood call site.
 //   * In none mode the canonical and absolute scales coincide.
 
 vector[n_studies_did] treatment_effect_did;
@@ -33,6 +33,11 @@ if (!is_correlated_effects) {
 vector[n_studies_did] baseline_control_did;
 vector[n_studies_did] baseline_treatment_did;
 
+// γ = baseline_difference uses the control-pre reference convention
+// (b_T - b_C) / b_C. The derivation formulas are:
+//   b_T = b_C * (1 + γ)
+//   b_C = b_T / (1 + γ)
+// The lower bound γ > -1 keeps (1 + γ) positive in either parameterisation.
 if (is_modelled) {
   if (is_modelled_treatment) {
     for (i in 1:n_studies_did) {

@@ -9,15 +9,15 @@
 //     treatment-pre baseline is in absolute units.
 //   * The hierarchical pooling layer in modelled modes lives on the
 //     canonical fractional scale (fractions of treatment-pre baseline);
-//     per-study θ_T, γ_T are bridged to absolute units at the likelihood
+//     per-study θ_T, β_T are bridged to absolute units at the likelihood
 //     call site in prepost_summary_model.stan.
 //   * In none mode the canonical and absolute scales coincide, preserving
 //     the existing absolute-scale behaviour of that mode.
 //
 // PP has no control arm, so neither b_C_pre nor the per-study baseline
-// imbalance δ is identified from PP data alone. They are pulled from the
+// imbalance γ is identified from PP data alone. They are pulled from the
 // hierarchical priors that DiD studies (and any other studies estimating
-// δ) populate in the same fit.
+// γ) populate in the same fit.
 
 vector[n_studies_pp_summary] treatment_effect_pp_summary;
 vector[n_studies_pp_summary * (1 - is_time_trend_pp_summary_zero)] time_trend_pp_summary;
@@ -42,7 +42,7 @@ if (!is_correlated_effects) {
 // + differenced likelihood, where the baseline cancels everywhere.
 //
 // Critically, this is sized > 0 in modelled mode REGARDLESS of the
-// likelihood form, because in modelled mode the per-study θ_T and γ_T are
+// likelihood form, because in modelled mode the per-study θ_T and β_T are
 // on the canonical fractional scale and need to be multiplied by the
 // per-study baseline to enter the (absolute-scale) likelihood — even the
 // differenced likelihood needs the multiplication, despite cancelling
@@ -53,7 +53,7 @@ if (!is_correlated_effects) {
 // x_bar_treatment_before via an explicit likelihood term in
 // prepost_summary_model.stan). In control-latent mode the latent is the
 // per-study b_C_pre, with b_T_pre derived via the hierarchical
-// baseline_difference (PP can't identify δ from its own data, so the
+// baseline_difference (PP can't identify γ from its own data, so the
 // latent's posterior is hierarchy-driven in that branch).
 
 vector[n_studies_pp_summary * (1 - is_differenced_likelihood_pp_summary * is_none_mode)] baseline_treatment_pp_summary;
@@ -65,7 +65,8 @@ if (is_modelled) {
       baseline_treatment_pp_summary[i] = baseline_per_study_latent_pp_summary[i];
   } else {
     // Control-latent: latent is per-study b_C_pre; derive b_T_pre via the
-    // pop-level baseline_difference (no per-study δ for PP).
+    // pop-level baseline_difference (no per-study γ for PP).
+    // Under control-pre reference convention: b_T = b_C * (1 + γ).
     for (i in 1:n_studies_pp_summary)
       baseline_treatment_pp_summary[i] = baseline_per_study_latent_pp_summary[i] *
                                           (1 + baseline_difference_mean);

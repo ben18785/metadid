@@ -97,7 +97,7 @@ if(n_studies_did_summary > 0) {
     baseline_control_did_summary_raw ~ std_normal();
   }
   if (!is_differenced_likelihood_did_summary) {
-    // Direct hierarchical prior on the constrained δ. The <lower=-1>
+    // Direct hierarchical prior on the constrained γ. The <lower=-1>
     // constraint is enforced at declaration; this just provides the
     // population-level Normal pull.
     baseline_difference_did_summary ~ normal(baseline_difference_mean, baseline_difference_sd);

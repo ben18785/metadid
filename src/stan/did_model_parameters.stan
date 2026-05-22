@@ -7,9 +7,9 @@ vector[n_studies_did] treatment_effect_did_raw;
 // uniform-prior latent declared below.
 vector[n_studies_did * is_none_mode] baseline_control_did_raw;
 
-// Per-study δ directly sampled with <lower=-1> constraint, avoiding the
-// (1 + δ) singularity in treatment-latent mode. See did_summary equivalent
-// for the rationale.
+// Per-study γ = (b_T - b_C) / b_C on the control-pre reference convention.
+// Directly sampled with <lower=-1> constraint so the derived (1 + γ) factor
+// stays positive. See did_summary equivalent for full rationale.
 vector<lower=-1>[n_studies_did] baseline_difference_did;
 vector[n_studies_did] time_trend_did_raw;
 

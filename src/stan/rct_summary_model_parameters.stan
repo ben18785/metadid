@@ -20,12 +20,13 @@ vector[n_studies_rct_summary * is_none_mode] baseline_control_rct_summary_raw;
 // mode and b_C_pre[i] in control-latent mode. The "other" baseline is derived
 // in transformed parameters via baseline_difference.
 // For RCT studies neither pre baseline is directly observed (no pre period);
-// the latent is informed jointly with the per-study θ, γ, and δ via the
+// the latent is informed jointly with the per-study θ, β, and γ via the
 // post-period observations and the hierarchical priors from the rest of the
 // meta-analysis.
 vector<lower=0, upper=baseline_prior_upper>[n_studies_rct_summary * is_modelled] baseline_per_study_latent_rct_summary;
 
 // Per-study baseline difference (only sampled when imbalance is estimated).
-// Per-study δ directly sampled with <lower=-1> constraint (avoids the
-// (1 + δ) singularity in treatment-latent mode).
+// Per-study γ = (b_T - b_C) / b_C on the control-pre reference convention.
+// Directly sampled with <lower=-1> constraint so the (1 + γ) factor stays
+// positive in both parameterisations.
 vector<lower=-1>[n_studies_rct_summary * is_baseline_difference_estimated] baseline_difference_rct_summary;
