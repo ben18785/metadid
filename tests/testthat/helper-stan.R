@@ -15,32 +15,47 @@ skip_if_no_stan <- function() {
 # Model compilation
 # ---------------------------------------------------------------------------
 
-# Compile the Stan model directly from src/stan/. During devtools::load_all(),
-# find.package() returns the source root, so src/stan/ is reachable. Under
-# R CMD check, the Stan source is preserved in the install tree at the same
-# relative path.
+# Resolve and load the compiled Stan model. We support two layouts so that
+# the tests can run both under devtools::load_all() (development) and under
+# R CMD check (CI):
 #
-# We pass force_recompile = TRUE to bypass cmdstanr's binary-config
-# validation. Newer cmdstanr versions (>= 0.9) require a sidecar JSON
-# config alongside any cached binary; binaries produced by older paths
-# (notably instantiate's install-time compile) lack this and would
-# otherwise raise "No CmdStan config files found. Set
-# 'save_cmdstan_config=TRUE' when fitting the model.", surfaced in CI as
-# the entire Stan-dependent test set being skipped. The cost is a fresh
-# compile per CI run (~30-60s); the benefit is robustness across
-# cmdstanr version changes.
+#   * Installed package (CI, R CMD check): src/install.libs.R copies the
+#     Stan source from src/stan/ to <install_dir>/bin/stan/ and compiles
+#     the master model there via instantiate::stan_package_compile(). At
+#     test time we point cmdstanr at that pre-compiled binary via the
+#     exe_file argument, avoiding a recompile.
+#
+#   * Source tree (devtools::load_all): the installed bin/stan/ doesn't
+#     exist, so we fall back to compiling from src/stan/ directly.
+#     cmdstanr caches the resulting binary, so subsequent calls within
+#     the session are fast.
+#
+# Mirrors the runtime resolution in R/meta_did.R so that test-time and
+# production paths are consistent.
 get_compiled_model <- function() {
-  stan_file <- file.path(
+  bin_dir <- system.file("bin/stan", package = "metadid")
+  if (nzchar(bin_dir)) {
+    stan_file <- file.path(bin_dir, "meta_analysis_master.stan")
+    exe_file  <- file.path(bin_dir, "meta_analysis_master")
+    if (file.exists(stan_file)) {
+      return(tryCatch(
+        cmdstanr::cmdstan_model(
+          stan_file     = stan_file,
+          exe_file      = if (file.exists(exe_file)) exe_file else NULL,
+          include_paths = bin_dir
+        ),
+        error = function(e) NULL
+      ))
+    }
+  }
+  # Dev fallback: compile from src/stan/.
+  src_file <- file.path(
     find.package("metadid"),
     "src/stan/meta_analysis_master.stan"
   )
-  if (!file.exists(stan_file)) return(NULL)
+  if (!file.exists(src_file)) return(NULL)
   tryCatch(
-    cmdstanr::cmdstan_model(
-      stan_file,
-      include_paths   = dirname(stan_file),
-      force_recompile = TRUE
-    ),
+    cmdstanr::cmdstan_model(src_file, include_paths = dirname(src_file)),
     error = function(e) NULL
   )
 }
