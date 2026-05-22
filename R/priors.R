@@ -152,9 +152,14 @@ print.did_prior <- function(x, ...) {
 #'   `correlated_effects = TRUE`). Default: `lkj(2)`, which gently
 #'   regularises toward zero correlation.
 #' @param baseline_difference_mean Prior on the population mean of the
-#'   per-study baseline imbalance (treatment-arm vs control-arm pre-treatment
-#'   mean, on the normalised fractional scale). Only used when
-#'   `baseline_imbalance = "estimated"`. Default: `normal(0, 0.5)`.
+#'   per-study baseline imbalance \eqn{\delta_i = (b_{T,i} - b_{C,i}) / b_{C,i}},
+#'   defined as the fractional difference between the treatment-arm and
+#'   control-arm pre-treatment baselines, expressed as a fraction of the
+#'   control-arm baseline (the control-pre reference convention).
+#'   Constrained to \eqn{\delta_i > -1} so that the derived
+#'   \eqn{(1 + \delta_i)} factor remains positive in both modelled-mode
+#'   parameterisations. Only used when `baseline_imbalance = "estimated"`.
+#'   Default: `normal(0, 0.5)`.
 #' @param baseline_difference_sd Prior on the between-study SD of the
 #'   baseline imbalance. Only used when `baseline_imbalance = "estimated"`.
 #'   Default: `cauchy(0.1)`.

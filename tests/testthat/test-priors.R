@@ -60,7 +60,8 @@ test_that("set_priors() returns a did_priors with all parameters", {
     "rho_mean", "rho_sd", "nu",
     "delta_rct", "delta_pp", "sigma",
     "beta_cov", "lkj_eta",
-    "baseline_difference_mean", "baseline_difference_sd"
+    "baseline_difference_mean", "baseline_difference_sd",
+    "baseline_per_study"
   )
   expect_equal(names(p), expected_names)
 })

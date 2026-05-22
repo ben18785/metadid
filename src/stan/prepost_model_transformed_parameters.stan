@@ -33,8 +33,9 @@ if (is_modelled) {
     for (i in 1:n_studies_pp)
       baseline_treatment_pp[i] = baseline_per_study_latent_pp[i];
   } else {
-    // Control-latent for PP: latent is a per-study b_C_pre, but PP cannot
-    // identify δ. Derive b_T_pre using the pop-level baseline_difference.
+    // Control-latent for PP: latent is per-study b_C_pre; derive b_T_pre via
+    // the pop-level baseline_difference. Under control-pre reference
+    // convention: b_T = b_C * (1 + γ).
     for (i in 1:n_studies_pp)
       baseline_treatment_pp[i] = baseline_per_study_latent_pp[i] *
                                   (1 + baseline_difference_mean);

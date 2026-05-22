@@ -251,7 +251,8 @@ The default `baseline_latent_arm = "treatment"` makes the treatment-arm
 pre-baseline the per-study latent with the wide prior. The control-arm
 pre-baseline is then a derived quantity, related to the latent via the
 hierarchical baseline-imbalance parameter $\gamma_i = (b_{T,i} -
-b_{C,i}) / b_{C,i}$:
+b_{C,i}) / b_{C,i}$ — defined relative to the control-pre baseline
+under the control-pre reference convention:
 
 $$
 b_{C,i} = b_{T,i} / (1 + \gamma_i).
@@ -259,7 +260,9 @@ $$
 
 Setting `baseline_latent_arm = "control"` reverses the choice: the
 control-arm pre-baseline becomes the latent and the treatment-arm
-pre-baseline is derived as $b_{T,i} = b_{C,i} (1 + \gamma_i)$. The
+pre-baseline is derived as $b_{T,i} = b_{C,i} \cdot (1 + \gamma_i)$. The
+lower bound $\gamma_i > -1$ keeps $(1 + \gamma_i)$ strictly positive in
+both parameterisations. The
 **reported canonical scale is the same** under both options — both pool
 on the treatment-arm pre-baseline reference — so the choice does not
 change the estimand. What it does change is which arm's pre-period

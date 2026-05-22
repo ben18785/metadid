@@ -61,27 +61,28 @@ if (!is_correlated_effects) {
 // (user-units) scale. Always sized whenever the full (non-differenced)
 // likelihood is in use; their source depends on baseline_latent_mode.
 //
-// NOTE: while DiD has been migrated to the modelled-mode machinery, RCT and
-// PP still use the legacy δ = (b_T - b_C) / b_C convention internally, so
-// for cross-design consistency δ retains that convention here too:
-//   b_T = b_C * (1 + δ)
-//   b_C = b_T / (1 + δ)
-// The intent is to switch the package-wide δ convention to (b_T - b_C) / b_T
-// once RCT and PP have also been migrated.
+// γ = baseline_difference uses the control-pre reference convention
+// (b_T - b_C) / b_C. The derivation formulas are:
+//   b_T = b_C * (1 + γ)
+//   b_C = b_T / (1 + γ)
+// The lower bound γ > -1 (enforced at the parameter declaration in the
+// parameters block) guarantees that both baselines remain positive in
+// either parameterisation.
 
 vector[n_studies_did_summary * (1 - is_differenced_likelihood_did_summary)] baseline_control_did_summary;
 vector[n_studies_did_summary * (1 - is_differenced_likelihood_did_summary)] baseline_treatment_did_summary;
 
 if (is_modelled) {
   if (is_modelled_treatment) {
-    // Treatment-latent: b_T_pre is the latent (uniform prior); b_C_pre derived.
+    // Treatment-latent: b_T_pre is the latent (uniform prior); b_C_pre derived
+    // via division. The lower bound γ > -1 keeps the divisor (1 + γ) positive.
     for (i in 1:size(baseline_treatment_did_summary)) {
       baseline_treatment_did_summary[i] = baseline_per_study_latent_did_summary[i];
       baseline_control_did_summary[i]   = baseline_treatment_did_summary[i] /
                                           (1 + baseline_difference_did_summary[i]);
     }
   } else {
-    // Control-latent: b_C_pre is the latent; b_T_pre derived.
+    // Control-latent: b_C_pre is the latent; b_T_pre derived via multiplication.
     for (i in 1:size(baseline_control_did_summary)) {
       baseline_control_did_summary[i]   = baseline_per_study_latent_did_summary[i];
       baseline_treatment_did_summary[i] = baseline_control_did_summary[i] *
@@ -90,7 +91,7 @@ if (is_modelled) {
   }
 } else {
   // "none" mode: hierarchical pop-level control baseline; treatment baseline
-  // derived from b_C via the imbalance (legacy convention preserved).
+  // derived from b_C via the imbalance under the legacy convention.
   for (i in 1:size(baseline_control_did_summary_raw))
     baseline_control_did_summary[i] = baseline_control_mean[1] + baseline_control_sd[1] * baseline_control_did_summary_raw[i];
   for (i in 1:size(baseline_treatment_did_summary))
