@@ -21,7 +21,8 @@ set_priors(
   beta_cov = normal(0, 10),
   lkj_eta = lkj(2),
   baseline_difference_mean = normal(0, 0.5),
-  baseline_difference_sd = cauchy(0.1)
+  baseline_difference_sd = cauchy(0.1),
+  baseline_per_study = NULL
 )
 ```
 
@@ -91,9 +92,13 @@ set_priors(
 - baseline_difference_mean:
 
   Prior on the population mean of the per-study baseline imbalance
-  (treatment-arm vs control-arm pre-treatment mean, on the normalised
-  fractional scale). Only used when `baseline_imbalance = "estimated"`.
-  Default: `normal(0, 0.5)`.
+  \\\delta_i = (b\_{T,i} - b\_{C,i}) / b\_{C,i}\\, defined as the
+  fractional difference between the treatment-arm and control-arm
+  pre-treatment baselines, expressed as a fraction of the control-arm
+  baseline (the control-pre reference convention). Constrained to
+  \\\delta_i \> -1\\ so that the derived \\(1 + \delta_i)\\ factor
+  remains positive in both modelled-mode parameterisations. Only used
+  when `baseline_imbalance = "estimated"`. Default: `normal(0, 0.5)`.
 
 - baseline_difference_sd:
 
@@ -124,6 +129,7 @@ set_priors()
 #>   lkj_eta ~ lkj(eta = 2)
 #>   baseline_difference_mean ~ normal(mean = 0, sd = 0.5)
 #>   baseline_difference_sd ~ cauchy(scale = 0.1)
+#>   baseline_per_study ~ NULL
 
 # Override one prior
 set_priors(treatment_effect_sd = cauchy(2))
@@ -142,4 +148,5 @@ set_priors(treatment_effect_sd = cauchy(2))
 #>   lkj_eta ~ lkj(eta = 2)
 #>   baseline_difference_mean ~ normal(mean = 0, sd = 0.5)
 #>   baseline_difference_sd ~ cauchy(scale = 0.1)
+#>   baseline_per_study ~ NULL
 ```

@@ -84,9 +84,12 @@ accounting for dose.
 
 Because
 [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)
-normalises outcomes by the baseline mean (by default), the parameters
-the model estimates are on the normalised scale. With a baseline mean of
-0.45:
+expresses effects as fractions of each study’s treatment-arm
+pre-treatment baseline (by default — `normalise = TRUE` performs this
+normalisation inside the Stan model rather than by dividing the data in
+R), the parameters the model estimates are on the normalised scale. With
+a baseline mean of 0.45 and no baseline imbalance in this simulation (so
+the treatment-arm and control-arm pre-baselines coincide on average):
 
 - **True normalised slope:**
   $`\beta / \bar{\alpha} = -0.04 / 0.45 \approx -0.089`$

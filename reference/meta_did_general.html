@@ -54,7 +54,8 @@ studies.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">meta_did_general</span><span class="op">(</span></span>
 <span>  summary_data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  individual_data <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  normalise_by_baseline <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  normalise <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  baseline_latent_arm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"treatment"</span>, <span class="st">"control"</span><span class="op">)</span>,</span>
 <span>  robust_heterogeneity <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  design_effects <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  hierarchical_rho <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -93,11 +94,33 @@ observation. Must include columns <code>study_id</code>, <code>design</code>, <c
 No <code>study_id</code> may appear in both <code>summary_data</code> and <code>individual_data</code>.</p></dd>
 
 
-<dt id="arg-normalise-by-baseline">normalise_by_baseline<a class="anchor" aria-label="anchor" href="#arg-normalise-by-baseline"></a></dt>
-<dd><p>Logical. If <code>TRUE</code> (default), all means and
-SDs are divided by each study's pre-treatment control mean (or the
-grand mean for change-only studies), placing outcomes on a common
-fractional scale.</p></dd>
+<dt id="arg-normalise">normalise<a class="anchor" aria-label="anchor" href="#arg-normalise"></a></dt>
+<dd><p>Logical. If <code>TRUE</code> (default), population-level effects
+(<code>treatment_effect_mean</code>, <code>time_trend_mean</code>, <code>baseline_difference_mean</code>)
+are expressed as fractions of the treatment-arm pre-treatment baseline.
+Stan receives the raw data unchanged and performs the normalisation
+internally via per-study latent baseline parameters. If <code>FALSE</code>, no
+per-study latent baseline is fit; population-level effects are pooled
+on the <strong>absolute</strong> (user-units) scale instead. Equivalent to the
+legacy <code>normalise_by_baseline = FALSE</code> behaviour.</p></dd>
+
+
+<dt id="arg-baseline-latent-arm">baseline_latent_arm<a class="anchor" aria-label="anchor" href="#arg-baseline-latent-arm"></a></dt>
+<dd><p>Character. Advanced. Only used when
+<code>normalise = TRUE</code>. Determines which arm's pre-treatment baseline is
+the per-study latent parameter (the one with the wide data-vague
+uniform prior); the other arm's baseline is derived via the
+hierarchical baseline-difference parameter. One of:</p><ul><li><p><code>"treatment"</code> (default): the treatment-arm pre-baseline is the
+latent, informed directly by <code>mean_pre_treatment</code> observations.</p></li>
+<li><p><code>"control"</code>: the control-arm pre-baseline is the latent, informed
+directly by <code>mean_pre_control</code> observations.</p></li>
+</ul><p>The choice does <strong>not</strong> change the canonical scale on which effects
+are reported — both options pool population-level effects on the
+treatment-arm pre-baseline scale. It only controls which arm's data
+most directly informs the per-study baseline's posterior, which can
+matter when one arm has substantially more direct data than the
+other. The two options are statistically equivalent in
+well-identified problems.</p></dd>
 
 
 <dt id="arg-robust-heterogeneity">robust_heterogeneity<a class="anchor" aria-label="anchor" href="#arg-robust-heterogeneity"></a></dt>
@@ -296,32 +319,6 @@ information for these parameters.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Running MCMC with 4 sequential chains...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1 Iteration:    1 / 2000 [  0%]  (Warmup) </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 Exception: Exception: multi_normal_lpdf: Location parameter[2] is -inf, but must be finite! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model_functions.stan', line 49, column 2, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 7, column 2) (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model.stan', line 32, column 6, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 50, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 Exception: Exception: multi_normal_lpdf: Location parameter[2] is -inf, but must be finite! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model_functions.stan', line 49, column 2, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 7, column 2) (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model.stan', line 32, column 6, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 50, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/rct_summary_model.stan', line 57, column 8, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 52, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/rct_summary_model.stan', line 57, column 8, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 52, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1 Iteration:  100 / 2000 [  5%]  (Warmup) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1 Iteration:  200 / 2000 [ 10%]  (Warmup) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1 Iteration:  300 / 2000 [ 15%]  (Warmup) </span>
@@ -343,39 +340,44 @@ information for these parameters.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1 Iteration: 1800 / 2000 [ 90%]  (Sampling) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1 Iteration: 1900 / 2000 [ 95%]  (Sampling) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1 finished in 9.6 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1 finished in 8.9 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2 Iteration:    1 / 2000 [  0%]  (Warmup) </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/rct_summary_model.stan', line 57, column 8, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 52, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/rct_summary_model.stan', line 57, column 8, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 52, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/rct_summary_model.stan', line 57, column 8, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 52, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/rct_summary_model.stan', line 57, column 8, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 52, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/rct_summary_model.stan', line 57, column 8, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 52, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2 Iteration:  100 / 2000 [  5%]  (Warmup) </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Exception: Exception: multi_normal_lpdf: Location parameter[2] is -nan, but must be finite! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model_functions.stan', line 49, column 2, included from</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpMKSaj1/model-1b06127c804.stan', line 7, column 2) (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model.stan', line 32, column 6, included from</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpMKSaj1/model-1b06127c804.stan', line 54, column 2)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Exception: Exception: multi_normal_lpdf: Location parameter[2] is -nan, but must be finite! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model_functions.stan', line 49, column 2, included from</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpMKSaj1/model-1b06127c804.stan', line 7, column 2) (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model.stan', line 32, column 6, included from</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpMKSaj1/model-1b06127c804.stan', line 54, column 2)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Exception: Exception: multi_normal_lpdf: Location parameter[2] is -nan, but must be finite! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model_functions.stan', line 49, column 2, included from</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpMKSaj1/model-1b06127c804.stan', line 7, column 2) (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model.stan', line 32, column 6, included from</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpMKSaj1/model-1b06127c804.stan', line 54, column 2)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Exception: Exception: multi_normal_lpdf: Location parameter[2] is -nan, but must be finite! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model_functions.stan', line 49, column 2, included from</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpMKSaj1/model-1b06127c804.stan', line 7, column 2) (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model.stan', line 32, column 6, included from</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpMKSaj1/model-1b06127c804.stan', line 54, column 2)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 Exception: Exception: multi_normal_lpdf: Location parameter[2] is -nan, but must be finite! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model_functions.stan', line 49, column 2, included from</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpMKSaj1/model-1b06127c804.stan', line 7, column 2) (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model.stan', line 32, column 6, included from</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 '/tmp/RtmpMKSaj1/model-1b06127c804.stan', line 54, column 2)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 2 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2 Iteration:  200 / 2000 [ 10%]  (Warmup) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2 Iteration:  300 / 2000 [ 15%]  (Warmup) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2 Iteration:  400 / 2000 [ 20%]  (Warmup) </span>
@@ -396,15 +398,8 @@ information for these parameters.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2 Iteration: 1800 / 2000 [ 90%]  (Sampling) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2 Iteration: 1900 / 2000 [ 95%]  (Sampling) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2 finished in 10.2 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2 finished in 7.0 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3 Iteration:    1 / 2000 [  0%]  (Warmup) </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 3 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 3 Exception: Exception: multi_normal_lpdf: Location parameter[1] is inf, but must be finite! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model_functions.stan', line 49, column 2, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 3 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 7, column 2) (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model.stan', line 32, column 6, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 3 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 50, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 3 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 3 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 3 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3 Iteration:  100 / 2000 [  5%]  (Warmup) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3 Iteration:  200 / 2000 [ 10%]  (Warmup) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3 Iteration:  300 / 2000 [ 15%]  (Warmup) </span>
@@ -426,54 +421,8 @@ information for these parameters.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3 Iteration: 1800 / 2000 [ 90%]  (Sampling) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3 Iteration: 1900 / 2000 [ 95%]  (Sampling) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3 Iteration: 2000 / 2000 [100%]  (Sampling) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3 finished in 7.8 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3 finished in 9.5 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4 Iteration:    1 / 2000 [  0%]  (Warmup) </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Exception: Exception: multi_normal_lpdf: Location parameter[1] is -inf, but must be finite! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model_functions.stan', line 49, column 2, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 7, column 2) (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model.stan', line 32, column 6, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 50, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Exception: Exception: multi_normal_lpdf: Location parameter[1] is -inf, but must be finite! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model_functions.stan', line 49, column 2, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 7, column 2) (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model.stan', line 32, column 6, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 50, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/rct_summary_model.stan', line 57, column 8, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 52, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/rct_summary_model.stan', line 57, column 8, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 52, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/rct_summary_model.stan', line 57, column 8, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 52, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Exception: Exception: multi_normal_lpdf: Location parameter[1] is -inf, but must be finite! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model_functions.stan', line 49, column 2, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 7, column 2) (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model.stan', line 32, column 6, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 50, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 Exception: Exception: multi_normal_lpdf: Location parameter[1] is -inf, but must be finite! (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model_functions.stan', line 49, column 2, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 7, column 2) (in '/home/runner/work/_temp/Library/00LOCK-metadid/00new/metadid/bin/stan/did_summary_model.stan', line 32, column 6, included from</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 '/tmp/RtmpUFbZYz/model-1bec2ad721.stan', line 50, column 2)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Chain 4 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4 Iteration:  100 / 2000 [  5%]  (Warmup) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4 Iteration:  200 / 2000 [ 10%]  (Warmup) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4 Iteration:  300 / 2000 [ 15%]  (Warmup) </span>
@@ -495,15 +444,15 @@ information for these parameters.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4 Iteration: 1800 / 2000 [ 90%]  (Sampling) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4 Iteration: 1900 / 2000 [ 95%]  (Sampling) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4 Iteration: 2000 / 2000 [100%]  (Sampling) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4 finished in 10.4 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4 finished in 8.3 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> All 4 chains finished successfully.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Mean chain execution time: 9.5 seconds.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Total execution time: 38.2 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Mean chain execution time: 8.4 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total execution time: 34.0 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Warning: 662 of 4000 (17.0%) transitions ended with a divergence.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Warning: 500 of 4000 (12.0%) transitions ended with a divergence.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> See https://mc-stan.org/misc/warnings for details.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Warning: 2971 of 4000 (74.0%) transitions hit the maximum treedepth limit of 10.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Warning: 1454 of 4000 (36.0%) transitions hit the maximum treedepth limit of 10.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> See https://mc-stan.org/misc/warnings for details.</span>
 </code></pre></div>
     </div>

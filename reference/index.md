@@ -24,6 +24,8 @@ Specify prior distributions for model parameters.
   Specify a gamma prior
 - [`lkj()`](https://ben18785.github.io/metadid/reference/lkj.md) :
   Specify an LKJ prior
+- [`uniform()`](https://ben18785.github.io/metadid/reference/uniform.md)
+  : Specify a uniform prior
 
 ## Results
 

@@ -22,7 +22,8 @@ analysing each design in isolation:
 meta_did_naive(
   summary_data = NULL,
   individual_data = NULL,
-  normalise_by_baseline = TRUE,
+  normalise = TRUE,
+  baseline_latent_arm = c("treatment", "control"),
   robust_heterogeneity = FALSE,
   design_effects = FALSE,
   hierarchical_rho = TRUE,
@@ -56,11 +57,39 @@ meta_did_naive(
   designs: `"did"`, `"rct"`, `"pp"`. No `study_id` may appear in both
   `summary_data` and `individual_data`.
 
-- normalise_by_baseline:
+- normalise:
 
-  Logical. If `TRUE` (default), all means and SDs are divided by each
-  study's pre-treatment control mean (or the grand mean for change-only
-  studies), placing outcomes on a common fractional scale.
+  Logical. If `TRUE` (default), population-level effects
+  (`treatment_effect_mean`, `time_trend_mean`,
+  `baseline_difference_mean`) are expressed as fractions of the
+  treatment-arm pre-treatment baseline. Stan receives the raw data
+  unchanged and performs the normalisation internally via per-study
+  latent baseline parameters. If `FALSE`, no per-study latent baseline
+  is fit; population-level effects are pooled on the **absolute**
+  (user-units) scale instead. Equivalent to the legacy
+  `normalise_by_baseline = FALSE` behaviour.
+
+- baseline_latent_arm:
+
+  Character. Advanced. Only used when `normalise = TRUE`. Determines
+  which arm's pre-treatment baseline is the per-study latent parameter
+  (the one with the wide data-vague uniform prior); the other arm's
+  baseline is derived via the hierarchical baseline-difference
+  parameter. One of:
+
+  - `"treatment"` (default): the treatment-arm pre-baseline is the
+    latent, informed directly by `mean_pre_treatment` observations.
+
+  - `"control"`: the control-arm pre-baseline is the latent, informed
+    directly by `mean_pre_control` observations.
+
+  The choice does **not** change the canonical scale on which effects
+  are reported — both options pool population-level effects on the
+  treatment-arm pre-baseline scale. It only controls which arm's data
+  most directly informs the per-study baseline's posterior, which can
+  matter when one arm has substantially more direct data than the other.
+  The two options are statistically equivalent in well-identified
+  problems.
 
 - robust_heterogeneity:
 

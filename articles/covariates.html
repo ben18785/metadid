@@ -133,9 +133,13 @@ after accounting for dose.</p>
 <div class="section level2">
 <h2 id="understanding-the-true-parameter-values">Understanding the true parameter values<a class="anchor" aria-label="anchor" href="#understanding-the-true-parameter-values"></a>
 </h2>
-<p>Because <code><a href="../reference/meta_did.html">meta_did()</a></code> normalises outcomes by the baseline
-mean (by default), the parameters the model estimates are on the
-normalised scale. With a baseline mean of 0.45:</p>
+<p>Because <code><a href="../reference/meta_did.html">meta_did()</a></code> expresses effects as fractions of
+each study’s treatment-arm pre-treatment baseline (by default —
+<code>normalise = TRUE</code> performs this normalisation inside the
+Stan model rather than by dividing the data in R), the parameters the
+model estimates are on the normalised scale. With a baseline mean of
+0.45 and no baseline imbalance in this simulation (so the treatment-arm
+and control-arm pre-baselines coincide on average):</p>
 <ul>
 <li>
 <strong>True normalised slope:</strong>

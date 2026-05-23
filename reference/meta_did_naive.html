@@ -72,7 +72,8 @@ pre-post change is attributed entirely to the treatment effect.</p></li>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">meta_did_naive</span><span class="op">(</span></span>
 <span>  summary_data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  individual_data <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  normalise_by_baseline <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  normalise <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  baseline_latent_arm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"treatment"</span>, <span class="st">"control"</span><span class="op">)</span>,</span>
 <span>  robust_heterogeneity <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  design_effects <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  hierarchical_rho <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -107,11 +108,33 @@ observation. Must include columns <code>study_id</code>, <code>design</code>, <c
 No <code>study_id</code> may appear in both <code>summary_data</code> and <code>individual_data</code>.</p></dd>
 
 
-<dt id="arg-normalise-by-baseline">normalise_by_baseline<a class="anchor" aria-label="anchor" href="#arg-normalise-by-baseline"></a></dt>
-<dd><p>Logical. If <code>TRUE</code> (default), all means and
-SDs are divided by each study's pre-treatment control mean (or the
-grand mean for change-only studies), placing outcomes on a common
-fractional scale.</p></dd>
+<dt id="arg-normalise">normalise<a class="anchor" aria-label="anchor" href="#arg-normalise"></a></dt>
+<dd><p>Logical. If <code>TRUE</code> (default), population-level effects
+(<code>treatment_effect_mean</code>, <code>time_trend_mean</code>, <code>baseline_difference_mean</code>)
+are expressed as fractions of the treatment-arm pre-treatment baseline.
+Stan receives the raw data unchanged and performs the normalisation
+internally via per-study latent baseline parameters. If <code>FALSE</code>, no
+per-study latent baseline is fit; population-level effects are pooled
+on the <strong>absolute</strong> (user-units) scale instead. Equivalent to the
+legacy <code>normalise_by_baseline = FALSE</code> behaviour.</p></dd>
+
+
+<dt id="arg-baseline-latent-arm">baseline_latent_arm<a class="anchor" aria-label="anchor" href="#arg-baseline-latent-arm"></a></dt>
+<dd><p>Character. Advanced. Only used when
+<code>normalise = TRUE</code>. Determines which arm's pre-treatment baseline is
+the per-study latent parameter (the one with the wide data-vague
+uniform prior); the other arm's baseline is derived via the
+hierarchical baseline-difference parameter. One of:</p><ul><li><p><code>"treatment"</code> (default): the treatment-arm pre-baseline is the
+latent, informed directly by <code>mean_pre_treatment</code> observations.</p></li>
+<li><p><code>"control"</code>: the control-arm pre-baseline is the latent, informed
+directly by <code>mean_pre_control</code> observations.</p></li>
+</ul><p>The choice does <strong>not</strong> change the canonical scale on which effects
+are reported — both options pool population-level effects on the
+treatment-arm pre-baseline scale. It only controls which arm's data
+most directly informs the per-study baseline's posterior, which can
+matter when one arm has substantially more direct data than the
+other. The two options are statistically equivalent in
+well-identified problems.</p></dd>
 
 
 <dt id="arg-robust-heterogeneity">robust_heterogeneity<a class="anchor" aria-label="anchor" href="#arg-robust-heterogeneity"></a></dt>
