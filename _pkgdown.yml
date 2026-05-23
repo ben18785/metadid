@@ -28,6 +28,7 @@ reference:
       - cauchy
       - gamma
       - lkj
+      - uniform
 
   - title: Results
     desc: Summarise and inspect fitted models.
