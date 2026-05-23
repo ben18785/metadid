@@ -1,22 +1,19 @@
 // did_model.stan
 
 if(n_studies_did > 0) {
-  // Construct effective baselines. DiD always estimates baseline_difference
-  // per-study (data identifies it). When normalised: control = 1, treatment =
-  // 1 + baseline_difference. When unnormalised: use the transformed parameters
-  // baseline_control_did and baseline_treatment_did (which already incorporates
-  // baseline_difference).
-  vector[n_studies_did] baseline_control_did_eff;
-  vector[n_studies_did] baseline_treatment_did_eff;
-  if (is_baseline_normalised) {
-    baseline_control_did_eff = rep_vector(1.0, n_studies_did);
-    baseline_treatment_did_eff = rep_vector(1.0, n_studies_did) + baseline_difference_did;
-  } else {
-    baseline_control_did_eff = baseline_control_did;
-    baseline_treatment_did_eff = baseline_treatment_did;
-  }
-
   for (i in 1:n_studies_did) {
+    // Bridge from canonical fractional scale to absolute. In modelled modes
+    // scale per-study θ and γ by the per-study treatment-pre baseline; in
+    // none mode pass them through (already absolute).
+    real bl_c   = baseline_control_did[i];
+    real bl_t   = baseline_treatment_did[i];
+    real te_abs = is_modelled
+                  ? treatment_effect_did[i] * bl_t
+                  : treatment_effect_did[i];
+    real tt_abs = is_modelled
+                  ? time_trend_did[i] * bl_t
+                  : time_trend_did[i];
+
     target += did_study_lpdf_from_data(
       study_start_control_did[i], study_end_control_did[i],
       study_start_treatment_did[i], study_end_treatment_did[i],
@@ -24,10 +21,10 @@ if(n_studies_did > 0) {
       x_control_after_did,
       x_treatment_before_did,
       x_treatment_after_did,
-      baseline_control_did_eff[i],
-      baseline_treatment_did_eff[i],
-      time_trend_did[i],
-      treatment_effect_did[i],
+      bl_c,
+      bl_t,
+      tt_abs,
+      te_abs,
       sigma_control_before_did[i],
       sigma_control_after_did[i],
       sigma_treatment_before_did[i],
@@ -37,8 +34,6 @@ if(n_studies_did > 0) {
   }
 
   // Hierarchical prior on rho via Fisher z-transform.
-  // rho is the parameter; prior is on z = atanh(rho).
-  // Jacobian: |dz/drho| = 1/(1 - rho^2), so log|J| = -log(1 - rho^2).
   if (is_correlation_coefficient_hierarchical) {
     for (i in 1:n_studies_did) {
       int n_i = sample_size_control_did[i] + sample_size_treatment_did[i];
@@ -47,10 +42,10 @@ if(n_studies_did > 0) {
     }
   }
 
-  if (!is_baseline_normalised) {
+  if (is_none_mode) {
     baseline_control_did_raw ~ std_normal();
   }
-  baseline_difference_did_raw ~ std_normal();
+  baseline_difference_did ~ normal(baseline_difference_mean, baseline_difference_sd);
   sigma_control_before_did ~ cauchy(0, sigma_prior_scale);
   sigma_control_after_did ~ cauchy(0, sigma_prior_scale);
   sigma_treatment_before_did ~ cauchy(0, sigma_prior_scale);

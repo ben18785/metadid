@@ -1,7 +1,11 @@
 
 time_trend_mean ~ normal(time_trend_mean_prior_mean, time_trend_mean_prior_sd);
 time_trend_sd ~ cauchy(0, time_trend_sd_prior_scale);
-if (!is_baseline_normalised) {
+// Pop-level baseline priors fire only in "none" mode, where the per-study
+// baselines are hierarchically pooled on the absolute scale. In modelled
+// modes the per-study latent baselines have a wide uniform prior directly
+// from their declared upper bound, so no pop-level baseline priors are needed.
+if (is_none_mode) {
   baseline_control_mean[1] ~ normal(0, 10);
   baseline_control_sd[1] ~ cauchy(0, 5);
   baseline_treatment_mean[1] ~ normal(0, 10);

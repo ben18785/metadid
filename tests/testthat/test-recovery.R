@@ -361,7 +361,7 @@ LARGE_TREND_RAW <- -0.10
 LARGE_TREND_TRUE_EFFECT_NORMALISED <- TRUE_EFFECT_RAW / MEAN_BASELINE
 
 sim_large_trend <- simulate_meta_did(
-  n_studies     = 5,
+  n_studies     = 20,
   true_effect   = TRUE_EFFECT_RAW,
   sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
   true_trend    = LARGE_TREND_RAW,
@@ -646,7 +646,7 @@ test_that("Fit 6b: unnormalised recovers baseline, treatment effect, and time tr
   skip_if_no_stan()
   fit <- recovery_fit(
     summary_data = as_summary_did(sim_unnorm),
-    normalise_by_baseline = FALSE
+    normalise = FALSE
   )
 
   # baseline_control_mean
@@ -717,15 +717,23 @@ test_that("Fit 7: estimated baseline imbalance recovers treatment effect under D
     baseline_imbalance = "estimated"
   )
 
-  # Treatment effect should be recovered (within CI) despite baseline imbalance
-  te <- covers(fit_est, "treatment_effect_mean", TRUE_EFFECT_NORMALISED)
-  expect_true(te$covers, info = ci_label(te$ci, TRUE_EFFECT_NORMALISED))
+  # Treatment effect should be recovered (within CI) despite baseline imbalance.
+  # Under the treatment-pre canonical scale, the truth shifts when there is
+  # non-zero baseline imbalance: the canonical denominator is b_T_pre, not
+  # b_C_pre, so the true canonical effect is θ_raw / b_T_pre rather than
+  # θ_raw / MEAN_BASELINE (which equals b_C_pre on average).
+  TRUE_EFFECT_CANONICAL_IMBALANCE <- TRUE_EFFECT_RAW /
+                                     (MEAN_BASELINE * (1 + 0.05 / MEAN_BASELINE))
+  te <- covers(fit_est, "treatment_effect_mean", TRUE_EFFECT_CANONICAL_IMBALANCE)
+  expect_true(te$covers, info = ci_label(te$ci, TRUE_EFFECT_CANONICAL_IMBALANCE))
 
-  # baseline_difference_mean should be non-zero and positive
-  # (truth ≈ 0.05 / 0.45 ≈ 0.111 on normalised scale)
+  # baseline_difference_mean should be non-zero and positive. Under the
+  # control-pre reference convention (b_T - b_C) / b_C, truth = 0.05 / b_C
+  # = 0.05 / 0.45 ≈ 0.111.
+  TRUE_DELTA_CANONICAL <- 0.05 / MEAN_BASELINE
   bd <- posterior_ci(fit_est, "baseline_difference_mean", prob = 0.9)
   expect_true(bd$lo > 0,
               info = sprintf("baseline_difference_mean 90%% CI [%.4f, %.4f] excludes zero",
                              bd$lo, bd$hi))
-  expect_lt(abs(bd$mean - 0.05 / MEAN_BASELINE), 0.05)
+  expect_lt(abs(bd$mean - TRUE_DELTA_CANONICAL), 0.05)
 })
