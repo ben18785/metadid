@@ -192,10 +192,10 @@ test_that("design_effects = TRUE runs without error on mixed data", {
   )
 })
 
-test_that("normalise_by_baseline = FALSE runs without error", {
+test_that("normalise = FALSE runs without error", {
   skip_if_no_stan()
   expect_no_error(
-    quick_fit(summary_data = did_summary(), normalise_by_baseline = FALSE)
+    quick_fit(summary_data = did_summary(), normalise = FALSE)
   )
 })
 
@@ -203,7 +203,7 @@ test_that("normalise_by_baseline = FALSE runs without error", {
 # PP + unnormalised smoke tests (regression for baseline_treatment_pp bug)
 # ---------------------------------------------------------------------------
 # When pp_likelihood = "differenced" (the default) and
-# normalise_by_baseline = FALSE, baseline_treatment_pp has size 0. The model
+# normalise = FALSE, baseline_treatment_pp has size 0. The model
 # block must guard against assigning that 0-length vector.
 
 pp_summary <- function() {
@@ -253,21 +253,21 @@ quick_fit_general <- function(summary_data = NULL, individual_data = NULL, ...) 
   )
 }
 
-test_that("PP summary + normalise_by_baseline = FALSE runs without error", {
+test_that("PP summary + normalise = FALSE runs without error", {
   skip_if_no_stan()
   mixed <- dplyr::bind_rows(did_summary(), pp_summary())
   expect_no_error(
-    quick_fit_general(summary_data = mixed, normalise_by_baseline = FALSE)
+    quick_fit_general(summary_data = mixed, normalise = FALSE)
   )
 })
 
-test_that("PP individual + normalise_by_baseline = FALSE runs without error", {
+test_that("PP individual + normalise = FALSE runs without error", {
   skip_if_no_stan()
   expect_no_error(
     quick_fit_general(
       summary_data    = did_summary(),
       individual_data = individual_pp(),
-      normalise_by_baseline = FALSE
+      normalise = FALSE
     )
   )
 })

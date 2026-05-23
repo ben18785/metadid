@@ -26,7 +26,7 @@ mock_fit_sample <- structure(
     summary_data = mock_summary_data,
     individual_data = NULL,
     model_flags = list(
-      is_baseline_normalised = 1L,
+      baseline_latent_mode                     = 1L,
       is_correlation_coefficient_hierarchical = 1L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 0L
@@ -80,8 +80,11 @@ test_that("compute_observed_effects handles RCT and PP", {
 
   obs <- compute_observed_effects(fit)
   expect_equal(obs$study_id, c("r1", "p1"))
-  expect_equal(obs$y_obs[1], 0.7 - 0.9)
-  expect_equal(obs$y_obs[2], 0.85 - 1.0)
+  # Normalised: raw / baseline. RCT baseline = mean_post_control = 0.9
+  expect_equal(obs$y_obs[1], (0.7 - 0.9) / 0.9)
+  # PP baseline = mean_pre_treatment = 1.0, so normalised = raw
+  expect_equal(obs$y_obs[2], (0.85 - 1.0) / 1.0)
+  expect_equal(obs$baseline, c(0.9, 1.0))
 })
 
 
@@ -112,8 +115,10 @@ test_that("compute_observed_effects handles individual DiD data", {
   ctrl_post <- mean(c(0.9, 1.0))
   trt_pre   <- mean(c(1.0, 1.1))
   trt_post  <- mean(c(0.7, 0.8))
-  expected  <- (trt_post - trt_pre) - (ctrl_post - ctrl_pre)
-  expect_equal(obs$y_obs, expected)
+  raw_did   <- (trt_post - trt_pre) - (ctrl_post - ctrl_pre)
+  # Normalised by treatment pre-treatment baseline
+  expect_equal(obs$y_obs, raw_did / trt_pre)
+  expect_equal(obs$baseline, trt_pre)
 })
 
 
@@ -251,4 +256,67 @@ test_that("pp_check_cdf runs on MCMC fit with individual data", {
   # Test study_id filter
   p2 <- pp_check_cdf(fit, study_id = unique(ind$study_id)[1])
   expect_s3_class(p2, "ggplot")
+})
+
+
+# ============================================================
+# Scale-consistency regression test
+# ============================================================
+# Verifies that observed effects from compute_observed_effects() are on the
+# same scale as the model's treatment_effect_mean parameter. A previous bug
+# left y_obs on the raw scale while the posterior predictive used normalised
+# parameters, producing badly miscalibrated pp_check plots.
+
+test_that("observed effects are on the normalised scale when model is normalised", {
+  skip_if_no_stan()
+
+  model <- get_compiled_model()
+
+  sim <- simulate_meta_did(
+    n_studies = 10, n_control = 80, n_treatment = 80,
+    true_effect = -0.15, sigma_effect = 0.03,
+    true_trend  = -0.02, sigma_trend  = 0.01,
+    baseline_mean = 0.45, baseline_sd = 0.02,
+    rho = 0.5, seed = 4718
+  )
+
+  mixed <- dplyr::bind_rows(
+    as_summary_did(sim[sim$study_id %in% unique(sim$study_id)[1:4], ]),
+    as_summary_rct(sim[sim$study_id %in% unique(sim$study_id)[5:7], ]),
+    as_summary_pp(sim[sim$study_id %in% unique(sim$study_id)[8:10], ])
+  )
+
+  local_mocked_bindings(
+    stan_package_model = function(...) model,
+    .package = "instantiate"
+  )
+
+  fit <- meta_did(
+    summary_data = mixed,
+    seed = 4718, chains = 2,
+    iter_warmup = 300, iter_sampling = 300, refresh = 0
+  )
+
+  obs <- compute_observed_effects(fit)
+  te_mean <- mean(fit$fit$draws("treatment_effect_mean", format = "matrix"))
+
+  # The mean of observed DiD effects should be roughly comparable to
+
+  # treatment_effect_mean (both on normalised scale, ~ -0.333).
+  # If y_obs were raw (~-0.15), the difference would be huge (> 0.1).
+  did_obs <- obs$y_obs[obs$design_family == "did"]
+  expect_true(
+    abs(mean(did_obs) - te_mean) < 0.10,
+    label = sprintf(
+      "DiD y_obs mean (%.3f) should be close to treatment_effect_mean (%.3f)",
+      mean(did_obs), te_mean
+    )
+  )
+
+  # All observed effects should have a baseline column
+  expect_true("baseline" %in% names(obs))
+  # Baselines should not be 1 for DiD (since baseline_mean = 0.45)
+  did_baselines <- obs$baseline[obs$design_family == "did"]
+  expect_true(all(did_baselines < 1),
+              label = "DiD baselines should reflect actual pre-treatment means")
 })

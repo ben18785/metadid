@@ -241,7 +241,7 @@ test_that("as_summary_did_change() propagates covariates", {
 test_that("prepare_stan_data() includes K_cov = 0 when no covariates", {
   df <- make_did_summary_with_cov(2)
   model_flags <- list(
-    is_baseline_normalised = 0L,
+    baseline_latent_mode                     = 3L,
     is_correlation_coefficient_hierarchical = 0L,
     is_student_t_heterogeneity = 0L,
     is_design_effect = 0L
@@ -255,7 +255,7 @@ test_that("prepare_stan_data() includes K_cov = 0 when no covariates", {
 test_that("prepare_stan_data() includes correct K_cov and matrices with covariates", {
   df <- make_did_summary_with_cov(3)
   model_flags <- list(
-    is_baseline_normalised = 0L,
+    baseline_latent_mode                     = 3L,
     is_correlation_coefficient_hierarchical = 0L,
     is_student_t_heterogeneity = 0L,
     is_design_effect = 0L
@@ -270,7 +270,7 @@ test_that("prepare_stan_data() includes correct K_cov and matrices with covariat
 test_that("prepare_stan_data() centers covariates by default", {
   df <- make_did_summary_with_cov(3)
   model_flags <- list(
-    is_baseline_normalised = 0L,
+    baseline_latent_mode                     = 3L,
     is_correlation_coefficient_hierarchical = 0L,
     is_student_t_heterogeneity = 0L,
     is_design_effect = 0L
@@ -288,7 +288,7 @@ test_that("prepare_stan_data() centers covariates by default", {
 test_that("prepare_stan_data() skips centering when center_covariates = FALSE", {
   df <- make_did_summary_with_cov(3)
   model_flags <- list(
-    is_baseline_normalised = 0L,
+    baseline_latent_mode                     = 3L,
     is_correlation_coefficient_hierarchical = 0L,
     is_student_t_heterogeneity = 0L,
     is_design_effect = 0L
@@ -304,7 +304,7 @@ test_that("prepare_stan_data() skips centering when center_covariates = FALSE", 
 test_that("prepare_stan_data() produces empty matrices for designs with 0 studies", {
   df <- make_did_summary_with_cov(2)
   model_flags <- list(
-    is_baseline_normalised = 0L,
+    baseline_latent_mode                     = 3L,
     is_correlation_coefficient_hierarchical = 0L,
     is_student_t_heterogeneity = 0L,
     is_design_effect = 0L
