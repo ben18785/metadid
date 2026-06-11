@@ -403,11 +403,17 @@ compute_baseline_prior_upper <- function(summary_data, individual_data, user_pri
 
 
 prepare_stan_data <- function(summary_data, individual_data, model_flags, priors,
-                              covariate_names = NULL, center_covariates = TRUE) {
+                              covariate_names = NULL,
+                              multiplicative_covariate = NULL,
+                              center_covariates = TRUE) {
 
   K_cov <- length(covariate_names)
+  has_mult <- as.integer(!is.null(multiplicative_covariate))
 
   # --- Compute centering values across all studies ---
+  # Only additive covariates are centered. The multiplicative covariate is
+  # never centered (a 0/1 indicator shifted to mean -0.4 has no clean
+  # multiplicative interpretation: gamma^{-0.4} is not what the user wants).
   cov_centers <- NULL
   if (K_cov > 0 && center_covariates) {
     # Collect one row per study from both data sources
@@ -476,6 +482,20 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   stan_rct$X_cov_rct <- .extract_cov_matrix_individual(ind_rct_raw, cov_names)
   stan_pp$X_cov_pp   <- .extract_cov_matrix_individual(ind_pp_raw, cov_names)
 
+  # --- Multiplicative covariate per-design vectors ---
+  # Always pass a vector of length n_studies_<design>. Filled with the
+  # binary column when the feature is on; filled with zeros when off
+  # (in which case effect_multiplier isn't sampled and the multiplier helper
+  # short-circuits to 1 regardless of the vector contents).
+  stan_did_summary$x_mult_did_summary             <- .extract_mult_vec_summary(sum_did,        multiplicative_covariate)
+  stan_did_change_only$x_mult_did_change_only     <- .extract_mult_vec_summary(sum_did_change, multiplicative_covariate)
+  stan_rct_summary$x_mult_rct_summary             <- .extract_mult_vec_summary(sum_rct,        multiplicative_covariate)
+  stan_pp_summary$x_mult_pp_summary               <- .extract_mult_vec_summary(sum_pp,         multiplicative_covariate)
+
+  stan_did$x_mult_did <- .extract_mult_vec_individual(ind_did_raw, multiplicative_covariate)
+  stan_rct$x_mult_rct <- .extract_mult_vec_individual(ind_rct_raw, multiplicative_covariate)
+  stan_pp$x_mult_pp   <- .extract_mult_vec_individual(ind_pp_raw,  multiplicative_covariate)
+
   # --- Baseline-latent prior upper bound ---
   # In modelled modes the per-study baseline has a wide uniform prior. The
   # upper bound is set to a large multiple of the observed baseline scale
@@ -493,8 +513,9 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
     model_flags,
     as_stan_data(priors),
     list(
-      K_cov                = K_cov,
-      baseline_prior_upper = baseline_prior_upper
+      K_cov                        = K_cov,
+      has_multiplicative_covariate = has_mult,
+      baseline_prior_upper         = baseline_prior_upper
     )
   )
 
@@ -512,4 +533,32 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
 
   attr(result, "cov_centers") <- cov_centers
   result
+}
+
+# ---------------------------------------------------------------------------
+# .extract_mult_vec_summary() / .extract_mult_vec_individual()
+# Extract a binary {0, 1} integer vector for the multiplicative covariate
+# (matching the array[] int Stan declaration). When the feature is off,
+# return a zero vector of the appropriate length; multiplier isn't
+# sampled in that case so the values don't matter, but the vector must have
+# the right length to satisfy the Stan data declaration.
+# ---------------------------------------------------------------------------
+
+.extract_mult_vec_summary <- function(data, multiplicative_covariate) {
+  n <- nrow(data)
+  if (is.null(multiplicative_covariate) || n == 0) {
+    return(as.array(rep(0L, n)))
+  }
+  as.array(as.integer(data[[multiplicative_covariate]]))
+}
+
+.extract_mult_vec_individual <- function(data, multiplicative_covariate) {
+  if (nrow(data) == 0) return(as.array(integer(0)))
+  n_studies <- length(unique(data$study_id))
+  if (is.null(multiplicative_covariate)) {
+    return(as.array(rep(0L, n_studies)))
+  }
+  # One value per study (validator ensures constant within study)
+  study_one_row <- data[!duplicated(data$study_id), , drop = FALSE]
+  as.array(as.integer(study_one_row[[multiplicative_covariate]]))
 }

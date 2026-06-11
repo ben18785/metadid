@@ -337,6 +337,170 @@ if (!is.null(summary_data) && nrow(summary_data) > 0) {
 }
 
 # ---------------------------------------------------------------------------
+# validate_multiplicative_covariate()
+# ---------------------------------------------------------------------------
+
+#' Validate a study-level multiplicative covariate
+#'
+#' Checks that the multiplicative-covariate column exists, is binary
+#' (values in `{0, 1}`, no `NA`s), and is constant within each study for
+#' individual-level data. Also performs two identifiability checks:
+#'
+#' 1. The column must vary across studies. If every study has the same
+#'    value (all 0 or all 1), the multiplier and the population mean
+#'    \eqn{\mu_\theta} are jointly unidentified — any pair
+#'    (mean, multiplier) with the same product gives identical
+#'    likelihood. This is a hard error.
+#' 2. The column must not be perfectly collinear with any additive
+#'    covariate. When `cor(x_mult, x_cov_k) > 0.95` for some `k`, the
+#'    multiplier and that covariate's coefficient become weakly identified:
+#'    the model will still run but `multiplier` and `beta_cov[k]` will be
+#'    highly correlated in the posterior. This is a soft warning.
+#'
+#' @param multiplicative_covariate_name Single column name (character of length 1).
+#' @param covariate_names Character vector of additive covariate names (or NULL).
+#' @param summary_data Summary-level data frame (or NULL).
+#' @param individual_data Individual-level data frame (or NULL).
+#'
+#' @return Invisible NULL. Stops with an error or emits a warning if a
+#'   validation or identifiability check fails.
+#' @keywords internal
+validate_multiplicative_covariate <- function(multiplicative_covariate_name,
+                                              covariate_names,
+                                              summary_data, individual_data) {
+  if (is.null(multiplicative_covariate_name)) {
+    return(invisible(NULL))
+  }
+
+  if (!is.character(multiplicative_covariate_name) ||
+      length(multiplicative_covariate_name) != 1) {
+    stop(
+      "'multiplicative_covariate' must be a single column name (character of length 1).",
+      call. = FALSE
+    )
+  }
+
+  col <- multiplicative_covariate_name
+
+  # Cannot overlap with the additive covariate list
+  if (col %in% covariate_names) {
+    stop(
+      "Column '", col, "' is listed in both 'covariates' and ",
+      "'multiplicative_covariate'. A covariate must be one or the other.",
+      call. = FALSE
+    )
+  }
+
+  .check_binary <- function(values, context) {
+    if (any(is.na(values))) {
+      stop("Multiplicative covariate '", col,
+           "' in ", context, " contains NA values.", call. = FALSE)
+    }
+    if (!is.numeric(values)) {
+      stop("Multiplicative covariate '", col,
+           "' in ", context, " must be numeric (binary 0/1).", call. = FALSE)
+    }
+    bad <- setdiff(unique(values), c(0, 1))
+    if (length(bad) > 0) {
+      stop(
+        "Multiplicative covariate '", col, "' in ", context,
+        " must be binary (values in {0, 1}). Found other values: ",
+        paste(utils::head(bad, 5), collapse = ", "),
+        if (length(bad) > 5) ", ..." else "", ".",
+        call. = FALSE
+      )
+    }
+  }
+
+  # Collect the per-study values across both data sources for identifiability checks
+  study_values <- numeric(0)
+  study_covs_for_collinearity <- NULL
+
+  if (!is.null(summary_data) && nrow(summary_data) > 0) {
+    if (!col %in% names(summary_data)) {
+      stop("Multiplicative covariate '", col,
+           "' not found in summary_data.", call. = FALSE)
+    }
+    .check_binary(summary_data[[col]], "summary_data")
+    study_values <- c(study_values, summary_data[[col]])
+    if (length(covariate_names) > 0) {
+      study_covs_for_collinearity <- summary_data[, covariate_names, drop = FALSE]
+    }
+  }
+
+  if (!is.null(individual_data) && nrow(individual_data) > 0) {
+    if (!col %in% names(individual_data)) {
+      stop("Multiplicative covariate '", col,
+           "' not found in individual_data.", call. = FALSE)
+    }
+    .check_binary(individual_data[[col]], "individual_data")
+    # Constant within study
+    n_unique <- tapply(individual_data[[col]], individual_data$study_id,
+                       function(x) length(unique(x)))
+    bad_studies <- names(n_unique)[n_unique > 1]
+    if (length(bad_studies) > 0) {
+      stop(
+        "Multiplicative covariate '", col, "' varies within study in ",
+        "individual_data (must be constant within study). Problem studies: ",
+        paste(utils::head(bad_studies, 3), collapse = ", "),
+        if (length(bad_studies) > 3) ", ..." else "", ".",
+        call. = FALSE
+      )
+    }
+    # Collapse to one row per study for the identifiability checks
+    ind_one_per_study <- individual_data[!duplicated(individual_data$study_id), , drop = FALSE]
+    study_values <- c(study_values, ind_one_per_study[[col]])
+    if (length(covariate_names) > 0) {
+      cov_block <- ind_one_per_study[, covariate_names, drop = FALSE]
+      study_covs_for_collinearity <- if (is.null(study_covs_for_collinearity)) {
+        cov_block
+      } else {
+        rbind(study_covs_for_collinearity, cov_block)
+      }
+    }
+  }
+
+  # --- Identifiability: x_mult must vary across studies ---
+  unique_vals <- unique(study_values)
+  if (length(unique_vals) < 2) {
+    common <- unique_vals[1]
+    stop(
+      "Multiplicative covariate '", col, "' is constant across all studies ",
+      "(every study has the value ", common, "). With no variation in '",
+      col, "', the multiplier multiplier and the population treatment ",
+      "effect mu are jointly unidentified — any (mu, multiplier) with the same ",
+      "product gives identical likelihood. Either remove the multiplicative ",
+      "covariate, or include at least one study with the opposite value.",
+      call. = FALSE
+    )
+  }
+
+  # --- Identifiability: warn on near-perfect collinearity with additive covariates ---
+  if (!is.null(study_covs_for_collinearity) && nrow(study_covs_for_collinearity) >= 3) {
+    threshold <- 0.95
+    for (cv in covariate_names) {
+      cv_vals <- study_covs_for_collinearity[[cv]]
+      # cor() is undefined when a column is constant; guard.
+      if (length(unique(cv_vals)) < 2) next
+      r <- suppressWarnings(stats::cor(study_values, cv_vals))
+      if (!is.na(r) && abs(r) > threshold) {
+        warning(
+          "Multiplicative covariate '", col, "' is nearly collinear with ",
+          "additive covariate '", cv, "' (|cor| = ", round(abs(r), 3),
+          " > ", threshold, "). multiplier and beta_cov[",
+          which(covariate_names == cv), "] may be weakly identified; ",
+          "expect a strong posterior correlation between them and wider ",
+          "credible intervals than usual.",
+          call. = FALSE
+        )
+      }
+    }
+  }
+
+  invisible(NULL)
+}
+
+# ---------------------------------------------------------------------------
 # Internal helper
 # ---------------------------------------------------------------------------
 

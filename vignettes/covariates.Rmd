@@ -261,3 +261,59 @@ print(fit_mixed)
 ```
 
 The credible intervals are somewhat wider with mixed designs, but both the intercept and slope are still recovered.
+
+## Multiplicative covariates
+
+The covariates discussed so far enter the treatment-effect model *additively*: each unit change in `dose` shifts the expected effect by a fixed amount. Sometimes a covariate is better described as *scaling* the effect — multiplying it by a factor rather than shifting it. A common motivating example: experimental ("artificial") settings often produce larger effect sizes than real-world deployments, and we'd like to estimate how much the real-world effect is attenuated relative to the experimental one, jointly with the experimental effect itself.
+
+metadid supports this through the `multiplicative_covariate` argument. The indicator has a single binary level $m_i \in \{0, 1\}$, with a single estimated `multiplier` applied to the studies where it equals 1:
+
+$$\mu_i = \begin{cases} \mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}} & m_i = 0 \\ \mathrm{multiplier} \cdot \bigl(\mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}}\bigr) & m_i = 1. \end{cases}$$
+
+Studies with $m_i = 0$ identify the linear predictor directly; studies with $m_i = 1$ see it multiplied by the `multiplier`. The multiplier is constrained to be non-negative, with a `normal(1, 0.5)` prior centred at 1 — the no-effect case where every study contributes to the same population mean.
+
+### Example: experimental vs real-world studies
+
+```{r mult-example, eval = FALSE}
+# Mark each study with a binary indicator
+studies$real_world <- ifelse(studies$setting == "experimental", 0, 1)
+
+fit <- meta_did(
+  summary_data             = studies,
+  multiplicative_covariate = "real_world",
+  priors = set_priors(
+    multiplier = normal(1, 0.5)
+  ),
+  seed = 9931
+)
+
+print(fit)
+```
+
+```
+#> Bayesian meta-analysis (metadid)
+#> Studies: DiD = 30 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0 
+#> Population treatment effect: -0.412  90% CI [-0.450, -0.376]
+#> Multiplicative covariate (real_world): 0.51  90% CI [0.42, 0.61]
+```
+
+The interpretation: experimental studies produce an effect around -0.412, while real-world studies produce roughly half of that. The combination yields the per-study mean used in the meta-analysis.
+
+### Identifiability
+
+A multiplicative covariate is only identifiable when the data contain variation in both directions. `meta_did()` enforces this with two checks:
+
+* **Hard error: constant indicator.** If every study has $m_i = 0$ or every study has $m_i = 1$, then $\mu_\theta$ and the `multiplier` are jointly unidentified — any pair with the same product gives identical likelihood. `meta_did()` stops with an error pointing to the column.
+* **Soft warning: collinearity with an additive covariate.** If `multiplicative_covariate` is nearly perfectly correlated with one of the `covariates` (`|cor| > 0.95`), the multiplier and that covariate's coefficient will be weakly identified. The model still runs but the posterior correlation between them will be high. A warning is issued so you can investigate before trusting the result.
+
+### When to use a multiplicative vs additive covariate
+
+The two parameterisations encode different beliefs about the world:
+
+* Use **additive** when each study's effect is shifted by a fixed amount linked to the covariate, with the same shift size regardless of the underlying effect's magnitude.
+* Use **multiplicative** when the covariate attenuates or amplifies the underlying effect — e.g. a real-world implementation that captures a fraction of what an experiment showed, and a stronger experimental effect would also produce a proportionally stronger real-world effect.
+
+The choice matters most for prediction at unobserved covariate values: under the multiplicative model, the predicted real-world effect tracks the experimental effect's posterior; under the additive model it differs by a fixed offset.
+
+A multiplicative covariate can be combined with one or more additive covariates in the same fit — provided they are not collinear with each other, as flagged above.
+

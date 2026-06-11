@@ -112,6 +112,7 @@ print.did_prior <- function(x, ...) {
   delta_pp                 = c("normal"),
   sigma                    = c("cauchy"),
   beta_cov                 = c("normal"),
+  multiplier               = c("normal"),
   lkj_eta                  = c("lkj"),
   baseline_difference_mean = c("normal"),
   baseline_difference_sd   = c("cauchy", "normal"),
@@ -163,6 +164,11 @@ print.did_prior <- function(x, ...) {
 #' @param baseline_difference_sd Prior on the between-study SD of the
 #'   baseline imbalance. Only used when `baseline_imbalance = "estimated"`.
 #'   Default: `cauchy(0.1)`.
+#' @param multiplier Prior on the multiplicative-covariate factor `multiplier`
+#'   (only used when `multiplicative_covariate` is specified in [meta_did()]).
+#'   Default: `normal(1, 0.5)` — centred at 1, the no-multiplicative-effect
+#'   case. The parameter itself is declared `<lower=0>` in Stan, so the
+#'   prior is effectively truncated to positive support.
 #'
 #' @return A `did_priors` object.
 #' @export
@@ -188,7 +194,8 @@ set_priors <- function(
     lkj_eta                  = lkj(2),
     baseline_difference_mean = normal(0, 0.5),
     baseline_difference_sd   = cauchy(0.1),
-    baseline_per_study       = NULL
+    baseline_per_study       = NULL,
+    multiplier               = normal(1, 0.5)
 ) {
   priors <- list(
     treatment_effect_mean    = treatment_effect_mean,
@@ -205,7 +212,8 @@ set_priors <- function(
     lkj_eta                  = lkj_eta,
     baseline_difference_mean = baseline_difference_mean,
     baseline_difference_sd   = baseline_difference_sd,
-    baseline_per_study       = baseline_per_study  # NULL = compute from data
+    baseline_per_study       = baseline_per_study,  # NULL = compute from data
+    multiplier               = multiplier
   )
   validate_priors(priors)
   structure(priors, class = "did_priors")
@@ -247,6 +255,7 @@ validate_priors <- function(priors) {
       )
     }
   }
+
   invisible(priors)
 }
 
@@ -298,7 +307,12 @@ as_stan_data.did_priors <- function(priors) {
     baseline_difference_mean_prior_mean = priors$baseline_difference_mean$mean,
     baseline_difference_mean_prior_sd   = priors$baseline_difference_mean$sd,
     baseline_difference_sd_prior_scale  = priors$baseline_difference_sd$scale %||%
-                                          priors$baseline_difference_sd$sd
+                                          priors$baseline_difference_sd$sd,
+    # multiplier ~ normal(mean, sd) on a <lower=0> parameter — only active
+    # when multiplicative_covariate is non-NULL (has_multiplicative_covariate
+    # == 1); harmless constants otherwise.
+    effect_multiplier_prior_mean            = priors$multiplier$mean,
+    effect_multiplier_prior_sd              = priors$multiplier$sd
   )
 }
 
