@@ -18,6 +18,11 @@ if(n_studies_rct_summary > 0) {
     );
   }
 
+  // Multiplicative-covariate factor per study (vector of 1s when feature off)
+  vector[n_studies_rct_summary] mult_rct_summary;
+  for (i in 1:n_studies_rct_summary)
+    mult_rct_summary[i] = mult_factor(has_multiplicative_covariate, effect_multiplier, x_mult_rct_summary[i]);
+
   for (i in 1:n_studies_rct_summary) {
     // Bridge from the canonical fractional scale (where the hierarchical
     // pooling lives) to the absolute scale (where the data and the
@@ -51,11 +56,11 @@ if(n_studies_rct_summary > 0) {
     if (is_correlated_effects && !is_time_trend_rct_summary_zero) {
       target += multi_normal_cholesky_lpdf(
         [treatment_effect_rct_summary[i], time_trend_rct_summary[i]]' |
-        [treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, time_trend_mean]',
+        [mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), time_trend_mean]',
         L_Sigma_rct_summary
       );
     } else if (is_student_t_heterogeneity) {
-      target += student_t_lpdf(treatment_effect_rct_summary[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov, treatment_effect_sd);
+      target += student_t_lpdf(treatment_effect_rct_summary[i] | nu_treatment_vec[1], mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), treatment_effect_sd);
     }
     // Normal case: handled by treatment_effect_rct_summary_raw ~ std_normal()
     // below.

@@ -13,21 +13,23 @@ new_meta_did_fit <- function(
     normalisation_factors,
     method = "sample",
     covariate_names = NULL,
+    multiplicative_covariate = NULL,
     cov_centers = NULL,
     center_covariates = TRUE
 ) {
   structure(
     list(
-      fit                   = fit,
-      summary_data          = summary_data,
-      individual_data       = individual_data,
-      model_flags           = model_flags,
-      priors                = priors,
-      normalisation_factors = normalisation_factors,
-      method                = method,
-      covariate_names       = covariate_names,
-      cov_centers           = cov_centers,
-      center_covariates     = center_covariates
+      fit                      = fit,
+      summary_data             = summary_data,
+      individual_data          = individual_data,
+      model_flags              = model_flags,
+      priors                   = priors,
+      normalisation_factors    = normalisation_factors,
+      method                   = method,
+      covariate_names          = covariate_names,
+      multiplicative_covariate = multiplicative_covariate,
+      cov_centers              = cov_centers,
+      center_covariates        = center_covariates
     ),
     class = "meta_did_fit"
   )
@@ -93,6 +95,14 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
         cat("  (covariates were mean-centered; treatment_effect_mean is the effect at covariate means)\n")
       }
     }
+    if (!is.null(x$multiplicative_covariate)) {
+      mult_draws <- x$fit$draws("effect_multiplier", format = "matrix")
+      m_mean      <- mean(mult_draws)
+      m_lo        <- stats::quantile(mult_draws, (1 - prob) / 2)
+      m_hi        <- stats::quantile(mult_draws, 1 - (1 - prob) / 2)
+      cat(sprintf("Multiplicative covariate (%s): %.3f  %g%% CI [%.3f, %.3f]\n",
+                  x$multiplicative_covariate, m_mean, prob * 100, m_lo, m_hi))
+    }
   } else {
     mle <- x$fit$mle()
     m   <- mle[["treatment_effect_mean"]]
@@ -114,6 +124,11 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
       if (x$center_covariates) {
         cat("  (covariates were mean-centered; treatment_effect_mean is the effect at covariate means)\n")
       }
+    }
+    if (!is.null(x$multiplicative_covariate)) {
+      mult_k <- mle[["effect_multiplier[1]"]]
+      cat(sprintf("Multiplicative covariate (%s): %.3f  (MAP estimate)\n",
+                  x$multiplicative_covariate, mult_k))
     }
   }
 
@@ -186,6 +201,13 @@ summary.meta_did_fit <- function(object, prob = 0.9, ...) {
       # Label rows with covariate names for clarity
       beta_summary$parameter <- paste0("beta_cov[", object$covariate_names, "]")
       pop <- rbind(pop, beta_summary)
+    }
+  }
+  if (!is.null(object$multiplicative_covariate)) {
+    mult_summary <- summarise_draws("effect_multiplier")
+    if (!is.null(mult_summary)) {
+      mult_summary$parameter <- paste0("effect_multiplier[", object$multiplicative_covariate, "]")
+      pop <- rbind(pop, mult_summary)
     }
   }
 

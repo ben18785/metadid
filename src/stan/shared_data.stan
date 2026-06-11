@@ -77,6 +77,17 @@ real<lower=0> sigma_prior_scale;
 int<lower=0> K_cov;               // number of covariates (0 = no meta-regression)
 real<lower=0> beta_cov_prior_sd;   // prior SD for covariate coefficients
 
+// Optional multiplicative covariate with a single binary level. When
+// has_multiplicative_covariate == 0 the feature is off (effect_multiplier stays at
+// the prior, every study's effect_multiplier is 1). When 1, each design block
+// carries a length-n integer array x_mult_<design> of {0, 1} indicators and
+// a single scalar effect_multiplier is estimated: studies with indicator 1 have
+// their population-mean linear predictor multiplied by effect_multiplier; studies
+// with indicator 0 are unaffected.
+int<lower=0, upper=1> has_multiplicative_covariate;
+real effect_multiplier_prior_mean;            // prior mean for effect_multiplier
+real<lower=0> effect_multiplier_prior_sd;     // prior SD for effect_multiplier
+
 // When is_student_t_heterogeneity == 1, study-level treatment effects are
 // drawn from a Student-t rather than a normal. The degrees-of-freedom
 // parameter nu_treatment (declared as a length-1 vector in the parameters
