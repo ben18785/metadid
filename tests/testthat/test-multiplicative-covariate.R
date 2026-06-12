@@ -1,9 +1,10 @@
 # Tests for the optional multiplicative-covariate meta-regression.
-# Covers the multiplier prior slot, validator semantics (binary, no NAs, constancy
-# within study, no overlap with covariates), identifiability checks (hard
-# error on constant column; warning on collinearity), prepare_stan_data()
-# plumbing, and (when Stan is available) recovery of a known multiplier
-# from two-regime simulated data.
+# Covers the multiplier prior slot, validator semantics (categorical levels,
+# no NAs, constancy within study, no overlap with covariates),
+# identifiability checks (hard error on constant column; warning on
+# collinearity), prepare_stan_data() global level coding, and (when Stan is
+# available) recovery of known multipliers from two- and three-regime
+# simulated data.
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -95,30 +96,28 @@ test_that("validate_multiplicative_covariate() errors on missing column", {
   )
 })
 
-test_that("validate_multiplicative_covariate() errors on non-binary values", {
+test_that("validate_multiplicative_covariate() accepts a multi-level numeric column", {
   df <- make_did_summary_with_mult()
   df$real_world[1] <- 2
-  expect_error(
-    validate_multiplicative_covariate("real_world", NULL, df, NULL),
-    "must be binary"
+  expect_silent(
+    validate_multiplicative_covariate("real_world", NULL, df, NULL)
   )
 })
 
-test_that("validate_multiplicative_covariate() errors on continuous covariate", {
-  df <- make_did_summary_with_mult()
-  df$real_world <- runif(nrow(df))
+test_that("validate_multiplicative_covariate() errors on a continuous covariate", {
+  df <- make_did_summary_with_mult(n = 8)
+  df$real_world <- seq_len(nrow(df)) * 0.137
   expect_error(
     validate_multiplicative_covariate("real_world", NULL, df, NULL),
-    "must be binary"
+    "looks continuous"
   )
 })
 
-test_that("validate_multiplicative_covariate() rejects character column", {
+test_that("validate_multiplicative_covariate() accepts a character column", {
   df <- make_did_summary_with_mult()
-  df$real_world <- as.character(df$real_world)
-  expect_error(
-    validate_multiplicative_covariate("real_world", NULL, df, NULL),
-    "must be numeric"
+  df$real_world <- ifelse(df$real_world == 1, "real_world", "experimental")
+  expect_silent(
+    validate_multiplicative_covariate("real_world", NULL, df, NULL)
   )
 })
 
@@ -208,7 +207,7 @@ test_that("validate_multiplicative_covariate() does not warn when collinearity i
 # prepare_stan_data() — flag and x_mult vectors
 # ---------------------------------------------------------------------------
 
-test_that("prepare_stan_data() sets has_multiplicative_covariate = 0 when off", {
+test_that("prepare_stan_data() zero-fills x_mult vectors when the feature is off", {
   df <- make_did_summary_with_mult()
   sd <- prepare_stan_data(df, NULL,
     model_flags = list(),
@@ -216,13 +215,13 @@ test_that("prepare_stan_data() sets has_multiplicative_covariate = 0 when off", 
     covariate_names = NULL,
     multiplicative_covariate = NULL
   )
-  expect_equal(sd$has_multiplicative_covariate, 0L)
+  expect_equal(sd$n_effect_multipliers, 0L)
   # x_mult_did_summary still has length n_studies (filled with zeros)
   expect_equal(length(sd$x_mult_did_summary), nrow(df))
   expect_true(all(sd$x_mult_did_summary == 0))
 })
 
-test_that("prepare_stan_data() sets has_multiplicative_covariate = 1 and copies values when on", {
+test_that("prepare_stan_data() codes a binary {0, 1} covariate as the two-level case", {
   df <- make_did_summary_with_mult()
   sd <- prepare_stan_data(df, NULL,
     model_flags = list(),
@@ -230,7 +229,7 @@ test_that("prepare_stan_data() sets has_multiplicative_covariate = 1 and copies 
     covariate_names = NULL,
     multiplicative_covariate = "real_world"
   )
-  expect_equal(sd$has_multiplicative_covariate, 1L)
+  expect_equal(sd$n_effect_multipliers, 1L)
   expect_equal(as.numeric(sd$x_mult_did_summary), df$real_world)
   # array[] int declaration on the Stan side: storage must be integer
   expect_true(is.integer(sd$x_mult_did_summary))
@@ -267,7 +266,7 @@ test_that("prepare_stan_data() populates x_mult_did from individual data", {
     covariate_names = NULL,
     multiplicative_covariate = "real_world"
   )
-  expect_equal(sd$has_multiplicative_covariate, 1L)
+  expect_equal(sd$n_effect_multipliers, 1L)
   expect_equal(length(sd$x_mult_did), 2L)  # one entry per study
   expect_setequal(as.numeric(sd$x_mult_did), c(0, 1))
   expect_true(is.integer(sd$x_mult_did))
@@ -322,10 +321,12 @@ test_that("new_meta_did_fit() stores multiplicative_covariate", {
     model_flags              = list(),
     priors                   = set_priors(),
     normalisation_factors    = NULL,
-    multiplicative_covariate = "real_world"
+    multiplicative_covariate = list(name   = "real_world",
+                                    levels = c("0", "1"))
   )
   expect_s3_class(obj, "meta_did_fit")
-  expect_equal(obj$multiplicative_covariate, "real_world")
+  expect_equal(obj$multiplicative_covariate$name, "real_world")
+  expect_equal(obj$multiplicative_covariate$levels, c("0", "1"))
 })
 
 test_that("new_meta_did_fit() defaults multiplicative_covariate to NULL", {
@@ -408,4 +409,183 @@ test_that("Stan fit recovers a known multiplier on two-regime simulated data", {
   # Sanity: convergence on the new parameter
   rhat <- fit$fit$summary("effect_multiplier")$rhat
   expect_true(all(rhat < 1.05), label = sprintf("R-hat = %.3f", rhat))
+})
+
+
+# ---------------------------------------------------------------------------
+# Categorical levels — global coding, reference control, plumbing
+# ---------------------------------------------------------------------------
+
+test_that("prepare_stan_data() codes a three-level character covariate with a reference", {
+  df <- make_did_summary_with_mult(n = 6)
+  df$setting <- rep(c("experimental", "rw_field", "rw_lab"), each = 2)
+  sd <- prepare_stan_data(df, NULL, model_flags = list(), priors = set_priors(),
+    covariate_names = NULL, multiplicative_covariate = "setting")
+  expect_equal(sd$n_effect_multipliers, 2L)
+  # alphabetical levels: experimental (reference = 0), rw_field (1), rw_lab (2)
+  expect_equal(as.integer(sd$x_mult_did_summary), rep(c(0L, 1L, 2L), each = 2))
+  expect_true(is.integer(sd$x_mult_did_summary))
+  expect_equal(attr(sd, "multiplier_levels"),
+               c("experimental", "rw_field", "rw_lab"))
+})
+
+test_that("prepare_stan_data() respects declared factor order (reference control)", {
+  df <- make_did_summary_with_mult(n = 6)
+  df$setting <- factor(rep(c("experimental", "rw_field", "rw_lab"), each = 2),
+                       levels = c("rw_lab", "experimental", "rw_field"))
+  sd <- prepare_stan_data(df, NULL, model_flags = list(), priors = set_priors(),
+    covariate_names = NULL, multiplicative_covariate = "setting")
+  expect_equal(attr(sd, "multiplier_levels"),
+               c("rw_lab", "experimental", "rw_field"))
+  expect_equal(as.integer(sd$x_mult_did_summary), rep(c(1L, 2L, 0L), each = 2))
+})
+
+test_that("prepare_stan_data() drops unused declared factor levels", {
+  df <- make_did_summary_with_mult(n = 4)
+  df$setting <- factor(rep(c("a", "b"), 2), levels = c("a", "b", "c"))
+  sd <- prepare_stan_data(df, NULL, model_flags = list(), priors = set_priors(),
+    covariate_names = NULL, multiplicative_covariate = "setting")
+  expect_equal(attr(sd, "multiplier_levels"), c("a", "b"))
+  expect_equal(sd$n_effect_multipliers, 1L)
+})
+
+test_that("prepare_stan_data() sorts numeric levels numerically", {
+  df <- make_did_summary_with_mult(n = 6)
+  df$dose_group <- rep(c(10, 2, 7), each = 2)
+  sd <- prepare_stan_data(df, NULL, model_flags = list(), priors = set_priors(),
+    covariate_names = NULL, multiplicative_covariate = "dose_group")
+  expect_equal(attr(sd, "multiplier_levels"), c("2", "7", "10"))
+  expect_equal(as.integer(sd$x_mult_did_summary), rep(c(2L, 0L, 1L), each = 2))
+})
+
+test_that("prepare_stan_data() codes levels jointly across summary and individual data", {
+  df <- make_did_summary_with_mult(n = 4)
+  df$setting <- rep(c("a", "c"), 2)
+  ind <- data.frame(
+    study_id   = rep(c("ind_a", "ind_b"), each = 8),
+    subject_id = rep(1:4, times = 4),
+    design     = "did",
+    group      = rep(c("control", "control", "treatment", "treatment"), 4),
+    time       = rep(c("pre", "post"), 8),
+    value      = rnorm(16, mean = 0.45, sd = 0.1),
+    setting    = rep(c("a", "b"), each = 8)
+  )
+  sd <- prepare_stan_data(df, ind, model_flags = list(), priors = set_priors(),
+    covariate_names = NULL, multiplicative_covariate = "setting")
+  expect_equal(attr(sd, "multiplier_levels"), c("a", "b", "c"))
+  expect_equal(sd$n_effect_multipliers, 2L)
+  expect_equal(as.integer(sd$x_mult_did_summary), rep(c(0L, 2L), 2))
+  expect_equal(as.integer(sd$x_mult_did), c(0L, 1L))
+})
+
+test_that("prepare_stan_data() errors on conflicting declared factor orders", {
+  df <- make_did_summary_with_mult(n = 4)
+  df$setting <- factor(rep(c("a", "b"), 2), levels = c("a", "b"))
+  ind <- data.frame(
+    study_id   = rep(c("ind_a", "ind_b"), each = 8),
+    subject_id = rep(1:4, times = 4),
+    design     = "did",
+    group      = rep(c("control", "control", "treatment", "treatment"), 4),
+    time       = rep(c("pre", "post"), 8),
+    value      = rnorm(16, mean = 0.45, sd = 0.1),
+    setting    = factor(rep(c("a", "b"), each = 8), levels = c("b", "a"))
+  )
+  expect_error(
+    prepare_stan_data(df, ind, model_flags = list(), priors = set_priors(),
+      covariate_names = NULL, multiplicative_covariate = "setting"),
+    "different level sets/orders"
+  )
+})
+
+test_that("prepare_stan_data() sets n_effect_multipliers = 0 when the feature is off", {
+  df <- make_did_summary_with_mult()
+  sd <- prepare_stan_data(df, NULL, model_flags = list(), priors = set_priors(),
+    covariate_names = NULL, multiplicative_covariate = NULL)
+  expect_equal(sd$n_effect_multipliers, 0L)
+  expect_null(attr(sd, "multiplier_levels"))
+})
+
+test_that("validate_multiplicative_covariate() accepts a three-level factor", {
+  df <- make_did_summary_with_mult(n = 6)
+  df$real_world <- factor(rep(c("exp", "lab", "field"), each = 2))
+  expect_silent(validate_multiplicative_covariate("real_world", NULL, df, NULL))
+})
+
+test_that("meta_did fit objects carry the covariate name and levels together", {
+  obj <- new_meta_did_fit(
+    fit = NULL, summary_data = NULL, individual_data = NULL,
+    model_flags = list(), priors = set_priors(), normalisation_factors = NULL,
+    multiplicative_covariate = list(name   = "setting",
+                                    levels = c("a", "b", "c"))
+  )
+  expect_equal(obj$multiplicative_covariate$levels, c("a", "b", "c"))
+})
+
+test_that("Stan fit recovers level-specific multipliers on three-regime simulated data", {
+  skip_if_no_stan()
+
+  EFFECT_EXP_RAW <- -0.20
+  MULT_LAB       <- 0.6
+  MULT_FIELD     <- 0.3
+  BASELINE_MEAN  <- 0.45
+  SIGMA_EFFECT   <- 0.02
+
+  sims <- list(
+    experimental = simulate_meta_did(
+      n_studies = 12L, n_control = 70L, n_treatment = 70L,
+      true_effect = EFFECT_EXP_RAW, sigma_effect = SIGMA_EFFECT,
+      true_trend = 0, baseline_mean = BASELINE_MEAN, seed = 31L),
+    rw_lab = simulate_meta_did(
+      n_studies = 12L, n_control = 70L, n_treatment = 70L,
+      true_effect = EFFECT_EXP_RAW * MULT_LAB, sigma_effect = SIGMA_EFFECT,
+      true_trend = 0, baseline_mean = BASELINE_MEAN, seed = 32L),
+    rw_field = simulate_meta_did(
+      n_studies = 12L, n_control = 70L, n_treatment = 70L,
+      true_effect = EFFECT_EXP_RAW * MULT_FIELD, sigma_effect = SIGMA_EFFECT,
+      true_trend = 0, baseline_mean = BASELINE_MEAN, seed = 33L)
+  )
+  studies <- do.call(rbind, lapply(names(sims), function(nm) {
+    s <- sims[[nm]]
+    s$study_id <- paste0(s$study_id, "_", nm)
+    out <- as_summary_did(s)
+    out$setting <- nm
+    out
+  }))
+  studies$setting <- factor(studies$setting,
+                            levels = c("experimental", "rw_lab", "rw_field"))
+
+  fit <- meta_did(
+    summary_data             = studies,
+    multiplicative_covariate = "setting",
+    priors                   = set_priors(multiplier = normal(1, 0.5)),
+    chains        = 2L,
+    iter_warmup   = 800L,
+    iter_sampling = 800L,
+    seed          = 9932L,
+    refresh       = 0
+  )
+
+  expect_equal(fit$multiplicative_covariate$name, "setting")
+  expect_equal(fit$multiplicative_covariate$levels,
+               c("experimental", "rw_lab", "rw_field"))
+
+  draws <- fit$fit$draws("effect_multiplier", format = "matrix")
+  expect_equal(ncol(draws), 2L)
+  true_m <- c(MULT_LAB, MULT_FIELD)
+  for (j in 1:2) {
+    lo <- unname(stats::quantile(draws[, j], 0.05))
+    hi <- unname(stats::quantile(draws[, j], 0.95))
+    expect_true(lo < true_m[j] && hi > true_m[j],
+      label = sprintf("multiplier %d 90%% CI [%.3f, %.3f] covers true %.3f",
+                      j, lo, hi, true_m[j]))
+  }
+
+  rhat <- fit$fit$summary("effect_multiplier")$rhat
+  expect_true(all(rhat < 1.05),
+              label = paste("R-hat =", paste(round(rhat, 3), collapse = ", ")))
+
+  # summary() rows are labelled with level names
+  sm <- summary(fit)
+  expect_true(all(c("effect_multiplier[rw_lab]",
+                    "effect_multiplier[rw_field]") %in% sm$parameter))
 })

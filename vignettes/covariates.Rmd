@@ -266,7 +266,7 @@ The credible intervals are somewhat wider with mixed designs, but both the inter
 
 The covariates discussed so far enter the treatment-effect model *additively*: each unit change in `dose` shifts the expected effect by a fixed amount. Sometimes a covariate is better described as *scaling* the effect — multiplying it by a factor rather than shifting it. A common motivating example: experimental ("artificial") settings often produce larger effect sizes than real-world deployments, and we'd like to estimate how much the real-world effect is attenuated relative to the experimental one, jointly with the experimental effect itself.
 
-metadid supports this through the `multiplicative_covariate` argument. The indicator has a single binary level $m_i \in \{0, 1\}$, with a single estimated `multiplier` applied to the studies where it equals 1:
+metadid supports this through the `multiplicative_covariate` argument. The covariate is categorical with a reference level: one `multiplier` is estimated per non-reference level and applied to the studies at that level, while the reference level's factor is fixed at 1. A binary indicator $m_i \in \{0, 1\}$ is the two-level special case, with a single estimated `multiplier` applied to the studies where it equals 1:
 
 $$\mu_i = \begin{cases} \mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}} & m_i = 0 \\ \mathrm{multiplier} \cdot \bigl(\mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}}\bigr) & m_i = 1. \end{cases}$$
 
@@ -305,6 +305,31 @@ A multiplicative covariate is only identifiable when the data contain variation 
 
 * **Hard error: constant indicator.** If every study has $m_i = 0$ or every study has $m_i = 1$, then $\mu_\theta$ and the `multiplier` are jointly unidentified — any pair with the same product gives identical likelihood. `meta_did()` stops with an error pointing to the column.
 * **Soft warning: collinearity with an additive covariate.** If `multiplicative_covariate` is nearly perfectly correlated with one of the `covariates` (`|cor| > 0.95`), the multiplier and that covariate's coefficient will be weakly identified. The model still runs but the posterior correlation between them will be high. A warning is issued so you can investigate before trusting the result.
+
+### Categorical multiplicative covariates
+
+The covariate is not restricted to a binary indicator. With a column such as
+`setting` taking the values `experimental`, `rw_lab`, and `rw_field`, one
+multiplier is estimated for each non-reference level:
+
+```{r, eval = FALSE}
+studies$setting <- factor(studies$setting,
+                          levels = c("experimental", "rw_lab", "rw_field"))
+fit <- meta_did(
+  summary_data             = studies,
+  multiplicative_covariate = "setting"
+)
+summary(fit)
+# rows: effect_multiplier[rw_lab], effect_multiplier[rw_field]
+```
+
+The reference is the first factor level — declare the column as a factor to
+control it, with identical levels declared in every data frame. For numeric
+input the levels sort in ascending order (so a `{0, 1}` indicator behaves
+exactly as before), and for character input alphabetically. The same
+`multiplier` prior from `set_priors()` is applied independently to each
+estimated factor, and the data must contain studies at two or more levels for
+the multipliers to be identified.
 
 ### When to use a multiplicative vs additive covariate
 

@@ -166,6 +166,8 @@ print.did_prior <- function(x, ...) {
 #'   Default: `cauchy(0.1)`.
 #' @param multiplier Prior on the multiplicative-covariate factor `multiplier`
 #'   (only used when `multiplicative_covariate` is specified in [meta_did()]).
+#'   With a categorical covariate the same prior is applied independently
+#'   to each estimated non-reference-level factor.
 #'   Default: `normal(1, 0.5)` — centred at 1, the no-multiplicative-effect
 #'   case. The parameter itself is declared `<lower=0>` in Stan, so the
 #'   prior is effectively truncated to positive support.
@@ -309,8 +311,8 @@ as_stan_data.did_priors <- function(priors) {
     baseline_difference_sd_prior_scale  = priors$baseline_difference_sd$scale %||%
                                           priors$baseline_difference_sd$sd,
     # multiplier ~ normal(mean, sd) on a <lower=0> parameter — only active
-    # when multiplicative_covariate is non-NULL (has_multiplicative_covariate
-    # == 1); harmless constants otherwise.
+    # when multiplicative_covariate is non-NULL (n_effect_multipliers
+    # >= 1); harmless constants otherwise.
     effect_multiplier_prior_mean            = priors$multiplier$mean,
     effect_multiplier_prior_sd              = priors$multiplier$sd
   )

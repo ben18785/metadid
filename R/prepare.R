@@ -487,14 +487,38 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   # binary column when the feature is on; filled with zeros when off
   # (in which case effect_multiplier isn't sampled and the multiplier helper
   # short-circuits to 1 regardless of the vector contents).
-  stan_did_summary$x_mult_did_summary             <- .extract_mult_vec_summary(sum_did,        multiplicative_covariate)
-  stan_did_change_only$x_mult_did_change_only     <- .extract_mult_vec_summary(sum_did_change, multiplicative_covariate)
-  stan_rct_summary$x_mult_rct_summary             <- .extract_mult_vec_summary(sum_rct,        multiplicative_covariate)
-  stan_pp_summary$x_mult_pp_summary               <- .extract_mult_vec_summary(sum_pp,         multiplicative_covariate)
+  # --- Multiplicative covariate: global level coding (reference = code 0) ---
+  mult_levels <- character(0)
+  if (has_mult == 1L) {
+    one_per_study <- function(d) {
+      if (is.null(d) || nrow(d) == 0) return(character(0))
+      d[!duplicated(d$study_id), , drop = FALSE][[multiplicative_covariate]]
+    }
+    mult_levels <- .mult_levels(list(
+      sum_did[[multiplicative_covariate]],
+      sum_did_change[[multiplicative_covariate]],
+      sum_rct[[multiplicative_covariate]],
+      sum_pp[[multiplicative_covariate]],
+      one_per_study(ind_did_raw),
+      one_per_study(ind_rct_raw),
+      one_per_study(ind_pp_raw)
+    ))
+    if (length(mult_levels) < 2) {
+      stop("Multiplicative covariate '", multiplicative_covariate,
+           "' must take at least two distinct values across studies.",
+           call. = FALSE)
+    }
+  }
+  n_mult <- if (has_mult == 1L) length(mult_levels) - 1L else 0L
 
-  stan_did$x_mult_did <- .extract_mult_vec_individual(ind_did_raw, multiplicative_covariate)
-  stan_rct$x_mult_rct <- .extract_mult_vec_individual(ind_rct_raw, multiplicative_covariate)
-  stan_pp$x_mult_pp   <- .extract_mult_vec_individual(ind_pp_raw,  multiplicative_covariate)
+  stan_did_summary$x_mult_did_summary             <- .extract_mult_vec_summary(sum_did,        multiplicative_covariate, mult_levels)
+  stan_did_change_only$x_mult_did_change_only     <- .extract_mult_vec_summary(sum_did_change, multiplicative_covariate, mult_levels)
+  stan_rct_summary$x_mult_rct_summary             <- .extract_mult_vec_summary(sum_rct,        multiplicative_covariate, mult_levels)
+  stan_pp_summary$x_mult_pp_summary               <- .extract_mult_vec_summary(sum_pp,         multiplicative_covariate, mult_levels)
+
+  stan_did$x_mult_did <- .extract_mult_vec_individual(ind_did_raw, multiplicative_covariate, mult_levels)
+  stan_rct$x_mult_rct <- .extract_mult_vec_individual(ind_rct_raw, multiplicative_covariate, mult_levels)
+  stan_pp$x_mult_pp   <- .extract_mult_vec_individual(ind_pp_raw,  multiplicative_covariate, mult_levels)
 
   # --- Baseline-latent prior upper bound ---
   # In modelled modes the per-study baseline has a wide uniform prior. The
@@ -514,7 +538,7 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
     as_stan_data(priors),
     list(
       K_cov                        = K_cov,
-      has_multiplicative_covariate = has_mult,
+      n_effect_multipliers         = n_mult,
       baseline_prior_upper         = baseline_prior_upper
     )
   )
@@ -532,27 +556,64 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   )
 
   attr(result, "cov_centers") <- cov_centers
+  attr(result, "multiplier_levels") <- if (has_mult == 1L) mult_levels else NULL
   result
 }
 
 # ---------------------------------------------------------------------------
 # .extract_mult_vec_summary() / .extract_mult_vec_individual()
-# Extract a binary {0, 1} integer vector for the multiplicative covariate
-# (matching the array[] int Stan declaration). When the feature is off,
-# return a zero vector of the appropriate length; multiplier isn't
-# sampled in that case so the values don't matter, but the vector must have
-# the right length to satisfy the Stan data declaration.
+# Global level coding for the multiplicative covariate.
+#
+# Levels are determined jointly across every data frame that carries the
+# covariate, so an integer code means the same level everywhere:
+#   * factor input  -- the declared level order is respected (declare
+#     identical levels in every frame; unused declared levels are dropped);
+#   * numeric input -- levels sort in ascending numeric order, so a binary
+#     {0, 1} column reduces exactly to the previous behaviour;
+#   * character / logical input -- levels sort alphabetically.
+# The first level is the reference (Stan code 0, factor fixed at 1);
+# a study at level k > 0 selects effect_multiplier[k]. When the feature is
+# off the vectors are zero-filled to satisfy the Stan declarations.
 # ---------------------------------------------------------------------------
 
-.extract_mult_vec_summary <- function(data, multiplicative_covariate) {
+.mult_levels <- function(values_list) {
+  vals <- values_list[vapply(values_list, length, integer(1)) > 0]
+  if (length(vals) == 0) return(character(0))
+  observed <- unique(as.character(unlist(lapply(vals, as.character))))
+  is_fac <- vapply(vals, is.factor, logical(1))
+  if (any(is_fac)) {
+    lv_sets <- unique(lapply(vals[is_fac], levels))
+    if (length(lv_sets) > 1) {
+      stop("Multiplicative covariate factors declare different level ",
+           "sets/orders across data frames; declare identical factor ",
+           "levels everywhere.", call. = FALSE)
+    }
+    declared <- lv_sets[[1]]
+    extra <- setdiff(observed, declared)
+    if (length(extra) > 0) {
+      stop("Multiplicative covariate contains values not among the declared ",
+           "factor levels: ", paste(extra, collapse = ", "), ".",
+           call. = FALSE)
+    }
+    declared[declared %in% observed]
+  } else if (all(vapply(vals, is.numeric, logical(1)))) {
+    as.character(sort(unique(as.numeric(unlist(vals)))))
+  } else {
+    sort(observed)
+  }
+}
+
+.extract_mult_vec_summary <- function(data, multiplicative_covariate,
+                                      mult_levels = character(0)) {
   n <- nrow(data)
   if (is.null(multiplicative_covariate) || n == 0) {
     return(as.array(rep(0L, n)))
   }
-  as.array(as.integer(data[[multiplicative_covariate]]))
+  as.array(match(as.character(data[[multiplicative_covariate]]), mult_levels) - 1L)
 }
 
-.extract_mult_vec_individual <- function(data, multiplicative_covariate) {
+.extract_mult_vec_individual <- function(data, multiplicative_covariate,
+                                         mult_levels = character(0)) {
   if (nrow(data) == 0) return(as.array(integer(0)))
   n_studies <- length(unique(data$study_id))
   if (is.null(multiplicative_covariate)) {
@@ -560,5 +621,5 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   }
   # One value per study (validator ensures constant within study)
   study_one_row <- data[!duplicated(data$study_id), , drop = FALSE]
-  as.array(as.integer(study_one_row[[multiplicative_covariate]]))
+  as.array(match(as.character(study_one_row[[multiplicative_covariate]]), mult_levels) - 1L)
 }
