@@ -1,17 +1,17 @@
 // shared_functions.stan
 //
 // Helper applying the optional multiplicative covariate to a study's
-// linear predictor. The covariate has a single binary level: a study either
-// belongs to the multiplied group (x == 1, factor = effect_multiplier[1]) or to
-// the reference group (x == 0, factor = 1).
-//
-// effect_multiplier is passed in as the (possibly length-0) parameter vector so the
-// function can be called unconditionally -- when the feature is off it never
-// dereferences the empty vector.
+// linear predictor. The covariate is categorical: level 0 is the
+// reference (factor = 1); level x in {1, ..., n_effect_multipliers}
+// selects the corresponding estimated factor, effect_multiplier[x].
+// A binary indicator is the two-level special case (reference 0, one
+// multiplier for level 1). When the feature is off every x is 0 (the
+// data bounds enforce this), so the function never dereferences the
+// empty effect_multiplier vector.
 
-real mult_factor(int has_multiplicative_covariate, vector effect_multiplier, int x) {
-  if (!has_multiplicative_covariate || x == 0) {
+real mult_factor(vector effect_multiplier, int x) {
+  if (x == 0) {
     return 1.0;
   }
-  return effect_multiplier[1];
+  return effect_multiplier[x];
 }

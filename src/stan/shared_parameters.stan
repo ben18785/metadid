@@ -39,10 +39,12 @@ vector[is_design_effect] delta_pp_raw;
 // Length K_cov; when K_cov == 0, not sampled.
 vector[K_cov] beta_cov;
 
-// Multiplicative covariate factor. Length 1 when has_multiplicative_covariate == 1,
-// length 0 otherwise (not sampled). Bounds are read from data so users can
-// configure them via set_priors(effect_multiplier = normal(mean, sd, lower, upper)).
-vector<lower=0>[has_multiplicative_covariate] effect_multiplier;
+// Multiplicative covariate factors, one per non-reference level of the
+// categorical covariate (length n_effect_multipliers; length 0 when the
+// feature is off, in which case nothing is sampled). The reference level's
+// factor is fixed at 1. Each element receives the same independent prior,
+// configured via set_priors(multiplier = normal(mean, sd)).
+vector<lower=0>[n_effect_multipliers] effect_multiplier;
 
 // Cholesky factor of the 2x2 correlation matrix between treatment effects
 // and time trends. Zero-length array when is_correlated_effects == 0 (not sampled).

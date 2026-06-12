@@ -96,7 +96,7 @@ if(n_studies_pp_summary > 0) {
   }
   vector[n_studies_pp_summary] mult_pp_summary;
   for (i in 1:n_studies_pp_summary)
-    mult_pp_summary[i] = mult_factor(has_multiplicative_covariate, effect_multiplier, x_mult_pp_summary[i]);
+    mult_pp_summary[i] = mult_factor(effect_multiplier, x_mult_pp_summary[i]);
   if (is_correlated_effects && !is_time_trend_pp_summary_zero) {
     matrix[2, 2] L_Sigma_pp_summary = diag_pre_multiply(
       [treatment_effect_sd, time_trend_sd]', L_corr_theta_beta[1]

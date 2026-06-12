@@ -96,12 +96,20 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
       }
     }
     if (!is.null(x$multiplicative_covariate)) {
+      mc <- x$multiplicative_covariate
+      nm <- if (is.list(mc)) mc$name else mc
+      lv <- if (is.list(mc)) mc$levels else NULL
       mult_draws <- x$fit$draws("effect_multiplier", format = "matrix")
-      m_mean      <- mean(mult_draws)
-      m_lo        <- stats::quantile(mult_draws, (1 - prob) / 2)
-      m_hi        <- stats::quantile(mult_draws, 1 - (1 - prob) / 2)
-      cat(sprintf("Multiplicative covariate (%s): %.3f  %g%% CI [%.3f, %.3f]\n",
-                  x$multiplicative_covariate, m_mean, prob * 100, m_lo, m_hi))
+      cat(sprintf("Multiplicative covariate (%s):\n", nm))
+      if (!is.null(lv)) cat(sprintf("  %s: 1  (reference)\n", lv[1]))
+      for (k in seq_len(ncol(mult_draws))) {
+        lab <- if (!is.null(lv)) lv[k + 1] else paste0("level ", k)
+        m_mean <- mean(mult_draws[, k])
+        m_lo   <- stats::quantile(mult_draws[, k], (1 - prob) / 2)
+        m_hi   <- stats::quantile(mult_draws[, k], 1 - (1 - prob) / 2)
+        cat(sprintf("  %s: %.3f  %g%% CI [%.3f, %.3f]\n",
+                    lab, m_mean, prob * 100, m_lo, m_hi))
+      }
     }
   } else {
     mle <- x$fit$mle()
@@ -126,9 +134,16 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
       }
     }
     if (!is.null(x$multiplicative_covariate)) {
-      mult_k <- mle[["effect_multiplier[1]"]]
-      cat(sprintf("Multiplicative covariate (%s): %.3f  (MAP estimate)\n",
-                  x$multiplicative_covariate, mult_k))
+      mc <- x$multiplicative_covariate
+      nm <- if (is.list(mc)) mc$name else mc
+      lv <- if (is.list(mc)) mc$levels else NULL
+      k_mult <- grep("^effect_multiplier\\[", names(mle))
+      cat(sprintf("Multiplicative covariate (%s):\n", nm))
+      if (!is.null(lv)) cat(sprintf("  %s: 1  (reference)\n", lv[1]))
+      for (j in seq_along(k_mult)) {
+        lab <- if (!is.null(lv)) lv[j + 1] else paste0("level ", j)
+        cat(sprintf("  %s: %.3f  (MAP estimate)\n", lab, mle[[k_mult[j]]]))
+      }
     }
   }
 
@@ -206,7 +221,16 @@ summary.meta_did_fit <- function(object, prob = 0.9, ...) {
   if (!is.null(object$multiplicative_covariate)) {
     mult_summary <- summarise_draws("effect_multiplier")
     if (!is.null(mult_summary)) {
-      mult_summary$parameter <- paste0("effect_multiplier[", object$multiplicative_covariate, "]")
+      mc <- object$multiplicative_covariate
+      lv <- if (is.list(mc)) mc$levels else NULL
+      labs <- if (!is.null(lv) && length(lv) == nrow(mult_summary) + 1) {
+        lv[-1]
+      } else if (nrow(mult_summary) == 1 && !is.list(mc)) {
+        mc
+      } else {
+        paste0("level", seq_len(nrow(mult_summary)))
+      }
+      mult_summary$parameter <- paste0("effect_multiplier[", labs, "]")
       pop <- rbind(pop, mult_summary)
     }
   }

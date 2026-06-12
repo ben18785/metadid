@@ -14,7 +14,7 @@ vector[n_studies_did] time_trend_did;
 
 if (!is_student_t_heterogeneity && !is_correlated_effects) {
   for (i in 1:n_studies_did)
-    treatment_effect_did[i] = mult_factor(has_multiplicative_covariate, effect_multiplier, x_mult_did[i]) * (treatment_effect_mean + X_cov_did[i] * beta_cov) + treatment_effect_sd * treatment_effect_did_raw[i];
+    treatment_effect_did[i] = mult_factor(effect_multiplier, x_mult_did[i]) * (treatment_effect_mean + X_cov_did[i] * beta_cov) + treatment_effect_sd * treatment_effect_did_raw[i];
 } else {
   treatment_effect_did = treatment_effect_did_raw;
 }

@@ -21,7 +21,7 @@ if(n_studies_rct_summary > 0) {
   // Multiplicative-covariate factor per study (vector of 1s when feature off)
   vector[n_studies_rct_summary] mult_rct_summary;
   for (i in 1:n_studies_rct_summary)
-    mult_rct_summary[i] = mult_factor(has_multiplicative_covariate, effect_multiplier, x_mult_rct_summary[i]);
+    mult_rct_summary[i] = mult_factor(effect_multiplier, x_mult_rct_summary[i]);
 
   for (i in 1:n_studies_rct_summary) {
     // Bridge from the canonical fractional scale (where the hierarchical

@@ -78,13 +78,15 @@ int<lower=0> K_cov;               // number of covariates (0 = no meta-regressio
 real<lower=0> beta_cov_prior_sd;   // prior SD for covariate coefficients
 
 // Optional multiplicative covariate with a single binary level. When
-// has_multiplicative_covariate == 0 the feature is off (effect_multiplier stays at
-// the prior, every study's effect_multiplier is 1). When 1, each design block
-// carries a length-n integer array x_mult_<design> of {0, 1} indicators and
-// a single scalar effect_multiplier is estimated: studies with indicator 1 have
-// their population-mean linear predictor multiplied by effect_multiplier; studies
-// with indicator 0 are unaffected.
-int<lower=0, upper=1> has_multiplicative_covariate;
+// n_effect_multipliers == 0 switches the feature off (effect_multiplier is
+// empty, every study's factor is 1). When positive, the covariate is categorical
+// with n_effect_multipliers + 1 levels: each design block supplies a
+// per-study integer x_mult_* in {0, ..., n_effect_multipliers}, where 0 is
+// the reference level (factor fixed at 1) and a study at level x has its
+// population-mean linear predictor multiplied by effect_multiplier[x].
+// A binary indicator is the two-level special case. The same normal prior
+// below is applied independently to every element of effect_multiplier.
+int<lower=0> n_effect_multipliers;            // # non-reference levels (0 when feature off)
 real effect_multiplier_prior_mean;            // prior mean for effect_multiplier
 real<lower=0> effect_multiplier_prior_sd;     // prior SD for effect_multiplier
 

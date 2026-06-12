@@ -34,7 +34,7 @@ baseline_difference_sd   ~ cauchy(0, baseline_difference_sd_prior_scale);
 
 beta_cov ~ normal(0, beta_cov_prior_sd);
 
-if (has_multiplicative_covariate) {
+if (n_effect_multipliers > 0) {
   effect_multiplier ~ normal(effect_multiplier_prior_mean, effect_multiplier_prior_sd);
 }
 
