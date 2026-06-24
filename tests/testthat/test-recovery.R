@@ -729,3 +729,56 @@ test_that("Fit 7: estimated baseline imbalance recovers treatment effect under D
                              bd$lo, bd$hi))
   expect_lt(abs(bd$mean - 0.05 / MEAN_BASELINE), 0.05)
 })
+
+# ---------------------------------------------------------------------------
+# Fit 6: Jensen / estimand test — shared (default) vs per-study normalisation
+# ---------------------------------------------------------------------------
+# With large between-study baseline variation, per-study normalisation pools
+# E[theta_i / b_i] and is biased for the target estimand E[theta]/E[b] by the
+# between-study baseline CV^2 (Jensen). The default "shared" normalisation
+# divides by a single constant and pools on the absolute scale, recovering
+# E[theta]/E[b] as a ratio of population means — unbiased. This fit checks the
+# default covers the truth AND is closer to it than per-study on the SAME data.
+
+test_that("Fit 6: shared normalisation removes the Jensen bias at high baseline variation", {
+  skip_if_no_stan()
+
+  jensen_sim <- simulate_meta_did(
+    n_studies     = 100,
+    true_effect   = TRUE_EFFECT_RAW,
+    sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
+    true_trend    = TRUE_TREND_RAW,
+    sigma_trend   = TRUE_SIGMA_TREND_RAW,
+    baseline_mean = MEAN_BASELINE,
+    baseline_sd   = 0.10,            # amplified between-study variation (G8 regime)
+    n_control     = 100L,
+    n_treatment   = 100L,
+    seed          = 4242L
+  )
+  jensen_did <- as_summary_did(jensen_sim)
+
+  fit_shared <- recovery_fit(summary_data = jensen_did)                               # default = "shared"
+  fit_per    <- recovery_fit(summary_data = jensen_did, normalise_by_baseline = "per_study")
+
+  te_shared <- summary(fit_shared)
+  te_shared <- te_shared[te_shared$parameter == "treatment_effect_mean", ]
+  te_per    <- summary(fit_per)
+  te_per    <- te_per[te_per$parameter == "treatment_effect_mean", ]
+
+  # Default (ratio of population means) covers the true fractional effect.
+  expect_true(
+    te_shared$lo < TRUE_EFFECT_NORMALISED && te_shared$hi > TRUE_EFFECT_NORMALISED,
+    label = ci_label(te_shared, TRUE_EFFECT_NORMALISED)
+  )
+
+  # ... and is closer to the truth than per-study, which carries the Jensen bias.
+  expect_lt(
+    abs(te_shared$mean - TRUE_EFFECT_NORMALISED),
+    abs(te_per$mean    - TRUE_EFFECT_NORMALISED)
+  )
+
+  # Convergence on the absolute-pooling path (high-variation scenario, so a
+  # slightly looser bound than the well-conditioned Fit 1).
+  rhat <- fit_shared$fit$summary("treatment_effect_mean_fraction")$rhat
+  expect_true(all(rhat < 1.1), label = paste("R-hat:", paste(round(rhat, 3), collapse = ", ")))
+})

@@ -6,6 +6,14 @@
 // Data should be divided by each group's pre-treatment mean before fitting.
 int<lower=0, upper=1> is_baseline_normalised;
 
+// When report_baseline_fraction == 1 the data were placed on a common absolute
+// scale (shared-constant normalisation) and pooled with baselines estimated
+// (is_baseline_normalised == 0). The population fractional effect is then
+// reported as a generated quantity: E[theta]/E[b] = treatment_effect_mean /
+// baseline_control_mean (a ratio of population means, propagating baseline
+// uncertainty). Only read when is_baseline_normalised == 0.
+int<lower=0, upper=1> report_baseline_fraction;
+
 // When is_correlation_coefficient_hierarchical == 1, model rho hierarchically:
 //   z_i ~ normal(mu_z, sqrt(tau_z^2 + 1/(n_i - 3)))
 //   rho_i = tanh(z_i)

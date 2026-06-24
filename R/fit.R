@@ -61,7 +61,12 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
   K_cov <- length(x$covariate_names)
 
   if (x$method == "sample") {
-    draws <- x$fit$draws("treatment_effect_mean", format = "matrix")
+    te_name <- if (isTRUE(x$model_flags$report_baseline_fraction == 1)) {
+      "treatment_effect_mean_fraction"
+    } else {
+      "treatment_effect_mean"
+    }
+    draws <- x$fit$draws(te_name, format = "matrix")
     m     <- mean(draws)
     lo    <- stats::quantile(draws, (1 - prob) / 2)
     hi    <- stats::quantile(draws, 1 - (1 - prob) / 2)
@@ -169,11 +174,16 @@ summary.meta_did_fit <- function(object, prob = 0.9, ...) {
     }
   }
 
-  # Population-level parameters
-  pop <- rbind(
-    summarise_draws("treatment_effect_mean"),
-    summarise_draws("treatment_effect_sd")
-  )
+  # Population-level parameters. In shared-normalisation mode the headline
+  # effect is the fractional effect E[theta]/E[b], reported via the
+  # *_fraction generated quantities but labelled with the usual names.
+  report_frac  <- isTRUE(object$model_flags$report_baseline_fraction == 1) &&
+                  object$method == "sample"
+  te_mean_name <- if (report_frac) "treatment_effect_mean_fraction" else "treatment_effect_mean"
+  te_sd_name   <- if (report_frac) "treatment_effect_sd_fraction"   else "treatment_effect_sd"
+  te_mean_row  <- summarise_draws(te_mean_name); te_mean_row$parameter <- "treatment_effect_mean"
+  te_sd_row    <- summarise_draws(te_sd_name);   te_sd_row$parameter   <- "treatment_effect_sd"
+  pop <- rbind(te_mean_row, te_sd_row)
   if (object$model_flags$is_design_effect) {
     pop <- rbind(pop,
       summarise_draws("treatment_effect_mean_rct"),

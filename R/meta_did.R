@@ -18,10 +18,17 @@
 #'   observation. Must include columns `study_id`, `design`, `group`,
 #'   `time`, and `value`. Valid designs: `"did"`, `"rct"`, `"pp"`.
 #'   No `study_id` may appear in both `summary_data` and `individual_data`.
-#' @param normalise_by_baseline Logical. If `TRUE` (default), all means and
-#'   SDs are divided by each study's pre-treatment control mean (or the
-#'   grand mean for change-only studies), placing outcomes on a common
-#'   fractional scale.
+#' @param normalise_by_baseline How studies are placed on a common scale.
+#'   `TRUE` (default) divides every study by a single shared constant (the
+#'   grand-mean baseline) and pools on the absolute scale; the reported
+#'   population effect is then the fractional effect \eqn{E[\theta]/E[b]} -- a
+#'   ratio of population means, which is unbiased even when baselines vary
+#'   across studies. `"per_study"` divides each study by its own baseline
+#'   (legacy behaviour): this targets the equal-weighted mean proportional
+#'   effect \eqn{E[\theta_i/b_i]} and suits studies measured on incommensurable
+#'   units, but is biased for \eqn{E[\theta]/E[b]} by the between-study baseline
+#'   coefficient of variation. `FALSE` applies no normalisation (absolute-scale
+#'   pooling in the user's original units).
 #' @param robust_heterogeneity Logical. If `TRUE`, study-level treatment
 #'   effects are drawn from a Student-t distribution rather than a normal,
 #'   providing robustness to outlier studies. The degrees-of-freedom
@@ -466,12 +473,42 @@ meta_did_naive <- function(
   }
 
   # --- Normalisation ---
-  normalisation_factors <- NULL
-  if (normalise_by_baseline) {
-    norm_result           <- normalise_summary(summary_data, individual_data)
-    summary_data          <- norm_result$summary_data
-    individual_data       <- norm_result$individual_data
-    normalisation_factors <- norm_result$factors
+  # `normalise_by_baseline` controls how studies are placed on a common scale:
+  #   TRUE / "shared"  (default): divide every study by a SINGLE shared constant
+  #     (the grand-mean baseline) and pool on the absolute scale. The reported
+  #     population effect is then the fractional effect E[theta]/E[b] -- a ratio
+  #     of population means, which is unbiased. Because the divisor is a constant
+  #     (not each study's own noisy baseline) there is no per-study Jensen bias.
+  #     Assumes studies share a measurement scale.
+  #   "per_study": divide each study by its OWN baseline (legacy behaviour).
+  #     Pools E[theta_i / b_i], the equal-weighted mean proportional effect.
+  #     Appropriate for incommensurable units, but biased for E[theta]/E[b] by
+  #     the between-study baseline CV^2.
+  #   FALSE: no normalisation; absolute-scale pooling in the user's units.
+  norm_mode <- if (isTRUE(normalise_by_baseline) ||
+                   identical(normalise_by_baseline, "shared")) {
+    "shared"
+  } else if (identical(normalise_by_baseline, "per_study")) {
+    "per_study"
+  } else {
+    "none"
+  }
+
+  normalisation_factors    <- NULL
+  is_baseline_normalised   <- 0L
+  report_baseline_fraction <- 0L
+  if (norm_mode == "shared") {
+    norm_result              <- normalise_summary_shared(summary_data, individual_data)
+    summary_data             <- norm_result$summary_data
+    individual_data          <- norm_result$individual_data
+    normalisation_factors    <- norm_result$factors
+    report_baseline_fraction <- 1L  # baselines estimated; report E[theta]/E[b]
+  } else if (norm_mode == "per_study") {
+    norm_result              <- normalise_summary(summary_data, individual_data)
+    summary_data             <- norm_result$summary_data
+    individual_data          <- norm_result$individual_data
+    normalisation_factors    <- norm_result$factors
+    is_baseline_normalised   <- 1L  # per-study baseline fixed at 1.0 in Stan
   }
 
   # --- Validate rho when hierarchical modelling is off ---
@@ -512,7 +549,8 @@ meta_did_naive <- function(
 
   # --- Model flags ---
   model_flags <- list(
-    is_baseline_normalised                  = as.integer(normalise_by_baseline),
+    is_baseline_normalised                  = is_baseline_normalised,
+    report_baseline_fraction                = report_baseline_fraction,
     is_correlation_coefficient_hierarchical = as.integer(hierarchical_rho),
     is_student_t_heterogeneity              = as.integer(robust_heterogeneity),
     is_design_effect                        = as.integer(design_effects),
@@ -554,7 +592,7 @@ meta_did_naive <- function(
   }
 
   fit <- if (method == "sample") {
-    model$sample(
+    sample_args <- list(
       data          = stan_data,
       chains        = chains,
       iter_warmup   = iter_warmup,
@@ -562,6 +600,29 @@ meta_did_naive <- function(
       seed          = seed,
       ...
     )
+    # In fractional-reporting (modelled-baseline) mode the absolute-scale
+    # posterior has a degenerate basin where a per-study baseline collapses
+    # toward zero and the effect diverges to compensate; a minority of chains
+    # fall into it from diffuse random inits, wrecking convergence (Rhat ~2).
+    # The shared-constant rescaling makes the population baselines ~1 by
+    # construction, so initialise the population-level parameters at that
+    # data-justified point. Per-study raws keep their random inits; a
+    # user-supplied `init` always takes precedence.
+    if (report_baseline_fraction == 1L && is.null(sample_args$init)) {
+      sample_args$init <- function() list(
+        baseline_control_mean    = array(1.0, dim = 1),
+        baseline_treatment_mean  = array(1.0, dim = 1),
+        baseline_control_sd      = array(0.2, dim = 1),
+        baseline_treatment_sd    = array(0.2, dim = 1),
+        baseline_difference_mean = 0.0,
+        baseline_difference_sd   = 0.1,
+        treatment_effect_mean    = 0.0,
+        treatment_effect_sd      = 0.1,
+        time_trend_mean          = 0.0,
+        time_trend_sd            = 0.1
+      )
+    }
+    do.call(model$sample, sample_args)
   } else {
     model$optimize(
       data   = stan_data,
@@ -676,5 +737,70 @@ normalise_summary <- function(summary_data, individual_data) {
     summary_data    = summary_data,
     individual_data = individual_data,
     factors         = factors
+  )
+}
+
+# Shared-constant normalisation.
+#
+# Divides every study's means and SDs by a SINGLE constant -- the grand-mean
+# baseline pooled across all studies -- rather than by each study's own
+# baseline. This rescales the data to order 1 for numerical conditioning while
+# keeping every study on a common absolute scale, so the model pools absolute
+# effects and the reported population fractional effect E[theta]/E[b] is
+# recovered without the per-study Jensen bias that per-study division induces.
+#
+# The divisor is a precise grand mean (averaged over all studies), so its own
+# sampling uncertainty is negligible; the residual baseline uncertainty is still
+# propagated because per-study baselines remain estimated in the (absolute)
+# model. Assumes studies share a measurement scale.
+normalise_summary_shared <- function(summary_data, individual_data) {
+  refs <- numeric(0)
+
+  if (!is.null(summary_data) && nrow(summary_data) > 0) {
+    d <- summary_data
+    if (any(d$design == "did", na.rm = TRUE))
+      refs <- c(refs, d$mean_pre_control[d$design == "did"])
+    if (any(d$design == "rct", na.rm = TRUE))
+      refs <- c(refs, d$mean_post_control[d$design == "rct"])
+    if (any(d$design == "pp", na.rm = TRUE))
+      refs <- c(refs, d$mean_pre_treatment[d$design == "pp"])
+    if (any(d$design == "did_change", na.rm = TRUE) &&
+        "mean_pre_control" %in% names(d))
+      refs <- c(refs, d$mean_pre_control[d$design == "did_change"])
+  }
+
+  if (!is.null(individual_data) && nrow(individual_data) > 0) {
+    ref_one <- function(df) {
+      dz <- df$design[1]
+      if (identical(dz, "did"))
+        mean(df$value[df$group == "control"   & df$time == "pre"],  na.rm = TRUE)
+      else if (identical(dz, "rct"))
+        mean(df$value[df$group == "control"   & df$time == "post"], na.rm = TRUE)
+      else if (identical(dz, "pp"))
+        mean(df$value[df$group == "treatment" & df$time == "pre"],  na.rm = TRUE)
+      else NA_real_
+    }
+    grp <- interaction(individual_data$study_id, individual_data$design,
+                       drop = TRUE)
+    refs <- c(refs, vapply(split(individual_data, grp), ref_one, numeric(1)))
+  }
+
+  const <- mean(refs, na.rm = TRUE)
+  if (!is.finite(const) || const == 0) const <- 1
+
+  if (!is.null(summary_data) && nrow(summary_data) > 0) {
+    mean_cols <- grep("^mean_", names(summary_data), value = TRUE)
+    sd_cols   <- grep("^sd_",   names(summary_data), value = TRUE)
+    summary_data[, mean_cols] <- summary_data[, mean_cols, drop = FALSE] / const
+    summary_data[, sd_cols]   <- summary_data[, sd_cols,   drop = FALSE] / const
+  }
+  if (!is.null(individual_data) && nrow(individual_data) > 0) {
+    individual_data$value <- individual_data$value / const
+  }
+
+  list(
+    summary_data    = summary_data,
+    individual_data = individual_data,
+    factors         = list(shared = const)
   )
 }
