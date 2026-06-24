@@ -352,7 +352,7 @@ test_that("meta_did() rejects more than two multiplicative covariates", {
   df <- make_did_summary_with_mult()
   expect_error(
     meta_did(summary_data = df,
-             multiplicative_covariate = ~ real_world + sex + age_group),
+             multiplicative_covariate = ~ delivery + intensity + duration),
     "one or two columns"
   )
 })
@@ -576,25 +576,25 @@ test_that("prepare_stan_data() zero-fills the second covariate when only one is 
 
 test_that("prepare_stan_data() codes two covariates as independent factors (~ a + b)", {
   df <- make_did_summary_with_mult(n = 8)
-  df$sex <- rep(c("f", "m"), length.out = nrow(df))                 # 2 levels
-  df$age <- rep(c("young", "old", "mid"), length.out = nrow(df))    # 3 levels
+  df$delivery  <- rep(c("in_person", "remote"), length.out = nrow(df))    # 2 levels
+  df$intensity <- rep(c("low", "high", "medium"), length.out = nrow(df))  # 3 levels
   sd <- prepare_stan_data(df, NULL, model_flags = list(), priors = set_priors(),
-    covariate_names = NULL, multiplicative_covariate = ~ sex + age)
+    covariate_names = NULL, multiplicative_covariate = ~ delivery + intensity)
 
-  expect_equal(sd$n_effect_multipliers, 1L)   # sex: f(0), m(1)
-  expect_equal(sd$n_effect_multipliers2, 2L)  # age: mid(0), old(1), young(2)
+  expect_equal(sd$n_effect_multipliers, 1L)   # delivery: in_person(0), remote(1)
+  expect_equal(sd$n_effect_multipliers2, 2L)  # intensity: high(0), low(1), medium(2)
   expect_equal(as.integer(sd$x_mult_did_summary),
                rep(c(0L, 1L), length.out = 8))
-  # age = young,old,mid,... -> alphabetical levels mid<old<young -> codes 2,1,0,...
+  # intensity = low,high,medium,... -> alphabetical high<low<medium -> codes 1,0,2,...
   expect_equal(as.integer(sd$x_mult2_did_summary),
-               rep(c(2L, 1L, 0L), length.out = 8))
+               rep(c(1L, 0L, 2L), length.out = 8))
   expect_true(is.integer(sd$x_mult2_did_summary))
 
   mc <- attr(sd, "mult_covariates")
   expect_equal(length(mc), 2L)
-  expect_equal(mc[[1]]$name, "sex")
-  expect_equal(mc[[2]]$name, "age")
-  expect_equal(mc[[2]]$levels, c("mid", "old", "young"))
+  expect_equal(mc[[1]]$name, "delivery")
+  expect_equal(mc[[2]]$name, "intensity")
+  expect_equal(mc[[2]]$levels, c("high", "low", "medium"))
 })
 
 test_that("validate_multiplicative_covariate() accepts a three-level factor", {
@@ -686,33 +686,34 @@ test_that("Stan fit recovers two multiplicative covariates (product of factors)"
   skip_if_no_stan()
 
   MU    <- -0.30
-  ALPHA <- 0.6   # real_world multiplier (covariate 1)
-  BETA  <- 0.5   # sex multiplier        (covariate 2)
+  ALPHA <- 0.6   # remote-delivery multiplier  (covariate 1)
+  BETA  <- 0.5   # low-intensity multiplier    (covariate 2)
   BASE  <- 0.45
   SIG   <- 0.02
 
-  # Four groups (real_world x sex); the true effect is MU * alpha^rw * beta^male.
-  make_group <- function(rw, sx, mult, seed, tag) {
+  # Four groups (delivery x intensity); true effect is
+  # MU * alpha^[remote] * beta^[low].
+  make_group <- function(delivery, intensity, mult, seed, tag) {
     sim <- simulate_meta_did(
       n_studies = 10L, n_control = 80L, n_treatment = 80L,
       true_effect = MU * mult, sigma_effect = SIG,
       true_trend = 0, baseline_mean = BASE, seed = seed)
-    sim$study_id   <- paste0(sim$study_id, "_", tag)
-    out            <- as_summary_did(sim)
-    out$real_world <- rw
-    out$sex        <- sx
+    sim$study_id  <- paste0(sim$study_id, "_", tag)
+    out           <- as_summary_did(sim)
+    out$delivery  <- delivery
+    out$intensity <- intensity
     out
   }
   studies <- rbind(
-    make_group(0, "f", 1,            41L, "ff"),
-    make_group(1, "f", ALPHA,        42L, "tf"),
-    make_group(0, "m", BETA,         43L, "fm"),
-    make_group(1, "m", ALPHA * BETA, 44L, "tm")
+    make_group("in_person", "high", 1,            41L, "ih"),
+    make_group("remote",    "high", ALPHA,        42L, "rh"),
+    make_group("in_person", "low",  BETA,         43L, "il"),
+    make_group("remote",    "low",  ALPHA * BETA, 44L, "rl")
   )
 
   fit <- meta_did(
     summary_data             = studies,
-    multiplicative_covariate = ~ real_world + sex,
+    multiplicative_covariate = ~ delivery + intensity,
     priors                   = set_priors(multiplier = lognormal(0, 0.7)),
     chains        = 2L,
     iter_warmup   = 800L,
@@ -721,8 +722,10 @@ test_that("Stan fit recovers two multiplicative covariates (product of factors)"
     refresh       = 0
   )
 
-  a <- fit$fit$draws("effect_multiplier",  format = "matrix")  # real_world (alpha)
-  b <- fit$fit$draws("effect_multiplier2", format = "matrix")  # sex (beta)
+  # Reference levels are alphabetically first (in_person, high), so
+  # effect_multiplier is the 'remote' factor and effect_multiplier2 the 'low' one.
+  a <- fit$fit$draws("effect_multiplier",  format = "matrix")  # delivery (alpha)
+  b <- fit$fit$draws("effect_multiplier2", format = "matrix")  # intensity (beta)
   a_lo <- unname(stats::quantile(a, 0.05)); a_hi <- unname(stats::quantile(a, 0.95))
   b_lo <- unname(stats::quantile(b, 0.05)); b_hi <- unname(stats::quantile(b, 0.95))
   expect_true(a_lo < ALPHA && a_hi > ALPHA,
@@ -732,13 +735,13 @@ test_that("Stan fit recovers two multiplicative covariates (product of factors)"
 
   # Two covariate descriptors carried on the fit object.
   expect_equal(length(fit$multiplicative_covariate), 2L)
-  expect_equal(fit$multiplicative_covariate[[1]]$name, "real_world")
-  expect_equal(fit$multiplicative_covariate[[2]]$name, "sex")
+  expect_equal(fit$multiplicative_covariate[[1]]$name, "delivery")
+  expect_equal(fit$multiplicative_covariate[[2]]$name, "intensity")
 
   # summary() disambiguates the rows by covariate name.
   sm <- summary(fit)
-  expect_true(any(grepl("effect_multiplier\\[real_world:", sm$parameter)))
-  expect_true(any(grepl("effect_multiplier\\[sex:", sm$parameter)))
+  expect_true(any(grepl("effect_multiplier\\[delivery:", sm$parameter)))
+  expect_true(any(grepl("effect_multiplier\\[intensity:", sm$parameter)))
 
   rhat1 <- fit$fit$summary("effect_multiplier")$rhat
   rhat2 <- fit$fit$summary("effect_multiplier2")$rhat

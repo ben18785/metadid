@@ -131,10 +131,10 @@ with identical levels declared in every data frame), the lowest value
 for numeric input, or the alphabetically first value for character
 input. A numeric \verb{\{0, 1\}} indicator is the simplest case: 0 is the
 reference (factor fixed at 1) and 1 selects the single estimated
-multiplier. Useful when study settings represent an attenuated (or
-amplified) version of the underlying effect — e.g. experimental vs
-real-world conditions, optionally crossed with a second factor. Each
-column must contain no \code{NA}s, be constant within study for
+multiplier. Useful when a study attribute attenuates or amplifies the
+underlying effect by a shared factor — e.g. how an intervention was
+delivered, optionally crossed with a second attribute such as how long it
+ran. Each column must contain no \code{NA}s, be constant within study for
 individual-level data, must not also appear in \code{covariates}, and must
 take at least two distinct values across studies for its multipliers to
 be identified; the two columns must be distinct. Numeric columns with

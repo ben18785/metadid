@@ -381,37 +381,37 @@ A single fit may carry up to **two** multiplicative covariates. Pass a one-sided
 formula naming both columns; each is estimated independently and a study's
 overall multiplier is the **product** of the two per-covariate factors,
 $\alpha_{a(i)} \cdot \beta_{b(i)}$. This suits a design where the effect is
-scaled by two distinct study attributes at once — for example an
-experimental-vs-real-world factor crossed with a delivery-format factor.
+scaled by two distinct study attributes at once — for example how the
+intervention was delivered, crossed with how intensively it was applied.
 
 ```{r mult-two, eval = FALSE}
 # Two independent study attributes, each scaling the effect multiplicatively.
-studies$arm    <- rep(c("experimental", "real_world"), length.out = nrow(studies))
-studies$format <- rep(c("digital", "leaflet"),         length.out = nrow(studies))
+studies$delivery  <- rep(c("in_person", "remote"), length.out = nrow(studies))
+studies$intensity <- rep(c("high", "low"),         length.out = nrow(studies))
 
 fit <- meta_did(
   summary_data             = studies,
-  multiplicative_covariate = ~ arm + format,
+  multiplicative_covariate = ~ delivery + intensity,
   priors = set_priors(multiplier = lognormal(0, 0.7))
 )
 summary(fit)
 ```
 
 ```
-#>                           parameter   mean    sd     lo     hi
-#> 1             treatment_effect_mean -0.410 0.020 -0.443 -0.377
-#> 2               treatment_effect_sd  0.055 0.011  0.039  0.075
-#> 3 effect_multiplier[arm:real_world]  0.620 0.082  0.498  0.761
-#> 4 effect_multiplier[format:leaflet]  0.810 0.099  0.659  0.985
+#>                             parameter   mean    sd     lo     hi
+#> 1               treatment_effect_mean -0.410 0.020 -0.443 -0.377
+#> 2                 treatment_effect_sd  0.055 0.011  0.039  0.075
+#> 3  effect_multiplier[delivery:remote]  0.620 0.082  0.498  0.761
+#> 4   effect_multiplier[intensity:low]  0.550 0.073  0.441  0.679
 ```
 
-Each factor's reference level (`experimental` for `arm`, `digital` for `format`,
-both alphabetically first) is fixed at 1, so the rows report the remaining
-levels. Here the real-world arm retains about 62% of the experimental effect and
-the leaflet format about 81% of the digital one; a real-world leaflet study is
-scaled by the product (≈ 0.62 × 0.81 ≈ 0.50). With two covariates the summary
-rows are prefixed by the covariate name to disambiguate them. At most two
-multiplicative covariates are supported.
+Each factor's reference level (`in_person` for `delivery`, `high` for
+`intensity`, both alphabetically first) is fixed at 1, so the rows report the
+remaining levels. Here remote delivery retains about 62% of the in-person effect
+and a low-intensity programme about 55% of a high-intensity one; a remote,
+low-intensity study is scaled by the product (≈ 0.62 × 0.55 ≈ 0.34). With two
+covariates the summary rows are prefixed by the covariate name to disambiguate
+them. At most two multiplicative covariates are supported.
 
 ### When to use a multiplicative vs additive covariate
 

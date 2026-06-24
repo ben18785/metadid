@@ -509,28 +509,28 @@ two_cov_fit <- function() {
       effect_multiplier2           = matrix(rep(c(0.8, 0.5), each = 50), ncol = 2)
     ),
     multiplicative_covariate = list(
-      list(name = "sex", levels = c("f", "m")),
-      list(name = "age", levels = c("young", "mid", "old"))
+      list(name = "delivery",  levels = c("in_person", "remote")),
+      list(name = "intensity", levels = c("low", "medium", "high"))
     )
   )
 }
 
 test_that("print (sample): renders both covariates of a two-covariate fit", {
   out <- capture.output(print(two_cov_fit()))
-  expect_true(any(grepl("Multiplicative covariate \\(sex\\)", out)))
-  expect_true(any(grepl("Multiplicative covariate \\(age\\)", out)))
-  expect_true(any(grepl("f: 1  \\(reference\\)", out)))
-  expect_true(any(grepl("young: 1  \\(reference\\)", out)))
-  expect_true(any(grepl("m:", out)))
-  expect_true(any(grepl("mid:", out)))
-  expect_true(any(grepl("old:", out)))
+  expect_true(any(grepl("Multiplicative covariate \\(delivery\\)", out)))
+  expect_true(any(grepl("Multiplicative covariate \\(intensity\\)", out)))
+  expect_true(any(grepl("in_person: 1  \\(reference\\)", out)))
+  expect_true(any(grepl("low: 1  \\(reference\\)", out)))
+  expect_true(any(grepl("remote:", out)))
+  expect_true(any(grepl("medium:", out)))
+  expect_true(any(grepl("high:", out)))
 })
 
 test_that("summary (sample): prefixes two-covariate multiplier rows with the covariate name", {
   s <- summary(two_cov_fit())
-  expect_true("effect_multiplier[sex:m]" %in% s$parameter)
-  expect_true(all(c("effect_multiplier[age:mid]",
-                    "effect_multiplier[age:old]") %in% s$parameter))
+  expect_true("effect_multiplier[delivery:remote]" %in% s$parameter)
+  expect_true(all(c("effect_multiplier[intensity:medium]",
+                    "effect_multiplier[intensity:high]") %in% s$parameter))
 })
 
 # ---------------------------------------------------------------------------
