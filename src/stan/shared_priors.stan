@@ -35,7 +35,10 @@ baseline_difference_sd   ~ cauchy(0, baseline_difference_sd_prior_scale);
 beta_cov ~ normal(0, beta_cov_prior_sd);
 
 if (n_effect_multipliers > 0) {
-  effect_multiplier ~ normal(effect_multiplier_prior_mean, effect_multiplier_prior_sd);
+  // Log-normal prior: log(effect_multiplier) ~ normal(meanlog, sdlog). Strictly
+  // positive support with no boundary at zero, unlike a normal truncated by the
+  // <lower=0> declaration.
+  effect_multiplier ~ lognormal(effect_multiplier_prior_meanlog, effect_multiplier_prior_sdlog);
 }
 
 if (is_correlated_effects) {

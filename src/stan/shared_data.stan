@@ -77,18 +77,18 @@ real<lower=0> sigma_prior_scale;
 int<lower=0> K_cov;               // number of covariates (0 = no meta-regression)
 real<lower=0> beta_cov_prior_sd;   // prior SD for covariate coefficients
 
-// Optional multiplicative covariate with a single binary level. When
-// n_effect_multipliers == 0 switches the feature off (effect_multiplier is
-// empty, every study's factor is 1). When positive, the covariate is categorical
-// with n_effect_multipliers + 1 levels: each design block supplies a
-// per-study integer x_mult_* in {0, ..., n_effect_multipliers}, where 0 is
-// the reference level (factor fixed at 1) and a study at level x has its
-// population-mean linear predictor multiplied by effect_multiplier[x].
-// A binary indicator is the two-level special case. The same normal prior
-// below is applied independently to every element of effect_multiplier.
-int<lower=0> n_effect_multipliers;            // # non-reference levels (0 when feature off)
-real effect_multiplier_prior_mean;            // prior mean for effect_multiplier
-real<lower=0> effect_multiplier_prior_sd;     // prior SD for effect_multiplier
+// Optional categorical multiplicative covariate. When n_effect_multipliers == 0
+// the feature is off (effect_multiplier is empty, every study's factor is 1).
+// When positive, the covariate has n_effect_multipliers + 1 levels: each design
+// block supplies a per-study integer x_mult_* in {0, ..., n_effect_multipliers},
+// where 0 is the reference level (factor fixed at 1) and a study at level x has
+// its population-mean linear predictor multiplied by effect_multiplier[x]. A
+// two-level covariate is the simplest case (one estimated multiplier). The same
+// log-normal prior below is applied independently to every element of
+// effect_multiplier; the hyperparameters live on the log scale.
+int<lower=0> n_effect_multipliers;             // # non-reference levels (0 when feature off)
+real effect_multiplier_prior_meanlog;          // prior mean for log(effect_multiplier)
+real<lower=0> effect_multiplier_prior_sdlog;   // prior SD for log(effect_multiplier)
 
 // When is_student_t_heterogeneity == 1, study-level treatment effects are
 // drawn from a Student-t rather than a normal. The degrees-of-freedom

@@ -35,27 +35,28 @@ make_did_summary_with_mult <- function(n = 4) {
 test_that("set_priors() has a multiplier slot with sensible default", {
   p <- set_priors()
   expect_true("multiplier" %in% names(p))
-  expect_equal(p$multiplier$dist, "normal")
-  expect_equal(p$multiplier$mean, 1)
-  expect_equal(p$multiplier$sd, 0.5)
+  expect_equal(p$multiplier$dist, "lognormal")
+  expect_equal(p$multiplier$meanlog, 0)
+  expect_equal(p$multiplier$sdlog, 0.7)
 })
 
 test_that("set_priors() accepts a custom multiplier prior", {
-  p <- set_priors(multiplier = normal(1, 0.25))
-  expect_equal(p$multiplier$sd, 0.25)
+  p <- set_priors(multiplier = lognormal(0, 0.25))
+  expect_equal(p$multiplier$sdlog, 0.25)
 })
 
-test_that("set_priors() rejects a non-normal multiplier prior", {
+test_that("set_priors() rejects a non-lognormal multiplier prior", {
+  expect_error(set_priors(multiplier = normal(1, 0.5)), "multiplier")
   expect_error(set_priors(multiplier = cauchy(1)), "multiplier")
 })
 
-test_that("as_stan_data() exports multiplier hyperparameters", {
+test_that("as_stan_data() exports multiplier hyperparameters on the log scale", {
   sd <- as_stan_data(set_priors())
-  expect_true(all(c("effect_multiplier_prior_mean", "effect_multiplier_prior_sd") %in% names(sd)))
-  expect_equal(sd$effect_multiplier_prior_mean, 1)
-  expect_equal(sd$effect_multiplier_prior_sd, 0.5)
-  # The non-negativity constraint is hard-coded in the Stan declaration
-  # (<lower=0>), not passed as data.
+  expect_true(all(c("effect_multiplier_prior_meanlog",
+                    "effect_multiplier_prior_sdlog") %in% names(sd)))
+  expect_equal(sd$effect_multiplier_prior_meanlog, 0)
+  expect_equal(sd$effect_multiplier_prior_sdlog, 0.7)
+  # The positivity comes from the log-normal prior itself, not from data.
   expect_false(any(c("effect_multiplier_lower", "effect_multiplier_upper") %in% names(sd)))
 })
 
@@ -63,7 +64,7 @@ test_that("as_stan_data() exports multiplier hyperparameters", {
 # validate_multiplicative_covariate() — basic checks
 # ---------------------------------------------------------------------------
 
-test_that("validate_multiplicative_covariate() passes a valid binary column", {
+test_that("validate_multiplicative_covariate() passes a valid two-level column", {
   df <- make_did_summary_with_mult()
   expect_invisible(
     validate_multiplicative_covariate("real_world", NULL, df, NULL)
@@ -155,6 +156,49 @@ test_that("validate_multiplicative_covariate() errors when the column appears in
   )
 })
 
+# When both summary and individual data are supplied, the multiplicative
+# covariate column must be present in BOTH frames (it identifies every study).
+
+make_did_individual_with_mult <- function(mult_col = "real_world") {
+  ind <- data.frame(
+    study_id   = rep(c("s1", "s2"), each = 4),
+    subject_id = rep(1:2, times = 4),
+    design     = "did",
+    group      = rep(c("control", "control", "treatment", "treatment"), 2),
+    time       = rep(c("pre", "post"), 4),
+    value      = rnorm(8)
+  )
+  if (!is.null(mult_col)) ind[[mult_col]] <- rep(c(0, 1), each = 4)
+  ind
+}
+
+test_that("validate_multiplicative_covariate() errors when the column is missing from individual_data", {
+  df  <- make_did_summary_with_mult()              # has real_world
+  ind <- make_did_individual_with_mult(mult_col = NULL)  # lacks real_world
+  expect_error(
+    validate_multiplicative_covariate("real_world", NULL, df, ind),
+    "not found in individual_data"
+  )
+})
+
+test_that("validate_multiplicative_covariate() errors when the column is missing from summary_data", {
+  df  <- make_did_summary_with_mult()
+  df$real_world <- NULL                            # present only in individual_data
+  ind <- make_did_individual_with_mult()
+  expect_error(
+    validate_multiplicative_covariate("real_world", NULL, df, ind),
+    "not found in summary_data"
+  )
+})
+
+test_that("validate_multiplicative_covariate() accepts the covariate present in both frames", {
+  df  <- make_did_summary_with_mult()
+  ind <- make_did_individual_with_mult()
+  expect_invisible(
+    validate_multiplicative_covariate("real_world", NULL, df, ind)
+  )
+})
+
 # ---------------------------------------------------------------------------
 # validate_multiplicative_covariate() — identifiability checks
 # ---------------------------------------------------------------------------
@@ -221,7 +265,7 @@ test_that("prepare_stan_data() zero-fills x_mult vectors when the feature is off
   expect_true(all(sd$x_mult_did_summary == 0))
 })
 
-test_that("prepare_stan_data() codes a binary {0, 1} covariate as the two-level case", {
+test_that("prepare_stan_data() codes a two-level {0, 1} covariate as a single multiplier", {
   df <- make_did_summary_with_mult()
   sd <- prepare_stan_data(df, NULL,
     model_flags = list(),
@@ -345,7 +389,7 @@ test_that("new_meta_did_fit() defaults multiplicative_covariate to NULL", {
 # Stan-gated recovery test
 # ---------------------------------------------------------------------------
 # Two batches of studies are simulated with population effects mu and multiplier*mu.
-# A binary `real_world` flag identifies which batch each study belongs to.
+# A two-level `real_world` flag identifies which batch each study belongs to.
 # Fitting with multiplicative_covariate = "real_world" should recover the multiplier.
 
 test_that("Stan fit recovers a known multiplier on two-regime simulated data", {
@@ -390,7 +434,7 @@ test_that("Stan fit recovers a known multiplier on two-regime simulated data", {
     summary_data             = studies,
     multiplicative_covariate = "real_world",
     priors                   = set_priors(
-      multiplier = normal(1, 0.5)
+      multiplier = lognormal(0, 0.7)
     ),
     chains        = 2L,
     iter_warmup   = 800L,
@@ -557,7 +601,7 @@ test_that("Stan fit recovers level-specific multipliers on three-regime simulate
   fit <- meta_did(
     summary_data             = studies,
     multiplicative_covariate = "setting",
-    priors                   = set_priors(multiplier = normal(1, 0.5)),
+    priors                   = set_priors(multiplier = lognormal(0, 0.7)),
     chains        = 2L,
     iter_warmup   = 800L,
     iter_sampling = 800L,
@@ -588,4 +632,113 @@ test_that("Stan fit recovers level-specific multipliers on three-regime simulate
   sm <- summary(fit)
   expect_true(all(c("effect_multiplier[rw_lab]",
                     "effect_multiplier[rw_field]") %in% sm$parameter))
+})
+
+
+# ---------------------------------------------------------------------------
+# Level-coding helpers — direct unit tests
+# ---------------------------------------------------------------------------
+# These exercise the extracted internal helpers in isolation (rather than only
+# end-to-end through prepare_stan_data()).
+
+test_that(".study_first_value() returns one value per study in first-appearance order", {
+  ind <- data.frame(
+    study_id = c("a", "a", "b", "b", "b"),
+    setting  = c("p", "p", "q", "q", "q"),
+    stringsAsFactors = FALSE
+  )
+  expect_equal(.study_first_value(ind, "setting"), c("p", "q"))
+})
+
+test_that(".study_first_value() returns character(0) for NULL or empty input", {
+  expect_equal(.study_first_value(NULL, "setting"), character(0))
+  empty <- data.frame(study_id = character(0), setting = character(0))
+  expect_equal(.study_first_value(empty, "setting"), character(0))
+})
+
+test_that(".mult_levels() sorts numeric levels ascending and returns character", {
+  expect_equal(.mult_levels(list(c(10, 2, 7))), c("2", "7", "10"))
+})
+
+test_that(".mult_levels() sorts character and logical levels alphabetically", {
+  expect_equal(.mult_levels(list(c("b", "a", "c"))), c("a", "b", "c"))
+  expect_equal(.mult_levels(list(c(TRUE, FALSE, TRUE))), c("FALSE", "TRUE"))
+})
+
+test_that(".mult_levels() respects declared factor order and drops unused levels", {
+  f <- factor(c("a", "b"), levels = c("b", "a", "c"))
+  expect_equal(.mult_levels(list(f)), c("b", "a"))
+})
+
+test_that(".mult_levels() errors on conflicting factor orders across frames", {
+  expect_error(
+    .mult_levels(list(factor("a", levels = c("a", "b")),
+                      factor("b", levels = c("b", "a")))),
+    "different level sets/orders"
+  )
+})
+
+test_that(".mult_levels() errors when values are not among the declared factor levels", {
+  expect_error(
+    .mult_levels(list(factor(c("a", "z"), levels = c("a", "b")))),
+    "not among the declared"
+  )
+})
+
+test_that(".mult_levels() ignores empty frames and returns character(0) for none", {
+  expect_equal(.mult_levels(list(character(0), c("x", "y"))), c("x", "y"))
+  expect_equal(.mult_levels(list()), character(0))
+})
+
+test_that(".compute_mult_levels() returns character(0) when the feature is off", {
+  expect_equal(
+    .compute_mult_levels(NULL, summary_frames = list(), individual_frames = list()),
+    character(0)
+  )
+})
+
+test_that(".compute_mult_levels() errors when fewer than two levels are observed", {
+  expect_error(
+    .compute_mult_levels(
+      "setting",
+      summary_frames    = list(data.frame(setting = c("a", "a"))),
+      individual_frames = list()
+    ),
+    "at least two distinct values"
+  )
+})
+
+test_that(".compute_mult_levels() pools levels across summary and individual frames", {
+  ind <- data.frame(study_id = c("s1", "s1", "s2"), setting = c("b", "b", "c"))
+  levs <- .compute_mult_levels(
+    "setting",
+    summary_frames    = list(data.frame(setting = c("a", "c"))),
+    individual_frames = list(ind)
+  )
+  expect_equal(levs, c("a", "b", "c"))
+})
+
+test_that(".extract_mult_vec_summary() returns 0-based integer codes (reference = 0)", {
+  d <- data.frame(setting = c("x", "y", "x"), stringsAsFactors = FALSE)
+  v <- .extract_mult_vec_summary(d, "setting", c("x", "y"))
+  expect_equal(as.integer(v), c(0L, 1L, 0L))
+  expect_true(is.integer(v))
+})
+
+test_that(".extract_mult_vec_summary() zero-fills when the feature is off", {
+  d <- data.frame(setting = c("x", "y", "x"))
+  expect_equal(as.integer(.extract_mult_vec_summary(d, NULL, character(0))),
+               c(0L, 0L, 0L))
+})
+
+test_that(".extract_mult_vec_individual() codes one entry per study against shared levels", {
+  ind <- data.frame(study_id = c("a", "a", "b"), setting = c("p", "p", "q"))
+  expect_equal(as.integer(.extract_mult_vec_individual(ind, "setting", c("p", "q"))),
+               c(0L, 1L))
+})
+
+test_that(".extract_mult_vec_individual() returns integer(0) for an empty frame", {
+  empty <- data.frame(study_id = character(0), setting = character(0))
+  expect_equal(as.integer(.extract_mult_vec_individual(empty, "setting", c("p", "q"))),
+               integer(0))
 })

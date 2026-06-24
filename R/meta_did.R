@@ -103,8 +103,9 @@
 #'   the first factor level (declare the column as a factor to control it,
 #'   with identical levels declared in every data frame), the lowest value
 #'   for numeric input, or the alphabetically first value for character
-#'   input. A binary `{0, 1}` indicator is the two-level special case and
-#'   behaves exactly as before (reference 0). Useful when some study
+#'   input. A numeric `{0, 1}` indicator is the simplest case: 0 is the
+#'   reference (factor fixed at 1) and 1 selects the single estimated
+#'   multiplier. Useful when some study
 #'   settings represent an attenuated (or amplified) version of the
 #'   underlying effect — e.g. experimental vs real-world-lab vs
 #'   real-world-field conditions. The column must contain no `NA`s, be
@@ -531,7 +532,7 @@ meta_did_naive <- function(
     validate_covariates(covariate_names, summary_data, individual_data)
   }
 
-  # --- Validate multiplicative covariate (single binary column) ---
+  # --- Validate multiplicative covariate (single categorical column) ---
   validate_multiplicative_covariate(multiplicative_covariate, covariate_names,
                                     summary_data, individual_data)
 

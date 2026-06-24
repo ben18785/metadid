@@ -42,8 +42,9 @@ vector[K_cov] beta_cov;
 // Multiplicative covariate factors, one per non-reference level of the
 // categorical covariate (length n_effect_multipliers; length 0 when the
 // feature is off, in which case nothing is sampled). The reference level's
-// factor is fixed at 1. Each element receives the same independent prior,
-// configured via set_priors(multiplier = normal(mean, sd)).
+// factor is fixed at 1. Strictly positive (<lower=0>); each element receives
+// the same independent log-normal prior, configured via
+// set_priors(multiplier = lognormal(meanlog, sdlog)).
 vector<lower=0>[n_effect_multipliers] effect_multiplier;
 
 // Cholesky factor of the 2x2 correlation matrix between treatment effects
