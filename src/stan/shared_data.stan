@@ -77,16 +77,21 @@ real<lower=0> sigma_prior_scale;
 int<lower=0> K_cov;               // number of covariates (0 = no meta-regression)
 real<lower=0> beta_cov_prior_sd;   // prior SD for covariate coefficients
 
-// Optional categorical multiplicative covariate. When n_effect_multipliers == 0
-// the feature is off (effect_multiplier is empty, every study's factor is 1).
-// When positive, the covariate has n_effect_multipliers + 1 levels: each design
-// block supplies a per-study integer x_mult_* in {0, ..., n_effect_multipliers},
-// where 0 is the reference level (factor fixed at 1) and a study at level x has
-// its population-mean linear predictor multiplied by effect_multiplier[x]. A
+// Optional categorical multiplicative covariate(s). Up to two distinct
+// covariates may act on the effect multiplicatively; a study's overall factor
+// is the product of the two per-covariate factors (each 1 at its reference
+// level). When n_effect_multipliers == 0 the first covariate is off
+// (effect_multiplier is empty, its factor is 1); likewise n_effect_multipliers2
+// for the second. When positive, covariate has n_effect_multipliers + 1 levels:
+// each design block supplies a per-study integer x_mult_* in
+// {0, ..., n_effect_multipliers}, where 0 is the reference level (factor fixed
+// at 1) and a study at level x is multiplied by effect_multiplier[x]. A
 // two-level covariate is the simplest case (one estimated multiplier). The same
 // log-normal prior below is applied independently to every element of
-// effect_multiplier; the hyperparameters live on the log scale.
-int<lower=0> n_effect_multipliers;             // # non-reference levels (0 when feature off)
+// effect_multiplier and effect_multiplier2; the hyperparameters live on the log
+// scale.
+int<lower=0> n_effect_multipliers;             // # non-reference levels, covariate 1 (0 when off)
+int<lower=0> n_effect_multipliers2;            // # non-reference levels, covariate 2 (0 when absent)
 real effect_multiplier_prior_meanlog;          // prior mean for log(effect_multiplier)
 real<lower=0> effect_multiplier_prior_sdlog;   // prior SD for log(effect_multiplier)
 

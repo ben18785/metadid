@@ -76,8 +76,9 @@ Default: \code{cauchy(0.1)}.}
 
 \item{multiplier}{Prior on the multiplicative-covariate effect multiplier
 (only used when \code{multiplicative_covariate} is specified in \code{\link[=meta_did]{meta_did()}}).
-With a categorical covariate the same prior is applied independently to
-each estimated non-reference-level factor. Must be a \code{\link[=lognormal]{lognormal()}} prior,
+With one or two multiplicative covariates the same prior is applied
+independently to every estimated non-reference-level factor (of either
+covariate). Must be a \code{\link[=lognormal]{lognormal()}} prior,
 placed on the log of the multiplier so it is strictly positive with no
 boundary at zero. Default: \code{lognormal(0, 0.7)} — a median of 1 (the
 no-multiplicative-effect case), with a central 95\% range of roughly

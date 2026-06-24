@@ -91,34 +91,40 @@
 #'   both `summary_data` and `individual_data` (whichever are provided).
 #'   For individual-level data, covariate values must be constant within
 #'   each study. Default `NULL` (no meta-regression).
-#' @param multiplicative_covariate Optional single column name (character
-#'   of length 1) identifying a \emph{categorical} study-level covariate
-#'   that modifies the population treatment effect *multiplicatively*
-#'   rather than additively. One factor is estimated per non-reference
-#'   level: studies at the reference level keep their population-mean
-#'   linear predictor
+#' @param multiplicative_covariate Optional specification of one or two
+#'   \emph{categorical} study-level covariates that modify the population
+#'   treatment effect *multiplicatively* rather than additively. Either a
+#'   single column name (character of length 1) for one covariate, or a
+#'   one-sided formula naming one or two columns (`~ a` or `~ a + b`). At
+#'   most two are allowed. One factor is estimated per non-reference level
+#'   of each covariate: studies at a covariate's reference level keep their
+#'   population-mean linear predictor
 #'   \eqn{\mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}}}
 #'   unchanged (factor fixed at 1), while studies at level \eqn{k} have it
-#'   multiplied by the estimated `effect_multiplier[k]`. The reference is
+#'   multiplied by the estimated `effect_multiplier[k]`. With \strong{two}
+#'   covariates the study's overall factor is the \emph{product} of the two
+#'   per-covariate factors,
+#'   \eqn{\alpha_{a(i)} \cdot \beta_{b(i)}} — i.e. each covariate scales the
+#'   effect independently (a log-additive structure). The reference level is
 #'   the first factor level (declare the column as a factor to control it,
 #'   with identical levels declared in every data frame), the lowest value
 #'   for numeric input, or the alphabetically first value for character
 #'   input. A numeric `{0, 1}` indicator is the simplest case: 0 is the
 #'   reference (factor fixed at 1) and 1 selects the single estimated
-#'   multiplier. Useful when some study
-#'   settings represent an attenuated (or amplified) version of the
-#'   underlying effect — e.g. experimental vs real-world-lab vs
-#'   real-world-field conditions. The column must contain no `NA`s, be
-#'   constant within study for individual-level data, must not also appear
-#'   in `covariates`, and must take at least two distinct values across
-#'   studies for the multipliers to be identified. Numeric columns with
-#'   more than 5 distinct values are rejected as likely continuous
-#'   (convert genuinely categorical numeric codes to a factor). The same
-#'   `multiplier` prior from [set_priors()] is applied independently to
-#'   each estimated factor. On the returned object,
-#'   `fit$multiplicative_covariate` is a list with elements `name` and
-#'   `levels` (reference first). Default `NULL` (no multiplicative
-#'   structure).
+#'   multiplier. Useful when study settings represent an attenuated (or
+#'   amplified) version of the underlying effect — e.g. experimental vs
+#'   real-world conditions, optionally crossed with a second factor. Each
+#'   column must contain no `NA`s, be constant within study for
+#'   individual-level data, must not also appear in `covariates`, and must
+#'   take at least two distinct values across studies for its multipliers to
+#'   be identified; the two columns must be distinct. Numeric columns with
+#'   more than 5 distinct values are rejected as likely continuous (convert
+#'   genuinely categorical numeric codes to a factor). The same `multiplier`
+#'   prior from [set_priors()] is applied independently to every estimated
+#'   factor. On the returned object, `fit$multiplicative_covariate` is a list
+#'   with elements `name` and `levels` (reference first) for one covariate,
+#'   or a list of two such descriptors for two covariates. Default `NULL`
+#'   (no multiplicative structure).
 #' @param center_covariates Logical. If `TRUE` (default), covariates are
 #'   mean-centered across all studies before fitting. This ensures that
 #'   `treatment_effect_mean` is the population treatment effect at the
@@ -532,7 +538,7 @@ meta_did_naive <- function(
     validate_covariates(covariate_names, summary_data, individual_data)
   }
 
-  # --- Validate multiplicative covariate (single categorical column) ---
+  # --- Validate multiplicative covariate(s): one or two categorical columns ---
   validate_multiplicative_covariate(multiplicative_covariate, covariate_names,
                                     summary_data, individual_data)
 
@@ -611,11 +617,16 @@ meta_did_naive <- function(
                                   multiplicative_covariate = multiplicative_covariate,
                                   center_covariates = center_covariates)
   cov_centers <- attr(stan_data, "cov_centers")
-  multiplicative_covariate_info <- if (is.null(multiplicative_covariate)) {
+  # One descriptor per multiplicative covariate (list(name, levels)). A single
+  # covariate is stored as that one descriptor (back-compatible shape); two
+  # covariates are stored as a list of two descriptors.
+  mult_covariates <- attr(stan_data, "mult_covariates")
+  multiplicative_covariate_info <- if (is.null(mult_covariates)) {
     NULL
+  } else if (length(mult_covariates) == 1L) {
+    mult_covariates[[1]]
   } else {
-    list(name   = multiplicative_covariate,
-         levels = attr(stan_data, "multiplier_levels"))
+    mult_covariates
   }
 
   # Apply any overrides (e.g. naive-mode flags)

@@ -2,17 +2,18 @@
 % Please edit documentation in R/validate.R
 \name{validate_multiplicative_covariate}
 \alias{validate_multiplicative_covariate}
-\title{Validate a study-level multiplicative covariate}
+\title{Validate study-level multiplicative covariate(s)}
 \usage{
 validate_multiplicative_covariate(
-  multiplicative_covariate_name,
+  multiplicative_covariate,
   covariate_names,
   summary_data,
   individual_data
 )
 }
 \arguments{
-\item{multiplicative_covariate_name}{Single column name (character of length 1).}
+\item{multiplicative_covariate}{\code{NULL}, a single column name, or a one-sided
+formula naming one or two columns (see \code{\link[=meta_did]{meta_did()}}).}
 
 \item{covariate_names}{Character vector of additive covariate names (or NULL).}
 
@@ -25,12 +26,14 @@ Invisible NULL. Stops with an error or emits a warning if a
 validation or identifiability check fails.
 }
 \description{
-Checks that the multiplicative-covariate column exists, is categorical
-(numeric, logical, character, or factor; no \code{NA}s), is constant within each
-study for individual-level data, and does not also appear in
-\code{covariate_names}. Numeric columns with more than five distinct values are
-rejected as likely continuous. One multiplier is estimated per non-reference
-level. Also performs two identifiability checks:
+Validates the \code{multiplicative_covariate} specification (a single column name
+or a one-sided formula naming up to two columns, whose factors multiply) and
+checks each named column. For every column: it must exist, be categorical
+(numeric, logical, character, or factor; no \code{NA}s), be constant within each
+study for individual-level data, and not also appear in \code{covariate_names}.
+Numeric columns with more than five distinct values are rejected as likely
+continuous. One multiplier is estimated per non-reference level. Two
+identifiability checks are run per column:
 }
 \details{
 \enumerate{

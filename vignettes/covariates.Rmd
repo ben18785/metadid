@@ -375,6 +375,44 @@ alphabetically. The same `multiplier` prior from `set_priors()` is applied
 independently to each estimated factor, and the data must contain studies at
 two or more levels for the multipliers to be identified.
 
+### Two multiplicative covariates (a product of factors)
+
+A single fit may carry up to **two** multiplicative covariates. Pass a one-sided
+formula naming both columns; each is estimated independently and a study's
+overall multiplier is the **product** of the two per-covariate factors,
+$\alpha_{a(i)} \cdot \beta_{b(i)}$. This suits a design where the effect is
+scaled by two distinct study attributes at once — for example an
+experimental-vs-real-world factor crossed with a delivery-format factor.
+
+```{r mult-two, eval = FALSE}
+# Two independent study attributes, each scaling the effect multiplicatively.
+studies$arm    <- rep(c("experimental", "real_world"), length.out = nrow(studies))
+studies$format <- rep(c("digital", "leaflet"),         length.out = nrow(studies))
+
+fit <- meta_did(
+  summary_data             = studies,
+  multiplicative_covariate = ~ arm + format,
+  priors = set_priors(multiplier = lognormal(0, 0.7))
+)
+summary(fit)
+```
+
+```
+#>                           parameter   mean    sd     lo     hi
+#> 1             treatment_effect_mean -0.410 0.020 -0.443 -0.377
+#> 2               treatment_effect_sd  0.055 0.011  0.039  0.075
+#> 3 effect_multiplier[arm:real_world]  0.620 0.082  0.498  0.761
+#> 4 effect_multiplier[format:leaflet]  0.810 0.099  0.659  0.985
+```
+
+Each factor's reference level (`experimental` for `arm`, `digital` for `format`,
+both alphabetically first) is fixed at 1, so the rows report the remaining
+levels. Here the real-world arm retains about 62% of the experimental effect and
+the leaflet format about 81% of the digital one; a real-world leaflet study is
+scaled by the product (≈ 0.62 × 0.81 ≈ 0.50). With two covariates the summary
+rows are prefixed by the covariate name to disambiguate them. At most two
+multiplicative covariates are supported.
+
 ### When to use a multiplicative vs additive covariate
 
 The two parameterisations encode different beliefs about the world:

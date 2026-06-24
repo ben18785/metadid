@@ -13,3 +13,4 @@ vector[sum(sample_size_treatment_did)] x_treatment_before_did;
 vector[sum(sample_size_treatment_did)] x_treatment_after_did;
 matrix[n_studies_did, K_cov] X_cov_did;
 array[n_studies_did] int<lower=0, upper=n_effect_multipliers> x_mult_did;
+array[n_studies_did] int<lower=0, upper=n_effect_multipliers2> x_mult2_did;

@@ -52,7 +52,7 @@ if(n_studies_did > 0) {
   sigma_treatment_after_did ~ cauchy(0, sigma_prior_scale);
   vector[n_studies_did] mult_did;
   for (i in 1:n_studies_did)
-    mult_did[i] = mult_factor(effect_multiplier, x_mult_did[i]);
+    mult_did[i] = overall_mult(effect_multiplier, x_mult_did[i], effect_multiplier2, x_mult2_did[i]);
   if (is_correlated_effects) {
     matrix[2, 2] L_Sigma_did = diag_pre_multiply(
       [treatment_effect_sd, time_trend_sd]', L_corr_theta_beta[1]

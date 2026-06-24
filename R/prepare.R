@@ -408,7 +408,6 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
                               center_covariates = TRUE) {
 
   K_cov <- length(covariate_names)
-  has_mult <- as.integer(!is.null(multiplicative_covariate))
 
   # --- Compute centering values across all studies ---
   # Only additive covariates are centered. The multiplicative covariate is
@@ -483,27 +482,44 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   stan_pp$X_cov_pp   <- .extract_cov_matrix_individual(ind_pp_raw, cov_names)
 
   # --- Multiplicative covariate per-design vectors ---
-  # Each design carries an integer code vector (one entry per study) giving the
-  # 0-based index of each study's level in the joint level set; the reference
-  # level is 0. Zero-filled when the feature is off (n_effect_multipliers = 0),
-  # which the Stan model ignores via mult_factor(). Level coding is computed
-  # jointly across every design frame so a code means the same level everywhere
-  # (see .compute_mult_levels()).
-  mult_levels <- .compute_mult_levels(
-    multiplicative_covariate,
-    summary_frames    = list(sum_did, sum_did_change, sum_rct, sum_pp),
-    individual_frames = list(ind_did_raw, ind_rct_raw, ind_pp_raw)
-  )
-  n_mult <- if (length(mult_levels) >= 2L) length(mult_levels) - 1L else 0L
+  # Up to two distinct categorical covariates may act on the effect
+  # multiplicatively; a study's overall factor is the product of the two
+  # per-covariate factors. Each design carries one integer code vector per
+  # covariate (one entry per study) giving the 0-based index of that study's
+  # level in the covariate's joint level set; the reference level is 0.
+  # Zero-filled when a covariate is absent (n_effect_multipliers* = 0), which
+  # the Stan model ignores via overall_mult(). Level coding is computed jointly
+  # across every design frame so a code means the same level everywhere (see
+  # .compute_mult_levels()).
+  mult_cov_names    <- .normalise_mult_covariate(multiplicative_covariate)
+  summary_frames    <- list(sum_did, sum_did_change, sum_rct, sum_pp)
+  individual_frames <- list(ind_did_raw, ind_rct_raw, ind_pp_raw)
 
-  stan_did_summary$x_mult_did_summary             <- .extract_mult_vec_summary(sum_did,        multiplicative_covariate, mult_levels)
-  stan_did_change_only$x_mult_did_change_only     <- .extract_mult_vec_summary(sum_did_change, multiplicative_covariate, mult_levels)
-  stan_rct_summary$x_mult_rct_summary             <- .extract_mult_vec_summary(sum_rct,        multiplicative_covariate, mult_levels)
-  stan_pp_summary$x_mult_pp_summary               <- .extract_mult_vec_summary(sum_pp,         multiplicative_covariate, mult_levels)
+  nm1 <- if (length(mult_cov_names) >= 1L) mult_cov_names[1] else NULL
+  nm2 <- if (length(mult_cov_names) >= 2L) mult_cov_names[2] else NULL
 
-  stan_did$x_mult_did <- .extract_mult_vec_individual(ind_did_raw, multiplicative_covariate, mult_levels)
-  stan_rct$x_mult_rct <- .extract_mult_vec_individual(ind_rct_raw, multiplicative_covariate, mult_levels)
-  stan_pp$x_mult_pp   <- .extract_mult_vec_individual(ind_pp_raw,  multiplicative_covariate, mult_levels)
+  levels1 <- .compute_mult_levels(nm1, summary_frames, individual_frames)
+  levels2 <- .compute_mult_levels(nm2, summary_frames, individual_frames)
+  n_mult  <- if (length(levels1) >= 2L) length(levels1) - 1L else 0L
+  n_mult2 <- if (length(levels2) >= 2L) length(levels2) - 1L else 0L
+
+  # Covariate 1 (effect_multiplier)
+  stan_did_summary$x_mult_did_summary         <- .extract_mult_vec_summary(sum_did,        nm1, levels1)
+  stan_did_change_only$x_mult_did_change_only <- .extract_mult_vec_summary(sum_did_change, nm1, levels1)
+  stan_rct_summary$x_mult_rct_summary         <- .extract_mult_vec_summary(sum_rct,        nm1, levels1)
+  stan_pp_summary$x_mult_pp_summary           <- .extract_mult_vec_summary(sum_pp,         nm1, levels1)
+  stan_did$x_mult_did <- .extract_mult_vec_individual(ind_did_raw, nm1, levels1)
+  stan_rct$x_mult_rct <- .extract_mult_vec_individual(ind_rct_raw, nm1, levels1)
+  stan_pp$x_mult_pp   <- .extract_mult_vec_individual(ind_pp_raw,  nm1, levels1)
+
+  # Covariate 2 (effect_multiplier2); zero-filled when absent
+  stan_did_summary$x_mult2_did_summary         <- .extract_mult_vec_summary(sum_did,        nm2, levels2)
+  stan_did_change_only$x_mult2_did_change_only <- .extract_mult_vec_summary(sum_did_change, nm2, levels2)
+  stan_rct_summary$x_mult2_rct_summary         <- .extract_mult_vec_summary(sum_rct,        nm2, levels2)
+  stan_pp_summary$x_mult2_pp_summary           <- .extract_mult_vec_summary(sum_pp,         nm2, levels2)
+  stan_did$x_mult2_did <- .extract_mult_vec_individual(ind_did_raw, nm2, levels2)
+  stan_rct$x_mult2_rct <- .extract_mult_vec_individual(ind_rct_raw, nm2, levels2)
+  stan_pp$x_mult2_pp   <- .extract_mult_vec_individual(ind_pp_raw,  nm2, levels2)
 
   # --- Baseline-latent prior upper bound ---
   # In modelled modes the per-study baseline has a wide uniform prior. The
@@ -524,6 +540,7 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
     list(
       K_cov                        = K_cov,
       n_effect_multipliers         = n_mult,
+      n_effect_multipliers2        = n_mult2,
       baseline_prior_upper         = baseline_prior_upper
     )
   )
@@ -540,8 +557,15 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
     stan_did_change_only
   )
 
+  # Per-covariate (name, levels) descriptors for the fit object and reporting.
+  mult_covariates <- list()
+  if (!is.null(nm1)) mult_covariates <- c(mult_covariates, list(list(name = nm1, levels = levels1)))
+  if (!is.null(nm2)) mult_covariates <- c(mult_covariates, list(list(name = nm2, levels = levels2)))
+
   attr(result, "cov_centers") <- cov_centers
-  attr(result, "multiplier_levels") <- if (has_mult == 1L) mult_levels else NULL
+  # Retained for back-compatibility: the first covariate's levels (NULL when off).
+  attr(result, "multiplier_levels") <- if (length(levels1) >= 2L) levels1 else NULL
+  attr(result, "mult_covariates")   <- if (length(mult_covariates) > 0L) mult_covariates else NULL
   result
 }
 
@@ -555,6 +579,49 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
 # code 0, factor fixed at 1); a study at level k > 0 selects
 # effect_multiplier[k].
 # ---------------------------------------------------------------------------
+
+#' Normalise the multiplicative-covariate specification to column names
+#'
+#' Accepts the user-facing `multiplicative_covariate` argument in any of its
+#' permitted forms and returns the bare column names. At most two distinct
+#' covariates are allowed (a study's overall multiplier is their product).
+#'
+#' @param multiplicative_covariate `NULL` (off), a single column name (length-1
+#'   character), or a one-sided formula naming one or two columns (`~ a` or
+#'   `~ a + b`).
+#' @return Character vector of column names, length 0 (off), 1, or 2.
+#' @keywords internal
+#' @noRd
+.normalise_mult_covariate <- function(multiplicative_covariate) {
+  if (is.null(multiplicative_covariate)) return(character(0))
+  if (inherits(multiplicative_covariate, "formula")) {
+    if (length(multiplicative_covariate) != 2L) {
+      stop("'multiplicative_covariate' must be a one-sided formula ",
+           "(e.g. ~ a or ~ a + b).", call. = FALSE)
+    }
+    nm <- attr(stats::terms(multiplicative_covariate), "term.labels")
+    if (any(grepl("[:*|]", nm))) {
+      stop("'multiplicative_covariate' formula must not contain interactions; ",
+           "use '+' to separate up to two columns.", call. = FALSE)
+    }
+  } else if (is.character(multiplicative_covariate)) {
+    if (length(multiplicative_covariate) != 1L) {
+      stop("'multiplicative_covariate' given as a character vector must be a ",
+           "single column name; use a formula (~ a + b) for two columns.",
+           call. = FALSE)
+    }
+    nm <- multiplicative_covariate
+  } else {
+    stop("'multiplicative_covariate' must be a single column name or a ",
+         "one-sided formula naming one or two columns.", call. = FALSE)
+  }
+  if (length(nm) < 1L || length(nm) > 2L) {
+    stop("'multiplicative_covariate' must name one or two columns (got ",
+         length(nm), "); only a product of two multipliers is supported.",
+         call. = FALSE)
+  }
+  nm
+}
 
 #' First value of a column per study
 #'
