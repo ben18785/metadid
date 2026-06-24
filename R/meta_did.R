@@ -617,9 +617,6 @@ meta_did_naive <- function(
                                   multiplicative_covariate = multiplicative_covariate,
                                   center_covariates = center_covariates)
   cov_centers <- attr(stan_data, "cov_centers")
-  # One descriptor per multiplicative covariate (list(name, levels)). A single
-  # covariate is stored as that one descriptor (back-compatible shape); two
-  # covariates are stored as a list of two descriptors.
   mult_covariates <- attr(stan_data, "mult_covariates")
   multiplicative_covariate_info <- if (is.null(mult_covariates)) {
     NULL

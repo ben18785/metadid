@@ -568,7 +568,6 @@ test_that("prepare_stan_data() zero-fills the second covariate when only one is 
   expect_equal(length(sd$x_mult2_did_summary), nrow(df))
   expect_true(all(sd$x_mult2_did_summary == 0))
   expect_true(is.integer(sd$x_mult2_did_summary))
-  # back-compatible single-covariate descriptor
   mc <- attr(sd, "mult_covariates")
   expect_equal(length(mc), 1L)
   expect_equal(mc[[1]]$name, "real_world")
@@ -581,8 +580,8 @@ test_that("prepare_stan_data() codes two covariates as independent factors (~ a 
   sd <- prepare_stan_data(df, NULL, model_flags = list(), priors = set_priors(),
     covariate_names = NULL, multiplicative_covariate = ~ delivery + intensity)
 
-  expect_equal(sd$n_effect_multipliers, 1L)   # delivery: in_person(0), remote(1)
-  expect_equal(sd$n_effect_multipliers2, 2L)  # intensity: high(0), low(1), medium(2)
+  expect_equal(sd$n_effect_multipliers, 1L)
+  expect_equal(sd$n_effect_multipliers2, 2L)
   expect_equal(as.integer(sd$x_mult_did_summary),
                rep(c(0L, 1L), length.out = 8))
   # intensity = low,high,medium,... -> alphabetical high<low<medium -> codes 1,0,2,...
@@ -691,8 +690,6 @@ test_that("Stan fit recovers two multiplicative covariates (product of factors)"
   BASE  <- 0.45
   SIG   <- 0.02
 
-  # Four groups (delivery x intensity); true effect is
-  # MU * alpha^[remote] * beta^[low].
   make_group <- function(delivery, intensity, mult, seed, tag) {
     sim <- simulate_meta_did(
       n_studies = 10L, n_control = 80L, n_treatment = 80L,
@@ -722,10 +719,8 @@ test_that("Stan fit recovers two multiplicative covariates (product of factors)"
     refresh       = 0
   )
 
-  # Reference levels are alphabetically first (in_person, high), so
-  # effect_multiplier is the 'remote' factor and effect_multiplier2 the 'low' one.
-  a <- fit$fit$draws("effect_multiplier",  format = "matrix")  # delivery (alpha)
-  b <- fit$fit$draws("effect_multiplier2", format = "matrix")  # intensity (beta)
+  a <- fit$fit$draws("effect_multiplier",  format = "matrix")
+  b <- fit$fit$draws("effect_multiplier2", format = "matrix")
   a_lo <- unname(stats::quantile(a, 0.05)); a_hi <- unname(stats::quantile(a, 0.95))
   b_lo <- unname(stats::quantile(b, 0.05)); b_hi <- unname(stats::quantile(b, 0.95))
   expect_true(a_lo < ALPHA && a_hi > ALPHA,
@@ -733,12 +728,10 @@ test_that("Stan fit recovers two multiplicative covariates (product of factors)"
   expect_true(b_lo < BETA && b_hi > BETA,
     label = sprintf("beta 90%% CI [%.3f, %.3f] covers %.3f", b_lo, b_hi, BETA))
 
-  # Two covariate descriptors carried on the fit object.
   expect_equal(length(fit$multiplicative_covariate), 2L)
   expect_equal(fit$multiplicative_covariate[[1]]$name, "delivery")
   expect_equal(fit$multiplicative_covariate[[2]]$name, "intensity")
 
-  # summary() disambiguates the rows by covariate name.
   sm <- summary(fit)
   expect_true(any(grepl("effect_multiplier\\[delivery:", sm$parameter)))
   expect_true(any(grepl("effect_multiplier\\[intensity:", sm$parameter)))

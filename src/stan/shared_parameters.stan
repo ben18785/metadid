@@ -39,13 +39,8 @@ vector[is_design_effect] delta_pp_raw;
 // Length K_cov; when K_cov == 0, not sampled.
 vector[K_cov] beta_cov;
 
-// Multiplicative covariate factors, one per non-reference level of each
-// categorical covariate (length n_effect_multipliers / n_effect_multipliers2;
-// length 0 when that covariate is absent, in which case nothing is sampled).
-// The reference level's factor is fixed at 1. A study's overall multiplier is
-// effect_multiplier[.] * effect_multiplier2[.] (each defaulting to 1).
-// Strictly positive (<lower=0>); every element receives the same independent
-// log-normal prior, configured via set_priors(multiplier = lognormal(meanlog, sdlog)).
+// Per-non-reference-level multiplicative factors for up to two covariates
+// (length 0 when a covariate is absent). Strictly positive; log-normal prior.
 vector<lower=0>[n_effect_multipliers]  effect_multiplier;
 vector<lower=0>[n_effect_multipliers2] effect_multiplier2;
 
