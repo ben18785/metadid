@@ -7,6 +7,10 @@
 
 skip_if_no_stan <- function() {
   skip_on_cran()
+  # Skip Stan fits under coverage: covr's instrumentation/tempdir handling can
+  # drop cmdstanr's output CSVs mid-run, and these integration tests add no R
+  # coverage beyond the (Stan-free) mock and prepare/validate tests.
+  skip_on_covr()
   skip_if_not_installed("cmdstanr")
   skip_if_not(instantiate::stan_cmdstan_exists(), "CmdStan not available")
 }
