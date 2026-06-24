@@ -482,15 +482,6 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   stan_pp$X_cov_pp   <- .extract_cov_matrix_individual(ind_pp_raw, cov_names)
 
   # --- Multiplicative covariate per-design vectors ---
-  # Up to two distinct categorical covariates may act on the effect
-  # multiplicatively; a study's overall factor is the product of the two
-  # per-covariate factors. Each design carries one integer code vector per
-  # covariate (one entry per study) giving the 0-based index of that study's
-  # level in the covariate's joint level set; the reference level is 0.
-  # Zero-filled when a covariate is absent (n_effect_multipliers* = 0), which
-  # the Stan model ignores via overall_mult(). Level coding is computed jointly
-  # across every design frame so a code means the same level everywhere (see
-  # .compute_mult_levels()).
   mult_cov_names    <- .normalise_mult_covariate(multiplicative_covariate)
   summary_frames    <- list(sum_did, sum_did_change, sum_rct, sum_pp)
   individual_frames <- list(ind_did_raw, ind_rct_raw, ind_pp_raw)
@@ -503,7 +494,6 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   n_mult  <- if (length(levels1) >= 2L) length(levels1) - 1L else 0L
   n_mult2 <- if (length(levels2) >= 2L) length(levels2) - 1L else 0L
 
-  # Covariate 1 (effect_multiplier)
   stan_did_summary$x_mult_did_summary         <- .extract_mult_vec_summary(sum_did,        nm1, levels1)
   stan_did_change_only$x_mult_did_change_only <- .extract_mult_vec_summary(sum_did_change, nm1, levels1)
   stan_rct_summary$x_mult_rct_summary         <- .extract_mult_vec_summary(sum_rct,        nm1, levels1)
@@ -512,7 +502,6 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   stan_rct$x_mult_rct <- .extract_mult_vec_individual(ind_rct_raw, nm1, levels1)
   stan_pp$x_mult_pp   <- .extract_mult_vec_individual(ind_pp_raw,  nm1, levels1)
 
-  # Covariate 2 (effect_multiplier2); zero-filled when absent
   stan_did_summary$x_mult2_did_summary         <- .extract_mult_vec_summary(sum_did,        nm2, levels2)
   stan_did_change_only$x_mult2_did_change_only <- .extract_mult_vec_summary(sum_did_change, nm2, levels2)
   stan_rct_summary$x_mult2_rct_summary         <- .extract_mult_vec_summary(sum_rct,        nm2, levels2)
@@ -557,13 +546,11 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
     stan_did_change_only
   )
 
-  # Per-covariate (name, levels) descriptors for the fit object and reporting.
   mult_covariates <- list()
   if (!is.null(nm1)) mult_covariates <- c(mult_covariates, list(list(name = nm1, levels = levels1)))
   if (!is.null(nm2)) mult_covariates <- c(mult_covariates, list(list(name = nm2, levels = levels2)))
 
   attr(result, "cov_centers") <- cov_centers
-  # Retained for back-compatibility: the first covariate's levels (NULL when off).
   attr(result, "multiplier_levels") <- if (length(levels1) >= 2L) levels1 else NULL
   attr(result, "mult_covariates")   <- if (length(mult_covariates) > 0L) mult_covariates else NULL
   result
@@ -571,13 +558,6 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
 
 # ---------------------------------------------------------------------------
 # Multiplicative-covariate level coding helpers
-#
-# The covariate is categorical. Levels are determined jointly across every
-# design data frame (see .compute_mult_levels()), so an integer code means the
-# same level everywhere; each per-design frame is then coded against that shared
-# level set (.extract_mult_vec_*()). The first level is the reference (Stan
-# code 0, factor fixed at 1); a study at level k > 0 selects
-# effect_multiplier[k].
 # ---------------------------------------------------------------------------
 
 #' Normalise the multiplicative-covariate specification to column names

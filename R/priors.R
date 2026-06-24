@@ -335,9 +335,7 @@ as_stan_data.did_priors <- function(priors) {
     baseline_difference_mean_prior_sd   = priors$baseline_difference_mean$sd,
     baseline_difference_sd_prior_scale  = priors$baseline_difference_sd$scale %||%
                                           priors$baseline_difference_sd$sd,
-    # effect_multiplier ~ lognormal(meanlog, sdlog), i.e. the prior is on
-    # log(effect_multiplier). Only active when multiplicative_covariate is
-    # non-NULL (n_effect_multipliers >= 1); harmless constants otherwise.
+    # effect_multiplier ~ lognormal(meanlog, sdlog), i.e. prior on log scale
     effect_multiplier_prior_meanlog         = priors$multiplier$meanlog,
     effect_multiplier_prior_sdlog           = priors$multiplier$sdlog
   )

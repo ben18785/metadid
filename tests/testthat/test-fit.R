@@ -495,8 +495,6 @@ test_that("print()/summary() omit the multiplier section when multiplicative_cov
   expect_false(any(grepl("effect_multiplier", summary(fit)$parameter)))
 })
 
-# Two multiplicative covariates (product) — descriptor is a list of two entries.
-
 two_cov_fit <- function() {
   mock_meta_did_fit(
     method = "sample",

@@ -35,13 +35,9 @@ baseline_difference_sd   ~ cauchy(0, baseline_difference_sd_prior_scale);
 beta_cov ~ normal(0, beta_cov_prior_sd);
 
 if (n_effect_multipliers > 0) {
-  // Log-normal prior: log(effect_multiplier) ~ normal(meanlog, sdlog). Strictly
-  // positive support with no boundary at zero, unlike a normal truncated by the
-  // <lower=0> declaration.
   effect_multiplier ~ lognormal(effect_multiplier_prior_meanlog, effect_multiplier_prior_sdlog);
 }
 if (n_effect_multipliers2 > 0) {
-  // Same log-normal prior, applied independently to the second covariate's factors.
   effect_multiplier2 ~ lognormal(effect_multiplier_prior_meanlog, effect_multiplier_prior_sdlog);
 }
 

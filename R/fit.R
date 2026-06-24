@@ -52,11 +52,10 @@ new_meta_did_fit <- function(
 .mult_cov_list <- function(mc) {
   if (is.null(mc)) return(list())
   if (is.character(mc)) return(list(list(name = mc, levels = NULL)))
-  if (!is.null(mc$name)) return(list(mc))   # single list(name, levels)
-  mc                                          # already a list of descriptors
+  if (!is.null(mc$name)) return(list(mc))
+  mc
 }
 
-# Stan parameter name holding covariate i's estimated factors.
 .mult_stan_var <- function(i) if (i == 1L) "effect_multiplier" else "effect_multiplier2"
 
 #' Print a meta_did_fit object
@@ -252,8 +251,6 @@ summary.meta_did_fit <- function(object, prob = 0.9, ...) {
     } else {
       paste0("level", seq_len(nrow(mult_summary)))
     }
-    # Disambiguate by covariate name only when there is more than one covariate,
-    # so the single-covariate labels stay effect_multiplier[<level>].
     prefix <- if (length(covs) > 1L) paste0(mc$name, ":") else ""
     mult_summary$parameter <- paste0("effect_multiplier[", prefix, labs, "]")
     pop <- rbind(pop, mult_summary)
