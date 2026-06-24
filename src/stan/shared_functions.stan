@@ -4,7 +4,7 @@
 // linear predictor. The covariate is categorical: level 0 is the
 // reference (factor = 1); level x in {1, ..., n_effect_multipliers}
 // selects the corresponding estimated factor, effect_multiplier[x].
-// A binary indicator is the two-level special case (reference 0, one
+// The simplest case is a two-level covariate (reference 0, one
 // multiplier for level 1). When the feature is off every x is 0 (the
 // data bounds enforce this), so the function never dereferences the
 // empty effect_multiplier vector.

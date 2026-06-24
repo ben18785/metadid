@@ -19,7 +19,8 @@ set_priors(
   lkj_eta = lkj(2),
   baseline_difference_mean = normal(0, 0.5),
   baseline_difference_sd = cauchy(0.1),
-  baseline_per_study = NULL
+  baseline_per_study = NULL,
+  multiplier = lognormal(0, 0.7)
 )
 }
 \arguments{
@@ -72,6 +73,15 @@ Default: \code{normal(0, 0.5)}.}
 \item{baseline_difference_sd}{Prior on the between-study SD of the
 baseline imbalance. Only used when \code{baseline_imbalance = "estimated"}.
 Default: \code{cauchy(0.1)}.}
+
+\item{multiplier}{Prior on the multiplicative-covariate effect multiplier
+(only used when \code{multiplicative_covariate} is specified in \code{\link[=meta_did]{meta_did()}}).
+With a categorical covariate the same prior is applied independently to
+each estimated non-reference-level factor. Must be a \code{\link[=lognormal]{lognormal()}} prior,
+placed on the log of the multiplier so it is strictly positive with no
+boundary at zero. Default: \code{lognormal(0, 0.7)} — a median of 1 (the
+no-multiplicative-effect case), with a central 95\% range of roughly
+\verb{[0.25, 3.9]} on the natural scale.}
 }
 \value{
 A \code{did_priors} object.

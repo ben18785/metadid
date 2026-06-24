@@ -483,33 +483,18 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   stan_pp$X_cov_pp   <- .extract_cov_matrix_individual(ind_pp_raw, cov_names)
 
   # --- Multiplicative covariate per-design vectors ---
-  # Always pass a vector of length n_studies_<design>. Filled with the
-  # binary column when the feature is on; filled with zeros when off
-  # (in which case effect_multiplier isn't sampled and the multiplier helper
-  # short-circuits to 1 regardless of the vector contents).
-  # --- Multiplicative covariate: global level coding (reference = code 0) ---
-  mult_levels <- character(0)
-  if (has_mult == 1L) {
-    one_per_study <- function(d) {
-      if (is.null(d) || nrow(d) == 0) return(character(0))
-      d[!duplicated(d$study_id), , drop = FALSE][[multiplicative_covariate]]
-    }
-    mult_levels <- .mult_levels(list(
-      sum_did[[multiplicative_covariate]],
-      sum_did_change[[multiplicative_covariate]],
-      sum_rct[[multiplicative_covariate]],
-      sum_pp[[multiplicative_covariate]],
-      one_per_study(ind_did_raw),
-      one_per_study(ind_rct_raw),
-      one_per_study(ind_pp_raw)
-    ))
-    if (length(mult_levels) < 2) {
-      stop("Multiplicative covariate '", multiplicative_covariate,
-           "' must take at least two distinct values across studies.",
-           call. = FALSE)
-    }
-  }
-  n_mult <- if (has_mult == 1L) length(mult_levels) - 1L else 0L
+  # Each design carries an integer code vector (one entry per study) giving the
+  # 0-based index of each study's level in the joint level set; the reference
+  # level is 0. Zero-filled when the feature is off (n_effect_multipliers = 0),
+  # which the Stan model ignores via mult_factor(). Level coding is computed
+  # jointly across every design frame so a code means the same level everywhere
+  # (see .compute_mult_levels()).
+  mult_levels <- .compute_mult_levels(
+    multiplicative_covariate,
+    summary_frames    = list(sum_did, sum_did_change, sum_rct, sum_pp),
+    individual_frames = list(ind_did_raw, ind_rct_raw, ind_pp_raw)
+  )
+  n_mult <- if (length(mult_levels) >= 2L) length(mult_levels) - 1L else 0L
 
   stan_did_summary$x_mult_did_summary             <- .extract_mult_vec_summary(sum_did,        multiplicative_covariate, mult_levels)
   stan_did_change_only$x_mult_did_change_only     <- .extract_mult_vec_summary(sum_did_change, multiplicative_covariate, mult_levels)
@@ -561,21 +546,57 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
 }
 
 # ---------------------------------------------------------------------------
-# .extract_mult_vec_summary() / .extract_mult_vec_individual()
-# Global level coding for the multiplicative covariate.
+# Multiplicative-covariate level coding helpers
 #
-# Levels are determined jointly across every data frame that carries the
-# covariate, so an integer code means the same level everywhere:
-#   * factor input  -- the declared level order is respected (declare
-#     identical levels in every frame; unused declared levels are dropped);
-#   * numeric input -- levels sort in ascending numeric order, so a binary
-#     {0, 1} column reduces exactly to the previous behaviour;
-#   * character / logical input -- levels sort alphabetically.
-# The first level is the reference (Stan code 0, factor fixed at 1);
-# a study at level k > 0 selects effect_multiplier[k]. When the feature is
-# off the vectors are zero-filled to satisfy the Stan declarations.
+# The covariate is categorical. Levels are determined jointly across every
+# design data frame (see .compute_mult_levels()), so an integer code means the
+# same level everywhere; each per-design frame is then coded against that shared
+# level set (.extract_mult_vec_*()). The first level is the reference (Stan
+# code 0, factor fixed at 1); a study at level k > 0 selects
+# effect_multiplier[k].
 # ---------------------------------------------------------------------------
 
+#' First value of a column per study
+#'
+#' Collapses an individual-level data frame to one row per `study_id` and
+#' returns the requested column. The multiplicative covariate is constant within
+#' study (enforced by [validate_multiplicative_covariate()]), so the first value
+#' represents the whole study.
+#'
+#' @param data Individual-level data frame, or `NULL`.
+#' @param column Name of the column to extract.
+#' @return The column vector with one entry per distinct `study_id`, in
+#'   first-appearance order. `character(0)` for `NULL` or empty input.
+#' @keywords internal
+#' @noRd
+.study_first_value <- function(data, column) {
+  if (is.null(data) || nrow(data) == 0) return(character(0))
+  data[!duplicated(data$study_id), , drop = FALSE][[column]]
+}
+
+#' Derive globally consistent levels for the multiplicative covariate
+#'
+#' Levels are determined jointly across every data frame that carries the
+#' covariate, so the same integer code means the same level everywhere.
+#'
+#' @param values_list List of covariate-column vectors, one per design/data
+#'   source. Zero-length entries (designs with no studies) are ignored.
+#' @details Ordering depends on the input type:
+#'   \itemize{
+#'     \item factor: the declared level order is respected (declare identical
+#'       levels in every frame; unused declared levels are dropped, conflicting
+#'       level sets/orders error, and observed values outside the declared
+#'       levels error);
+#'     \item numeric: levels sort in ascending numeric order, so a `{0, 1}`
+#'       column codes 0 to the reference and 1 to the single non-reference level;
+#'     \item character / logical: levels sort alphabetically (`FALSE` before
+#'       `TRUE`).
+#'   }
+#' @return Ordered character vector of distinct levels. The first element is the
+#'   reference (Stan code 0, factor fixed at 1); a study at level k > 0 selects
+#'   `effect_multiplier[k]`. `character(0)` when no frame carries values.
+#' @keywords internal
+#' @noRd
 .mult_levels <- function(values_list) {
   vals <- values_list[vapply(values_list, length, integer(1)) > 0]
   if (length(vals) == 0) return(character(0))
@@ -603,6 +624,50 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   }
 }
 
+#' Compute the joint level set for the multiplicative covariate
+#'
+#' Collects the covariate column from every per-design data frame (summary
+#' frames are already one row per study; individual frames are collapsed via
+#' `.study_first_value()`) and delegates to `.mult_levels()` to derive a single
+#' globally consistent, ordered set of levels.
+#'
+#' @param multiplicative_covariate Column name (length-1 character), or `NULL`
+#'   when the feature is off.
+#' @param summary_frames List of summary-level design frames (one row per study).
+#' @param individual_frames List of individual-level design frames (multiple rows
+#'   per study).
+#' @return Ordered character vector of distinct levels, reference first (Stan
+#'   code 0). `character(0)` when `multiplicative_covariate` is `NULL`. Errors if
+#'   the covariate takes fewer than two distinct values across all studies (the
+#'   multiplier and the population mean are then jointly unidentified).
+#' @keywords internal
+#' @noRd
+.compute_mult_levels <- function(multiplicative_covariate,
+                                 summary_frames, individual_frames) {
+  if (is.null(multiplicative_covariate)) return(character(0))
+  summary_vals    <- lapply(summary_frames,
+                            function(d) d[[multiplicative_covariate]])
+  individual_vals <- lapply(individual_frames, .study_first_value,
+                            column = multiplicative_covariate)
+  mult_levels <- .mult_levels(c(summary_vals, individual_vals))
+  if (length(mult_levels) < 2L) {
+    stop("Multiplicative covariate '", multiplicative_covariate,
+         "' must take at least two distinct values across studies.",
+         call. = FALSE)
+  }
+  mult_levels
+}
+
+#' Integer level codes for a summary-level design frame
+#'
+#' @param data Summary-level data frame (one row per study).
+#' @param multiplicative_covariate Column name, or `NULL` when the feature is off.
+#' @param mult_levels Joint level vector from `.mult_levels()`.
+#' @return Integer array (length `nrow(data)`); each entry is the 0-based index
+#'   of that study's level in `mult_levels` (reference = 0). An all-zero array
+#'   when the feature is off or the frame is empty.
+#' @keywords internal
+#' @noRd
 .extract_mult_vec_summary <- function(data, multiplicative_covariate,
                                       mult_levels = character(0)) {
   n <- nrow(data)
@@ -612,14 +677,23 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   as.array(match(as.character(data[[multiplicative_covariate]]), mult_levels) - 1L)
 }
 
+#' Integer level codes for an individual-level design frame
+#'
+#' @param data Individual-level data frame (multiple rows per study).
+#' @param multiplicative_covariate Column name, or `NULL` when the feature is off.
+#' @param mult_levels Joint level vector from `.mult_levels()`.
+#' @return Integer array with one entry per distinct `study_id`, the 0-based
+#'   level index into `mult_levels` (reference = 0). `integer(0)` array when the
+#'   frame is empty; an all-zero array when the feature is off.
+#' @keywords internal
+#' @noRd
 .extract_mult_vec_individual <- function(data, multiplicative_covariate,
                                          mult_levels = character(0)) {
-  if (nrow(data) == 0) return(as.array(integer(0)))
+  if (is.null(data) || nrow(data) == 0) return(as.array(integer(0)))
   n_studies <- length(unique(data$study_id))
   if (is.null(multiplicative_covariate)) {
     return(as.array(rep(0L, n_studies)))
   }
-  # One value per study (validator ensures constant within study)
-  study_one_row <- data[!duplicated(data$study_id), , drop = FALSE]
-  as.array(match(as.character(study_one_row[[multiplicative_covariate]]), mult_levels) - 1L)
+  study_vals <- .study_first_value(data, multiplicative_covariate)
+  as.array(match(as.character(study_vals), mult_levels) - 1L)
 }

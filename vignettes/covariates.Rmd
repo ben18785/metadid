@@ -266,23 +266,50 @@ The credible intervals are somewhat wider with mixed designs, but both the inter
 
 The covariates discussed so far enter the treatment-effect model *additively*: each unit change in `dose` shifts the expected effect by a fixed amount. Sometimes a covariate is better described as *scaling* the effect — multiplying it by a factor rather than shifting it. A common motivating example: experimental ("artificial") settings often produce larger effect sizes than real-world deployments, and we'd like to estimate how much the real-world effect is attenuated relative to the experimental one, jointly with the experimental effect itself.
 
-metadid supports this through the `multiplicative_covariate` argument. The covariate is categorical with a reference level: one `multiplier` is estimated per non-reference level and applied to the studies at that level, while the reference level's factor is fixed at 1. A binary indicator $m_i \in \{0, 1\}$ is the two-level special case, with a single estimated `multiplier` applied to the studies where it equals 1:
+metadid supports this through the `multiplicative_covariate` argument. The covariate is categorical with a reference level: one `multiplier` is estimated per non-reference level and applied to the studies at that level, while the reference level's factor is fixed at 1. A two-level indicator $m_i \in \{0, 1\}$ is the simplest case, with a single estimated `multiplier` applied to the studies where it equals 1:
 
 $$\mu_i = \begin{cases} \mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}} & m_i = 0 \\ \mathrm{multiplier} \cdot \bigl(\mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}}\bigr) & m_i = 1. \end{cases}$$
 
-Studies with $m_i = 0$ identify the linear predictor directly; studies with $m_i = 1$ see it multiplied by the `multiplier`. The multiplier is constrained to be non-negative, with a `normal(1, 0.5)` prior centred at 1 — the no-effect case where every study contributes to the same population mean.
+Studies with $m_i = 0$ identify the linear predictor directly; studies with $m_i = 1$ see it multiplied by the `multiplier`. The multiplier is strictly positive, with a log-normal `lognormal(0, 0.7)` prior: a median of 1 (the no-effect case, where every study contributes to the same population mean) and no boundary at zero, so a small attenuating multiplier is not pushed up against a hard limit. The prior is placed on $\log(\mathrm{multiplier})$, so the factor is symmetric in "halving" versus "doubling".
 
 ### Example: experimental vs real-world studies
 
+We build an illustrative summary data frame of 30 DiD studies in three settings
+(10 each): an experimental batch and two real-world batches whose true effects
+are attenuated relative to it. Each study is tagged with its `setting`.
+
+```{r mult-setup, eval = FALSE}
+make_batch <- function(effect, setting, seed) {
+  sim <- simulate_meta_did(
+    n_studies = 10, n_control = 100, n_treatment = 100,
+    true_effect = effect, sigma_effect = 0.05,
+    true_trend = 0, baseline_mean = 0.45, seed = seed
+  )
+  sim$study_id <- paste0(setting, "_", sim$study_id)  # keep IDs unique across batches
+  out <- as_summary_did(sim)
+  out$setting <- setting
+  out
+}
+
+studies <- rbind(
+  make_batch(-0.41, "experimental", 11),
+  make_batch(-0.27, "rw_lab",       22),
+  make_batch(-0.14, "rw_field",     33)
+)
+```
+
+A first pass collapses the two real-world settings into a single `{0, 1}`
+indicator, estimating one multiplier for "any real-world" relative to
+experimental:
+
 ```{r mult-example, eval = FALSE}
-# Mark each study with a binary indicator
 studies$real_world <- ifelse(studies$setting == "experimental", 0, 1)
 
 fit <- meta_did(
   summary_data             = studies,
   multiplicative_covariate = "real_world",
   priors = set_priors(
-    multiplier = normal(1, 0.5)
+    multiplier = lognormal(0, 0.7)
   ),
   seed = 9931
 )
@@ -292,12 +319,17 @@ print(fit)
 
 ```
 #> Bayesian meta-analysis (metadid)
-#> Studies: DiD = 30 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0 
-#> Population treatment effect: -0.412  90% CI [-0.450, -0.376]
-#> Multiplicative covariate (real_world): 0.51  90% CI [0.42, 0.61]
+#> Studies: DiD = 30 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0
+#> Population treatment effect: -0.410  90% CI [-0.450, -0.372]
+#> Multiplicative covariate (real_world):
+#>   0: 1  (reference)
+#>   1: 0.503  90% CI [0.412, 0.598]
 ```
 
-The interpretation: experimental studies produce an effect around -0.412, while real-world studies produce roughly half of that. The combination yields the per-study mean used in the meta-analysis.
+The reference level (`0`, experimental) is fixed at 1. The interpretation:
+experimental studies produce an effect around -0.41, while real-world studies
+produce roughly half of that (multiplier ≈ 0.50). The combination yields the
+per-study mean used in the meta-analysis.
 
 ### Identifiability
 
@@ -308,11 +340,11 @@ A multiplicative covariate is only identifiable when the data contain variation 
 
 ### Categorical multiplicative covariates
 
-The covariate is not restricted to a binary indicator. With a column such as
+The covariate is not restricted to a two-level indicator. With a column such as
 `setting` taking the values `experimental`, `rw_lab`, and `rw_field`, one
 multiplier is estimated for each non-reference level:
 
-```{r, eval = FALSE}
+```{r mult-categorical, eval = FALSE}
 studies$setting <- factor(studies$setting,
                           levels = c("experimental", "rw_lab", "rw_field"))
 fit <- meta_did(
@@ -320,16 +352,28 @@ fit <- meta_did(
   multiplicative_covariate = "setting"
 )
 summary(fit)
-# rows: effect_multiplier[rw_lab], effect_multiplier[rw_field]
 ```
+
+```
+#>                     parameter   mean    sd     lo     hi
+#> 1       treatment_effect_mean -0.410 0.019 -0.442 -0.379
+#> 2         treatment_effect_sd  0.052 0.011  0.036  0.072
+#> 3   effect_multiplier[rw_lab]  0.659 0.071  0.548  0.781
+#> 4 effect_multiplier[rw_field]  0.341 0.058  0.252  0.443
+```
+
+Each non-reference level gets its own row, labelled `effect_multiplier[<level>]`
+(the same name `print()` uses): the lab setting retains about two-thirds of the
+experimental effect, the field setting about a third. The reference level
+(`experimental`) is fixed at 1 and is not shown as a row.
 
 The reference is the first factor level — declare the column as a factor to
 control it, with identical levels declared in every data frame. For numeric
-input the levels sort in ascending order (so a `{0, 1}` indicator behaves
-exactly as before), and for character input alphabetically. The same
-`multiplier` prior from `set_priors()` is applied independently to each
-estimated factor, and the data must contain studies at two or more levels for
-the multipliers to be identified.
+input the levels sort in ascending order (so a `{0, 1}` indicator makes 0 the
+reference and 1 the single non-reference level), and for character input
+alphabetically. The same `multiplier` prior from `set_priors()` is applied
+independently to each estimated factor, and the data must contain studies at
+two or more levels for the multipliers to be identified.
 
 ### When to use a multiplicative vs additive covariate
 

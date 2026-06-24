@@ -343,19 +343,23 @@ if (!is.null(summary_data) && nrow(summary_data) > 0) {
 #' Validate a study-level multiplicative covariate
 #'
 #' Checks that the multiplicative-covariate column exists, is categorical
-#' (values in `{0, 1}`, no `NA`s), and is constant within each study for
-#' individual-level data. Also performs two identifiability checks:
+#' (numeric, logical, character, or factor; no `NA`s), is constant within each
+#' study for individual-level data, and does not also appear in
+#' `covariate_names`. Numeric columns with more than five distinct values are
+#' rejected as likely continuous. One multiplier is estimated per non-reference
+#' level. Also performs two identifiability checks:
 #'
-#' 1. The column must vary across studies. If every study has the same
-#'    value (all 0 or all 1), the multiplier and the population mean
-#'    \eqn{\mu_\theta} are jointly unidentified — any pair
-#'    (mean, multiplier) with the same product gives identical
-#'    likelihood. This is a hard error.
-#' 2. The column must not be perfectly collinear with any additive
-#'    covariate. When `cor(x_mult, x_cov_k) > 0.95` for some `k`, the
-#'    multiplier and that covariate's coefficient become weakly identified:
-#'    the model will still run but `multiplier` and `beta_cov[k]` will be
-#'    highly correlated in the posterior. This is a soft warning.
+#' 1. The column must take at least two distinct levels across studies. If every
+#'    study sits at the same level, the multiplier(s) and the population mean
+#'    \eqn{\mu_\theta} are jointly unidentified — any (mean, multiplier) pair
+#'    with the same product gives identical likelihood. This is a hard error.
+#' 2. No non-reference level may be perfectly collinear with an additive
+#'    covariate. For each non-reference level the indicator
+#'    \eqn{1\{x_{\mathrm{mult}} = \mathrm{level}\}} is correlated with each
+#'    additive covariate; when `|cor| > 0.95` that level's multiplier and the
+#'    covariate's coefficient become weakly identified: the model still runs but
+#'    `effect_multiplier[level]` and `beta_cov[k]` will be highly correlated in
+#'    the posterior. This is a soft warning.
 #'
 #' @param multiplicative_covariate_name Single column name (character of length 1).
 #' @param covariate_names Character vector of additive covariate names (or NULL).

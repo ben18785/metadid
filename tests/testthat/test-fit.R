@@ -76,7 +76,10 @@ mock_meta_did_fit <- function(
       treatment_effect_mean = -0.3,
       treatment_effect_sd = 0.05,
       treatment_effect_did_summary = c(-0.28, -0.32)
-    )
+    ),
+    covariate_names = NULL,
+    multiplicative_covariate = NULL,
+    center_covariates = FALSE
 ) {
   if (method == "sample") {
     fake_fit <- mock_cmdstan_sample(params)
@@ -92,7 +95,10 @@ mock_meta_did_fit <- function(
       model_flags = model_flags,
       priors = NULL,
       normalisation_factors = NULL,
-      method = method
+      method = method,
+      covariate_names = covariate_names,
+      multiplicative_covariate = multiplicative_covariate,
+      center_covariates = center_covariates
     ),
     class = "meta_did_fit"
   )
@@ -340,6 +346,153 @@ test_that("summary (optimize): returns NAs for sd/lo/hi", {
   expect_true(all(is.na(s$lo)))
   expect_true(all(is.na(s$hi)))
   expect_equal(s$mean[s$parameter == "treatment_effect_mean"], -0.3)
+})
+
+# ---------------------------------------------------------------------------
+# print() / summary() — multiplicative covariate (no Stan)
+# ---------------------------------------------------------------------------
+
+test_that("print (sample): renders the multiplier ladder with reference and level names", {
+  fit <- mock_meta_did_fit(
+    method = "sample",
+    summary_data = did_summary,
+    params = list(
+      treatment_effect_mean        = -0.3,
+      treatment_effect_sd          = 0.05,
+      treatment_effect_did_summary = c(-0.28, -0.32),
+      effect_multiplier            = matrix(rep(c(0.6, 0.3), each = 50), ncol = 2)
+    ),
+    multiplicative_covariate = list(
+      name   = "setting",
+      levels = c("experimental", "rw_lab", "rw_field")
+    )
+  )
+  out <- capture.output(print(fit))
+  expect_true(any(grepl("Multiplicative covariate \\(setting\\)", out)))
+  expect_true(any(grepl("experimental: 1  \\(reference\\)", out)))
+  expect_true(any(grepl("rw_lab:", out)))
+  expect_true(any(grepl("rw_field:", out)))
+})
+
+test_that("print (sample): labels a bare-string multiplicative_covariate as 'level k'", {
+  fit <- mock_meta_did_fit(
+    method = "sample",
+    summary_data = did_summary,
+    params = list(
+      treatment_effect_mean        = -0.3,
+      treatment_effect_sd          = 0.05,
+      treatment_effect_did_summary = c(-0.28, -0.32),
+      effect_multiplier            = matrix(rep(0.5, 50), ncol = 1)
+    ),
+    multiplicative_covariate = "real_world"
+  )
+  out <- capture.output(print(fit))
+  expect_true(any(grepl("Multiplicative covariate \\(real_world\\)", out)))
+  expect_true(any(grepl("level 1:", out)))
+})
+
+test_that("print (optimize): renders multiplier MAP estimates with reference", {
+  fit <- mock_meta_did_fit(
+    method = "optimize",
+    summary_data = did_summary,
+    params = list(
+      "treatment_effect_mean" = -0.3,
+      "effect_multiplier[1]"  = 0.6,
+      "effect_multiplier[2]"  = 0.3
+    ),
+    multiplicative_covariate = list(
+      name   = "setting",
+      levels = c("experimental", "rw_lab", "rw_field")
+    )
+  )
+  out <- capture.output(print(fit))
+  expect_true(any(grepl("Multiplicative covariate \\(setting\\)", out)))
+  expect_true(any(grepl("experimental: 1  \\(reference\\)", out)))
+  expect_true(any(grepl("rw_lab:.*MAP estimate", out)))
+})
+
+test_that("summary (sample): labels effect_multiplier rows by level name", {
+  fit <- mock_meta_did_fit(
+    method = "sample",
+    summary_data = did_summary,
+    params = list(
+      treatment_effect_mean        = -0.3,
+      treatment_effect_sd          = 0.05,
+      treatment_effect_did_summary = c(-0.28, -0.32),
+      effect_multiplier            = matrix(rep(c(0.6, 0.3), each = 50), ncol = 2)
+    ),
+    multiplicative_covariate = list(
+      name   = "setting",
+      levels = c("experimental", "rw_lab", "rw_field")
+    )
+  )
+  s <- summary(fit)
+  expect_true(all(c("effect_multiplier[rw_lab]",
+                    "effect_multiplier[rw_field]") %in% s$parameter))
+})
+
+test_that("summary (sample): falls back to the bare covariate name for a single-level string mc", {
+  fit <- mock_meta_did_fit(
+    method = "sample",
+    summary_data = did_summary,
+    params = list(
+      treatment_effect_mean        = -0.3,
+      treatment_effect_sd          = 0.05,
+      treatment_effect_did_summary = c(-0.28, -0.32),
+      effect_multiplier            = matrix(rep(0.5, 50), ncol = 1)
+    ),
+    multiplicative_covariate = "real_world"
+  )
+  s <- summary(fit)
+  expect_true("effect_multiplier[real_world]" %in% s$parameter)
+})
+
+test_that("summary (sample): falls back to 'level' labels when level count mismatches draws", {
+  fit <- mock_meta_did_fit(
+    method = "sample",
+    summary_data = did_summary,
+    params = list(
+      treatment_effect_mean        = -0.3,
+      treatment_effect_sd          = 0.05,
+      treatment_effect_did_summary = c(-0.28, -0.32),
+      effect_multiplier            = matrix(rep(c(0.6, 0.3, 0.4), each = 50), ncol = 3)
+    ),
+    # only 2 levels declared but 3 multipliers in the draws -> generic labels
+    multiplicative_covariate = list(name = "setting", levels = c("a", "b"))
+  )
+  s <- summary(fit)
+  expect_true(all(c("effect_multiplier[level1]", "effect_multiplier[level2]",
+                    "effect_multiplier[level3]") %in% s$parameter))
+})
+
+test_that("summary (optimize): emits effect_multiplier rows with NA uncertainty", {
+  fit <- mock_meta_did_fit(
+    method = "optimize",
+    summary_data = did_summary,
+    params = list(
+      "treatment_effect_mean" = -0.3,
+      "treatment_effect_sd"   = 0.05,
+      "effect_multiplier[1]"  = 0.6,
+      "effect_multiplier[2]"  = 0.3
+    ),
+    multiplicative_covariate = list(
+      name   = "setting",
+      levels = c("experimental", "rw_lab", "rw_field")
+    )
+  )
+  s <- summary(fit)
+  mult_rows <- s[grepl("^effect_multiplier", s$parameter), ]
+  expect_equal(nrow(mult_rows), 2)
+  expect_true(all(is.na(mult_rows$sd)))
+  expect_true(all(c("effect_multiplier[rw_lab]",
+                    "effect_multiplier[rw_field]") %in% mult_rows$parameter))
+})
+
+test_that("print()/summary() omit the multiplier section when multiplicative_covariate is NULL", {
+  fit <- mock_meta_did_fit(method = "sample", summary_data = did_summary)
+  out <- capture.output(print(fit))
+  expect_false(any(grepl("Multiplicative covariate", out)))
+  expect_false(any(grepl("effect_multiplier", summary(fit)$parameter)))
 })
 
 # ---------------------------------------------------------------------------
