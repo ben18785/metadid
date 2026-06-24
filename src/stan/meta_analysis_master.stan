@@ -20,10 +20,6 @@ data {
   #include "rct_summary_model_data.stan"
 }
 
-transformed data {
-  #include "shared_transformed_data.stan"
-}
-
 parameters {
   #include "did_model_parameters.stan"
   #include "rct_model_parameters.stan"

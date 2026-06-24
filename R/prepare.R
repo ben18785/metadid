@@ -343,65 +343,6 @@ prepare_individual_pp <- function(df) {
 # prepare_stan_data()  -- main dispatcher
 # ---------------------------------------------------------------------------
 
-# Compute the upper bound for the wide uniform prior on the per-study
-# latent baseline parameter in modelled modes.
-#
-# If the user has explicitly set a baseline_per_study uniform prior via
-# set_priors(), that bound is used directly. Otherwise the bound is
-# computed from the observed data as 100x the largest observed pre-period
-# or contemporaneous-control mean across studies. Returns 1.0 as a benign
-# fallback when no relevant data are present (e.g. when fitting in
-# baseline_latent = "none" mode where the bound is unused but Stan still
-# expects the variable to be declared).
-compute_baseline_prior_upper <- function(summary_data, individual_data, user_prior = NULL) {
-
-  # User override takes precedence
-  if (!is.null(user_prior)) {
-    if (!identical(user_prior$dist, "uniform")) {
-      stop("baseline_per_study prior must be a uniform(...) distribution.",
-           call. = FALSE)
-    }
-    return(as.numeric(user_prior$upper))
-  }
-
-  candidate_means <- c()
-
-  if (!is.null(summary_data) && nrow(summary_data) > 0) {
-    for (col in c("mean_pre_control", "mean_pre_treatment",
-                  "mean_post_control", "mean_post_treatment")) {
-      if (col %in% names(summary_data)) {
-        candidate_means <- c(candidate_means, summary_data[[col]])
-      }
-    }
-  }
-
-  if (!is.null(individual_data) && nrow(individual_data) > 0) {
-    # Use the maximum absolute group-time mean across studies as the scale.
-    by_keys <- c("study_id", "design", "group", "time")
-    has_cols <- all(by_keys %in% names(individual_data))
-    if (has_cols) {
-      ind_means <- individual_data |>
-        dplyr::group_by(.data$study_id, .data$design, .data$group, .data$time) |>
-        dplyr::summarise(m = mean(.data$value, na.rm = TRUE), .groups = "drop")
-      candidate_means <- c(candidate_means, ind_means$m)
-    }
-  }
-
-  candidate_means <- candidate_means[is.finite(candidate_means)]
-
-  if (length(candidate_means) == 0) {
-    return(1.0)
-  }
-
-  data_scale <- max(abs(candidate_means), na.rm = TRUE)
-  if (!is.finite(data_scale) || data_scale <= 0) {
-    return(1.0)
-  }
-
-  100 * data_scale
-}
-
-
 prepare_stan_data <- function(summary_data, individual_data, model_flags, priors,
                               covariate_names = NULL, center_covariates = TRUE) {
 
@@ -476,27 +417,8 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   stan_rct$X_cov_rct <- .extract_cov_matrix_individual(ind_rct_raw, cov_names)
   stan_pp$X_cov_pp   <- .extract_cov_matrix_individual(ind_pp_raw, cov_names)
 
-  # --- Baseline-latent prior upper bound ---
-  # In modelled modes the per-study baseline has a wide uniform prior. The
-  # upper bound is set to a large multiple of the observed baseline scale
-  # (control-pre / treatment-pre / control-post means across all studies)
-  # so the prior is data-vague but proper. Users can override the bound
-  # via set_priors(baseline_per_study = uniform(0, X)).
-  baseline_prior_upper <- compute_baseline_prior_upper(
-    summary_data    = summary_data,
-    individual_data = individual_data,
-    user_prior      = priors$baseline_per_study
-  )
-
   # --- Shared data: flags + prior hyperparameters + covariate info ---
-  shared <- c(
-    model_flags,
-    as_stan_data(priors),
-    list(
-      K_cov                = K_cov,
-      baseline_prior_upper = baseline_prior_upper
-    )
-  )
+  shared <- c(model_flags, as_stan_data(priors), list(K_cov = K_cov))
 
   # --- Combine ---
   result <- c(

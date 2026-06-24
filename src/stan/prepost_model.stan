@@ -3,71 +3,47 @@
 if(n_studies_pp > 0) {
 
   if (is_differenced_likelihood_pp) {
-    // Differenced form: d_j = post_j - pre_j ~ N(beta + theta, sigma_d).
-    // The mean of the difference cancels the baseline, but in modelled
-    // mode we still need to bridge from the canonical fractional scale to
-    // the absolute scale before passing β_T and θ_T into the likelihood.
-    // We multiply by the per-study latent baseline; the latent is anchored
-    // by an explicit likelihood term below on the individual pre-treatment
-    // observations (the differenced likelihood itself does not inform it).
+    // Differenced form: d_j = post_j - pre_j ~ N(beta + theta, sigma_d)
     for (i in 1:n_studies_pp) {
       real tt_pp_temp = 0;
       if(!is_time_trend_pp_zero)
         tt_pp_temp = time_trend_pp[i];
-
-      real bl_t   = is_modelled ? baseline_treatment_pp[i] : 1.0;
-      real te_abs = is_modelled ? treatment_effect_pp[i] * bl_t : treatment_effect_pp[i];
-      real tt_abs = is_modelled ? tt_pp_temp * bl_t : tt_pp_temp;
 
       target += prepost_study_differenced_lpdf_from_data(
         study_start_treatment_pp[i], study_end_treatment_pp[i],
         x_treatment_before_pp,
         x_treatment_after_pp,
-        tt_abs,
-        te_abs,
+        tt_pp_temp,
+        treatment_effect_pp[i],
         sigma_d_pp[i]
       );
-
-      // Anchor the per-study latent baseline from the individual pre-period
-      // observations. sigma_treatment_before_pp[i] is sampled as a free
-      // parameter in this branch (sized for differenced+modelled in
-      // prepost_model_parameters.stan), with the same cauchy prior as the
-      // bivariate path. Independent of sigma_d_pp[i] — both are informed
-      // by their own slice of the data.
-      if (is_modelled) {
-        for (j in study_start_treatment_pp[i]:study_end_treatment_pp[i])
-          target += normal_lpdf(x_treatment_before_pp[j] | bl_t, sigma_treatment_before_pp[i]);
-      }
     }
     sigma_d_pp ~ cauchy(0, sigma_prior_scale);
-    if (is_modelled) {
-      sigma_treatment_before_pp ~ cauchy(0, sigma_prior_scale);
-    }
 
   } else {
-    // Non-differenced (bivariate) form. Bridge canonical → absolute by
-    // scaling per-study θ and γ by the per-study treatment-pre baseline in
-    // modelled modes.
+    // Non-differenced (bivariate) form
+    vector[n_studies_pp] baseline_treatment_pp_eff;
+    // When differenced likelihood is active, baseline_treatment_pp has size 0;
+    // this dummy value is set but never read (the differenced branch does not
+    // use baseline_treatment_pp_eff).
+    if (is_baseline_normalised || is_differenced_likelihood_pp) {
+      baseline_treatment_pp_eff = rep_vector(1.0, n_studies_pp);
+    } else {
+      baseline_treatment_pp_eff = baseline_treatment_pp;
+    }
+
     for (i in 1:n_studies_pp) {
       real tt_pp_temp = 0;
       if(!is_time_trend_pp_zero)
         tt_pp_temp = time_trend_pp[i];
 
-      real bl_t   = baseline_treatment_pp[i];
-      real te_abs = is_modelled
-                    ? treatment_effect_pp[i] * bl_t
-                    : treatment_effect_pp[i];
-      real tt_abs = is_modelled
-                    ? tt_pp_temp * bl_t
-                    : tt_pp_temp;
-
       target += prepost_study_lpdf_from_data(
         study_start_treatment_pp[i], study_end_treatment_pp[i],
         x_treatment_before_pp,
         x_treatment_after_pp,
-        bl_t,
-        tt_abs,
-        te_abs,
+        baseline_treatment_pp_eff[i],
+        tt_pp_temp,
+        treatment_effect_pp[i],
         sigma_treatment_before_pp[i],
         sigma_treatment_after_pp[i],
         rho_pp[i]
@@ -85,7 +61,7 @@ if(n_studies_pp > 0) {
 
     sigma_treatment_before_pp ~ cauchy(0, sigma_prior_scale);
     sigma_treatment_after_pp ~ cauchy(0, sigma_prior_scale);
-    if (is_none_mode) {
+    if (!is_baseline_normalised) {
       baseline_treatment_pp_raw ~ std_normal();
     }
   }
@@ -110,3 +86,4 @@ if(n_studies_pp > 0) {
     }
   }
 }
+

@@ -18,8 +18,7 @@ set_priors(
   beta_cov = normal(0, 10),
   lkj_eta = lkj(2),
   baseline_difference_mean = normal(0, 0.5),
-  baseline_difference_sd = cauchy(0.1),
-  baseline_per_study = NULL
+  baseline_difference_sd = cauchy(0.1)
 )
 }
 \arguments{
@@ -60,14 +59,9 @@ between treatment effects and time trends (only used when
 regularises toward zero correlation.}
 
 \item{baseline_difference_mean}{Prior on the population mean of the
-per-study baseline imbalance \eqn{\delta_i = (b_{T,i} - b_{C,i}) / b_{C,i}},
-defined as the fractional difference between the treatment-arm and
-control-arm pre-treatment baselines, expressed as a fraction of the
-control-arm baseline (the control-pre reference convention).
-Constrained to \eqn{\delta_i > -1} so that the derived
-\eqn{(1 + \delta_i)} factor remains positive in both modelled-mode
-parameterisations. Only used when \code{baseline_imbalance = "estimated"}.
-Default: \code{normal(0, 0.5)}.}
+per-study baseline imbalance (treatment-arm vs control-arm pre-treatment
+mean, on the normalised fractional scale). Only used when
+\code{baseline_imbalance = "estimated"}. Default: \code{normal(0, 0.5)}.}
 
 \item{baseline_difference_sd}{Prior on the between-study SD of the
 baseline imbalance. Only used when \code{baseline_imbalance = "estimated"}.

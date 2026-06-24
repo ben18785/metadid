@@ -63,34 +63,13 @@ lkj <- function(eta) {
   structure(list(dist = "lkj", eta = eta), class = "did_prior")
 }
 
-#' Specify a uniform prior
-#'
-#' Used for the per-study latent baseline parameter in modelled normalisation
-#' modes (`baseline_latent = "treatment"` or `"control"`). Bounds must be
-#' non-negative and `lower < upper`. If no `baseline_per_study` prior is
-#' supplied to [set_priors()], the upper bound is computed automatically
-#' from the observed baseline scale (100x the maximum observed pre-period
-#' or contemporaneous-control mean across studies).
-#'
-#' @param lower Lower bound (must be non-negative; default 0).
-#' @param upper Upper bound (must be positive and strictly greater than `lower`).
-#' @return A `did_prior` object.
-#' @export
-uniform <- function(lower = 0, upper) {
-  stopifnot(is.numeric(lower), length(lower) == 1, lower >= 0)
-  stopifnot(is.numeric(upper), length(upper) == 1, upper > lower)
-  structure(list(dist = "uniform", lower = lower, upper = upper),
-            class = "did_prior")
-}
-
 #' @export
 print.did_prior <- function(x, ...) {
   params <- switch(x$dist,
-    normal  = paste0("mean = ", x$mean, ", sd = ", x$sd),
-    cauchy  = paste0("scale = ", x$scale),
-    gamma   = paste0("shape = ", x$shape, ", rate = ", x$rate),
-    lkj     = paste0("eta = ", x$eta),
-    uniform = paste0("lower = ", x$lower, ", upper = ", x$upper)
+    normal = paste0("mean = ", x$mean, ", sd = ", x$sd),
+    cauchy = paste0("scale = ", x$scale),
+    gamma  = paste0("shape = ", x$shape, ", rate = ", x$rate),
+    lkj    = paste0("eta = ", x$eta)
   )
   cat(x$dist, "(", params, ")\n", sep = "")
   invisible(x)
@@ -114,8 +93,7 @@ print.did_prior <- function(x, ...) {
   beta_cov                 = c("normal"),
   lkj_eta                  = c("lkj"),
   baseline_difference_mean = c("normal"),
-  baseline_difference_sd   = c("cauchy", "normal"),
-  baseline_per_study       = c("uniform")
+  baseline_difference_sd   = c("cauchy", "normal")
 )
 
 # ---------------------------------------------------------------------------
@@ -152,14 +130,9 @@ print.did_prior <- function(x, ...) {
 #'   `correlated_effects = TRUE`). Default: `lkj(2)`, which gently
 #'   regularises toward zero correlation.
 #' @param baseline_difference_mean Prior on the population mean of the
-#'   per-study baseline imbalance \eqn{\delta_i = (b_{T,i} - b_{C,i}) / b_{C,i}},
-#'   defined as the fractional difference between the treatment-arm and
-#'   control-arm pre-treatment baselines, expressed as a fraction of the
-#'   control-arm baseline (the control-pre reference convention).
-#'   Constrained to \eqn{\delta_i > -1} so that the derived
-#'   \eqn{(1 + \delta_i)} factor remains positive in both modelled-mode
-#'   parameterisations. Only used when `baseline_imbalance = "estimated"`.
-#'   Default: `normal(0, 0.5)`.
+#'   per-study baseline imbalance (treatment-arm vs control-arm pre-treatment
+#'   mean, on the normalised fractional scale). Only used when
+#'   `baseline_imbalance = "estimated"`. Default: `normal(0, 0.5)`.
 #' @param baseline_difference_sd Prior on the between-study SD of the
 #'   baseline imbalance. Only used when `baseline_imbalance = "estimated"`.
 #'   Default: `cauchy(0.1)`.
@@ -187,8 +160,7 @@ set_priors <- function(
     beta_cov                 = normal(0, 10),
     lkj_eta                  = lkj(2),
     baseline_difference_mean = normal(0, 0.5),
-    baseline_difference_sd   = cauchy(0.1),
-    baseline_per_study       = NULL
+    baseline_difference_sd   = cauchy(0.1)
 ) {
   priors <- list(
     treatment_effect_mean    = treatment_effect_mean,
@@ -204,8 +176,7 @@ set_priors <- function(
     beta_cov                 = beta_cov,
     lkj_eta                  = lkj_eta,
     baseline_difference_mean = baseline_difference_mean,
-    baseline_difference_sd   = baseline_difference_sd,
-    baseline_per_study       = baseline_per_study  # NULL = compute from data
+    baseline_difference_sd   = baseline_difference_sd
   )
   validate_priors(priors)
   structure(priors, class = "did_priors")
@@ -228,13 +199,9 @@ print.did_priors <- function(x, ...) {
 validate_priors <- function(priors) {
   for (nm in names(priors)) {
     p <- priors[[nm]]
-    # baseline_per_study is allowed to be NULL (meaning "auto-compute from
-    # data") so we skip validation entirely when not supplied.
-    if (is.null(p) && nm == "baseline_per_study") next
     if (!inherits(p, "did_prior")) {
       stop(
-        "Prior for '", nm, "' must be created with normal(), cauchy(), gamma(), ",
-        "lkj(), or uniform().",
+        "Prior for '", nm, "' must be created with normal(), cauchy(), or gamma().",
         call. = FALSE
       )
     }
