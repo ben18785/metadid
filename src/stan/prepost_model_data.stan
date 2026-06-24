@@ -10,3 +10,4 @@ int<lower=0, upper=1> is_time_trend_pp_zero;
 int<lower=0, upper=1> is_differenced_likelihood_pp;
 matrix[n_studies_pp, K_cov] X_cov_pp;
 array[n_studies_pp] int<lower=0, upper=n_effect_multipliers> x_mult_pp;
+array[n_studies_pp] int<lower=0, upper=n_effect_multipliers2> x_mult2_pp;

@@ -104,7 +104,7 @@ if(n_studies_did_summary > 0) {
   }
   vector[n_studies_did_summary] mult_did_summary;
   for (i in 1:n_studies_did_summary)
-    mult_did_summary[i] = mult_factor(effect_multiplier, x_mult_did_summary[i]);
+    mult_did_summary[i] = overall_mult(effect_multiplier, x_mult_did_summary[i], effect_multiplier2, x_mult2_did_summary[i]);
   if (is_correlated_effects) {
     matrix[2, 2] L_Sigma_did_summary = diag_pre_multiply(
       [treatment_effect_sd, time_trend_sd]', L_corr_theta_beta[1]
@@ -145,7 +145,7 @@ if (n_studies_did_change_only > 0) {
   if (is_student_t_heterogeneity) {
     vector[n_studies_did_change_only] mult_did_change_only;
     for (i in 1:n_studies_did_change_only)
-      mult_did_change_only[i] = mult_factor(effect_multiplier, x_mult_did_change_only[i]);
+      mult_did_change_only[i] = overall_mult(effect_multiplier, x_mult_did_change_only[i], effect_multiplier2, x_mult2_did_change_only[i]);
     treatment_effect_did_change_only ~ student_t(nu_treatment_vec[1], mult_did_change_only .* (treatment_effect_mean + X_cov_did_change_only * beta_cov), treatment_effect_sd);
   } else {
     treatment_effect_did_change_only_raw ~ std_normal();

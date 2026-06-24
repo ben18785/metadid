@@ -77,15 +77,18 @@ test_that("validate_multiplicative_covariate() returns NULL when arg is NULL", {
   )
 })
 
-test_that("validate_multiplicative_covariate() rejects non-string argument", {
+test_that("validate_multiplicative_covariate() rejects a multi-element character vector", {
   df <- make_did_summary_with_mult()
   expect_error(
     validate_multiplicative_covariate(c("a", "b"), NULL, df, NULL),
     "single column name"
   )
-  expect_error(
-    validate_multiplicative_covariate(~ real_world, NULL, df, NULL),
-    "single column name"
+})
+
+test_that("validate_multiplicative_covariate() accepts a one-sided formula", {
+  df <- make_did_summary_with_mult()
+  expect_invisible(
+    validate_multiplicative_covariate(~ real_world, NULL, df, NULL)
   )
 })
 
@@ -345,11 +348,12 @@ test_that("meta_did() errors when multiplicative_covariate is constant across st
   )
 })
 
-test_that("meta_did() rejects non-string multiplicative_covariate", {
+test_that("meta_did() rejects more than two multiplicative covariates", {
   df <- make_did_summary_with_mult()
   expect_error(
-    meta_did(summary_data = df, multiplicative_covariate = ~ real_world),
-    "single column name"
+    meta_did(summary_data = df,
+             multiplicative_covariate = ~ real_world + sex + age_group),
+    "one or two columns"
   )
 })
 
@@ -546,7 +550,51 @@ test_that("prepare_stan_data() sets n_effect_multipliers = 0 when the feature is
   sd <- prepare_stan_data(df, NULL, model_flags = list(), priors = set_priors(),
     covariate_names = NULL, multiplicative_covariate = NULL)
   expect_equal(sd$n_effect_multipliers, 0L)
+  expect_equal(sd$n_effect_multipliers2, 0L)
   expect_null(attr(sd, "multiplier_levels"))
+  expect_null(attr(sd, "mult_covariates"))
+})
+
+# ---------------------------------------------------------------------------
+# Two multiplicative covariates (product of factors)
+# ---------------------------------------------------------------------------
+
+test_that("prepare_stan_data() zero-fills the second covariate when only one is given", {
+  df <- make_did_summary_with_mult()
+  sd <- prepare_stan_data(df, NULL, model_flags = list(), priors = set_priors(),
+    covariate_names = NULL, multiplicative_covariate = "real_world")
+  expect_equal(sd$n_effect_multipliers, 1L)
+  expect_equal(sd$n_effect_multipliers2, 0L)
+  expect_equal(length(sd$x_mult2_did_summary), nrow(df))
+  expect_true(all(sd$x_mult2_did_summary == 0))
+  expect_true(is.integer(sd$x_mult2_did_summary))
+  # back-compatible single-covariate descriptor
+  mc <- attr(sd, "mult_covariates")
+  expect_equal(length(mc), 1L)
+  expect_equal(mc[[1]]$name, "real_world")
+})
+
+test_that("prepare_stan_data() codes two covariates as independent factors (~ a + b)", {
+  df <- make_did_summary_with_mult(n = 8)
+  df$sex <- rep(c("f", "m"), length.out = nrow(df))                 # 2 levels
+  df$age <- rep(c("young", "old", "mid"), length.out = nrow(df))    # 3 levels
+  sd <- prepare_stan_data(df, NULL, model_flags = list(), priors = set_priors(),
+    covariate_names = NULL, multiplicative_covariate = ~ sex + age)
+
+  expect_equal(sd$n_effect_multipliers, 1L)   # sex: f(0), m(1)
+  expect_equal(sd$n_effect_multipliers2, 2L)  # age: mid(0), old(1), young(2)
+  expect_equal(as.integer(sd$x_mult_did_summary),
+               rep(c(0L, 1L), length.out = 8))
+  # age = young,old,mid,... -> alphabetical levels mid<old<young -> codes 2,1,0,...
+  expect_equal(as.integer(sd$x_mult2_did_summary),
+               rep(c(2L, 1L, 0L), length.out = 8))
+  expect_true(is.integer(sd$x_mult2_did_summary))
+
+  mc <- attr(sd, "mult_covariates")
+  expect_equal(length(mc), 2L)
+  expect_equal(mc[[1]]$name, "sex")
+  expect_equal(mc[[2]]$name, "age")
+  expect_equal(mc[[2]]$levels, c("mid", "old", "young"))
 })
 
 test_that("validate_multiplicative_covariate() accepts a three-level factor", {
@@ -634,12 +682,89 @@ test_that("Stan fit recovers level-specific multipliers on three-regime simulate
                     "effect_multiplier[rw_field]") %in% sm$parameter))
 })
 
+test_that("Stan fit recovers two multiplicative covariates (product of factors)", {
+  skip_if_no_stan()
+
+  MU    <- -0.30
+  ALPHA <- 0.6   # real_world multiplier (covariate 1)
+  BETA  <- 0.5   # sex multiplier        (covariate 2)
+  BASE  <- 0.45
+  SIG   <- 0.02
+
+  # Four groups (real_world x sex); the true effect is MU * alpha^rw * beta^male.
+  make_group <- function(rw, sx, mult, seed, tag) {
+    sim <- simulate_meta_did(
+      n_studies = 10L, n_control = 80L, n_treatment = 80L,
+      true_effect = MU * mult, sigma_effect = SIG,
+      true_trend = 0, baseline_mean = BASE, seed = seed)
+    sim$study_id   <- paste0(sim$study_id, "_", tag)
+    out            <- as_summary_did(sim)
+    out$real_world <- rw
+    out$sex        <- sx
+    out
+  }
+  studies <- rbind(
+    make_group(0, "f", 1,            41L, "ff"),
+    make_group(1, "f", ALPHA,        42L, "tf"),
+    make_group(0, "m", BETA,         43L, "fm"),
+    make_group(1, "m", ALPHA * BETA, 44L, "tm")
+  )
+
+  fit <- meta_did(
+    summary_data             = studies,
+    multiplicative_covariate = ~ real_world + sex,
+    priors                   = set_priors(multiplier = lognormal(0, 0.7)),
+    chains        = 2L,
+    iter_warmup   = 800L,
+    iter_sampling = 800L,
+    seed          = 9933L,
+    refresh       = 0
+  )
+
+  a <- fit$fit$draws("effect_multiplier",  format = "matrix")  # real_world (alpha)
+  b <- fit$fit$draws("effect_multiplier2", format = "matrix")  # sex (beta)
+  a_lo <- unname(stats::quantile(a, 0.05)); a_hi <- unname(stats::quantile(a, 0.95))
+  b_lo <- unname(stats::quantile(b, 0.05)); b_hi <- unname(stats::quantile(b, 0.95))
+  expect_true(a_lo < ALPHA && a_hi > ALPHA,
+    label = sprintf("alpha 90%% CI [%.3f, %.3f] covers %.3f", a_lo, a_hi, ALPHA))
+  expect_true(b_lo < BETA && b_hi > BETA,
+    label = sprintf("beta 90%% CI [%.3f, %.3f] covers %.3f", b_lo, b_hi, BETA))
+
+  # Two covariate descriptors carried on the fit object.
+  expect_equal(length(fit$multiplicative_covariate), 2L)
+  expect_equal(fit$multiplicative_covariate[[1]]$name, "real_world")
+  expect_equal(fit$multiplicative_covariate[[2]]$name, "sex")
+
+  # summary() disambiguates the rows by covariate name.
+  sm <- summary(fit)
+  expect_true(any(grepl("effect_multiplier\\[real_world:", sm$parameter)))
+  expect_true(any(grepl("effect_multiplier\\[sex:", sm$parameter)))
+
+  rhat1 <- fit$fit$summary("effect_multiplier")$rhat
+  rhat2 <- fit$fit$summary("effect_multiplier2")$rhat
+  expect_true(all(c(rhat1, rhat2) < 1.05))
+})
+
 
 # ---------------------------------------------------------------------------
 # Level-coding helpers — direct unit tests
 # ---------------------------------------------------------------------------
 # These exercise the extracted internal helpers in isolation (rather than only
 # end-to-end through prepare_stan_data()).
+
+test_that(".normalise_mult_covariate() handles NULL, a string, and formulas", {
+  expect_equal(.normalise_mult_covariate(NULL), character(0))
+  expect_equal(.normalise_mult_covariate("a"), "a")
+  expect_equal(.normalise_mult_covariate(~ a), "a")
+  expect_equal(.normalise_mult_covariate(~ a + b), c("a", "b"))
+})
+
+test_that(".normalise_mult_covariate() rejects invalid specifications", {
+  expect_error(.normalise_mult_covariate(c("a", "b")), "single column name")
+  expect_error(.normalise_mult_covariate(~ a + b + c), "one or two columns")
+  expect_error(.normalise_mult_covariate(~ a:b), "interactions")
+  expect_error(.normalise_mult_covariate(42), "single column name or a")
+})
 
 test_that(".study_first_value() returns one value per study in first-appearance order", {
   ind <- data.frame(

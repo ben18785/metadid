@@ -111,34 +111,40 @@ both \code{summary_data} and \code{individual_data} (whichever are provided).
 For individual-level data, covariate values must be constant within
 each study. Default \code{NULL} (no meta-regression).}
 
-\item{multiplicative_covariate}{Optional single column name (character
-of length 1) identifying a \emph{categorical} study-level covariate
-that modifies the population treatment effect \emph{multiplicatively}
-rather than additively. One factor is estimated per non-reference
-level: studies at the reference level keep their population-mean
-linear predictor
+\item{multiplicative_covariate}{Optional specification of one or two
+\emph{categorical} study-level covariates that modify the population
+treatment effect \emph{multiplicatively} rather than additively. Either a
+single column name (character of length 1) for one covariate, or a
+one-sided formula naming one or two columns (\code{~ a} or \code{~ a + b}). At
+most two are allowed. One factor is estimated per non-reference level
+of each covariate: studies at a covariate's reference level keep their
+population-mean linear predictor
 \eqn{\mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}}}
 unchanged (factor fixed at 1), while studies at level \eqn{k} have it
-multiplied by the estimated \code{effect_multiplier[k]}. The reference is
+multiplied by the estimated \code{effect_multiplier[k]}. With \strong{two}
+covariates the study's overall factor is the \emph{product} of the two
+per-covariate factors,
+\eqn{\alpha_{a(i)} \cdot \beta_{b(i)}} — i.e. each covariate scales the
+effect independently (a log-additive structure). The reference level is
 the first factor level (declare the column as a factor to control it,
 with identical levels declared in every data frame), the lowest value
 for numeric input, or the alphabetically first value for character
 input. A numeric \verb{\{0, 1\}} indicator is the simplest case: 0 is the
 reference (factor fixed at 1) and 1 selects the single estimated
-multiplier. Useful when some study
-settings represent an attenuated (or amplified) version of the
-underlying effect — e.g. experimental vs real-world-lab vs
-real-world-field conditions. The column must contain no \code{NA}s, be
-constant within study for individual-level data, must not also appear
-in \code{covariates}, and must take at least two distinct values across
-studies for the multipliers to be identified. Numeric columns with
-more than 5 distinct values are rejected as likely continuous
-(convert genuinely categorical numeric codes to a factor). The same
-\code{multiplier} prior from \code{\link[=set_priors]{set_priors()}} is applied independently to
-each estimated factor. On the returned object,
-\code{fit$multiplicative_covariate} is a list with elements \code{name} and
-\code{levels} (reference first). Default \code{NULL} (no multiplicative
-structure).}
+multiplier. Useful when study settings represent an attenuated (or
+amplified) version of the underlying effect — e.g. experimental vs
+real-world conditions, optionally crossed with a second factor. Each
+column must contain no \code{NA}s, be constant within study for
+individual-level data, must not also appear in \code{covariates}, and must
+take at least two distinct values across studies for its multipliers to
+be identified; the two columns must be distinct. Numeric columns with
+more than 5 distinct values are rejected as likely continuous (convert
+genuinely categorical numeric codes to a factor). The same \code{multiplier}
+prior from \code{\link[=set_priors]{set_priors()}} is applied independently to every estimated
+factor. On the returned object, \code{fit$multiplicative_covariate} is a list
+with elements \code{name} and \code{levels} (reference first) for one covariate,
+or a list of two such descriptors for two covariates. Default \code{NULL}
+(no multiplicative structure).}
 
 \item{center_covariates}{Logical. If \code{TRUE} (default), covariates are
 mean-centered across all studies before fitting. This ensures that

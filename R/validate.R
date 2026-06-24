@@ -340,14 +340,16 @@ if (!is.null(summary_data) && nrow(summary_data) > 0) {
 # validate_multiplicative_covariate()
 # ---------------------------------------------------------------------------
 
-#' Validate a study-level multiplicative covariate
+#' Validate study-level multiplicative covariate(s)
 #'
-#' Checks that the multiplicative-covariate column exists, is categorical
-#' (numeric, logical, character, or factor; no `NA`s), is constant within each
-#' study for individual-level data, and does not also appear in
-#' `covariate_names`. Numeric columns with more than five distinct values are
-#' rejected as likely continuous. One multiplier is estimated per non-reference
-#' level. Also performs two identifiability checks:
+#' Validates the `multiplicative_covariate` specification (a single column name
+#' or a one-sided formula naming up to two columns, whose factors multiply) and
+#' checks each named column. For every column: it must exist, be categorical
+#' (numeric, logical, character, or factor; no `NA`s), be constant within each
+#' study for individual-level data, and not also appear in `covariate_names`.
+#' Numeric columns with more than five distinct values are rejected as likely
+#' continuous. One multiplier is estimated per non-reference level. Two
+#' identifiability checks are run per column:
 #'
 #' 1. The column must take at least two distinct levels across studies. If every
 #'    study sits at the same level, the multiplier(s) and the population mean
@@ -361,7 +363,8 @@ if (!is.null(summary_data) && nrow(summary_data) > 0) {
 #'    `effect_multiplier[level]` and `beta_cov[k]` will be highly correlated in
 #'    the posterior. This is a soft warning.
 #'
-#' @param multiplicative_covariate_name Single column name (character of length 1).
+#' @param multiplicative_covariate `NULL`, a single column name, or a one-sided
+#'   formula naming one or two columns (see [meta_did()]).
 #' @param covariate_names Character vector of additive covariate names (or NULL).
 #' @param summary_data Summary-level data frame (or NULL).
 #' @param individual_data Individual-level data frame (or NULL).
@@ -369,22 +372,26 @@ if (!is.null(summary_data) && nrow(summary_data) > 0) {
 #' @return Invisible NULL. Stops with an error or emits a warning if a
 #'   validation or identifiability check fails.
 #' @keywords internal
-validate_multiplicative_covariate <- function(multiplicative_covariate_name,
+validate_multiplicative_covariate <- function(multiplicative_covariate,
                                               covariate_names,
                                               summary_data, individual_data) {
-  if (is.null(multiplicative_covariate_name)) {
-    return(invisible(NULL))
+  cols <- .normalise_mult_covariate(multiplicative_covariate)
+  if (length(cols) == 0L) return(invisible(NULL))
+  for (col in cols) {
+    .validate_one_mult_covariate(col, covariate_names,
+                                 summary_data, individual_data)
   }
+  invisible(NULL)
+}
 
-  if (!is.character(multiplicative_covariate_name) ||
-      length(multiplicative_covariate_name) != 1) {
-    stop(
-      "'multiplicative_covariate' must be a single column name (character of length 1).",
-      call. = FALSE
-    )
-  }
-
-  col <- multiplicative_covariate_name
+#' Validate one multiplicative-covariate column
+#'
+#' @return Invisible NULL; stops or warns on failure. See
+#'   [validate_multiplicative_covariate()] for the checks performed.
+#' @keywords internal
+#' @noRd
+.validate_one_mult_covariate <- function(col, covariate_names,
+                                         summary_data, individual_data) {
 
   # Cannot overlap with the additive covariate list
   if (col %in% covariate_names) {

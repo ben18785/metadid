@@ -40,6 +40,10 @@ if (n_effect_multipliers > 0) {
   // <lower=0> declaration.
   effect_multiplier ~ lognormal(effect_multiplier_prior_meanlog, effect_multiplier_prior_sdlog);
 }
+if (n_effect_multipliers2 > 0) {
+  // Same log-normal prior, applied independently to the second covariate's factors.
+  effect_multiplier2 ~ lognormal(effect_multiplier_prior_meanlog, effect_multiplier_prior_sdlog);
+}
 
 if (is_correlated_effects) {
   L_corr_theta_beta[1] ~ lkj_corr_cholesky(lkj_eta_prior);

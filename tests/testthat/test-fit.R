@@ -495,6 +495,44 @@ test_that("print()/summary() omit the multiplier section when multiplicative_cov
   expect_false(any(grepl("effect_multiplier", summary(fit)$parameter)))
 })
 
+# Two multiplicative covariates (product) — descriptor is a list of two entries.
+
+two_cov_fit <- function() {
+  mock_meta_did_fit(
+    method = "sample",
+    summary_data = did_summary,
+    params = list(
+      treatment_effect_mean        = -0.3,
+      treatment_effect_sd          = 0.05,
+      treatment_effect_did_summary = c(-0.28, -0.32),
+      effect_multiplier            = matrix(rep(0.6, 50), ncol = 1),
+      effect_multiplier2           = matrix(rep(c(0.8, 0.5), each = 50), ncol = 2)
+    ),
+    multiplicative_covariate = list(
+      list(name = "sex", levels = c("f", "m")),
+      list(name = "age", levels = c("young", "mid", "old"))
+    )
+  )
+}
+
+test_that("print (sample): renders both covariates of a two-covariate fit", {
+  out <- capture.output(print(two_cov_fit()))
+  expect_true(any(grepl("Multiplicative covariate \\(sex\\)", out)))
+  expect_true(any(grepl("Multiplicative covariate \\(age\\)", out)))
+  expect_true(any(grepl("f: 1  \\(reference\\)", out)))
+  expect_true(any(grepl("young: 1  \\(reference\\)", out)))
+  expect_true(any(grepl("m:", out)))
+  expect_true(any(grepl("mid:", out)))
+  expect_true(any(grepl("old:", out)))
+})
+
+test_that("summary (sample): prefixes two-covariate multiplier rows with the covariate name", {
+  s <- summary(two_cov_fit())
+  expect_true("effect_multiplier[sex:m]" %in% s$parameter)
+  expect_true(all(c("effect_multiplier[age:mid]",
+                    "effect_multiplier[age:old]") %in% s$parameter))
+})
+
 # ---------------------------------------------------------------------------
 # tidy()
 # ---------------------------------------------------------------------------

@@ -20,7 +20,7 @@ if(n_studies_rct > 0) {
   // Multiplicative-covariate factor per study (vector of 1s when feature off)
   vector[n_studies_rct] mult_rct;
   for (i in 1:n_studies_rct)
-    mult_rct[i] = mult_factor(effect_multiplier, x_mult_rct[i]);
+    mult_rct[i] = overall_mult(effect_multiplier, x_mult_rct[i], effect_multiplier2, x_mult2_rct[i]);
 
   for (i in 1:n_studies_rct) {
     // Bridge canonical fractional scale → absolute scale at the likelihood
