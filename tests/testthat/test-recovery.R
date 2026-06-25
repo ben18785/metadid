@@ -729,3 +729,53 @@ test_that("Fit 7: estimated baseline imbalance recovers treatment effect under D
                              bd$lo, bd$hi))
   expect_lt(abs(bd$mean - 0.05 / MEAN_BASELINE), 0.05)
 })
+
+# ---------------------------------------------------------------------------
+# Fit 6: the population estimand is the mean per-study % effect E[theta/b]
+# ---------------------------------------------------------------------------
+# `treatment_effect_mean` is the population mean of the per-study proportional
+# (percentage-scale) effects, E[theta_i / b_i] -- each study expressed as a
+# fraction of its own baseline, then pooled. This is the right estimand for a
+# meta-analysis of studies on heterogeneous scales (averaging raw absolute
+# effects across studies is meaningless). It is NOT E[theta]/E[baseline]: when
+# baselines vary across studies the two differ by the between-study baseline
+# CV^2 (Jensen). This fit checks recovery of E[theta/b] at large baseline
+# variation, where the distinction is material. See ben18785/metadid#39.
+
+test_that("Fit 6: recovers the per-study percentage estimand E[theta/b] under large baseline variation", {
+  skip_if_no_stan()
+
+  baseline_sd <- 0.10  # amplified between-study variation (the regime that exposes the estimand)
+  jensen_sim <- simulate_meta_did(
+    n_studies     = 100,
+    true_effect   = TRUE_EFFECT_RAW,
+    sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
+    true_trend    = TRUE_TREND_RAW,
+    sigma_trend   = TRUE_SIGMA_TREND_RAW,
+    baseline_mean = MEAN_BASELINE,
+    baseline_sd   = baseline_sd,
+    n_control     = 100L,
+    n_treatment   = 100L,
+    seed          = 4242L
+  )
+  fit <- recovery_fit(summary_data = as_summary_did(jensen_sim))
+  te  <- summary(fit)
+  te  <- te[te$parameter == "treatment_effect_mean", ]
+
+  # Target: E[theta_i/b_i] = E[theta] * E[1/b] ~= (true_effect/bm)(1 + CV_b^2).
+  cv_b2          <- (baseline_sd / MEAN_BASELINE)^2
+  true_pct       <- (TRUE_EFFECT_RAW / MEAN_BASELINE) * (1 + cv_b2)  # ~ -0.350
+  wrong_estimand <- TRUE_EFFECT_RAW / MEAN_BASELINE                  # E[theta]/E[b] = -0.333
+
+  # Covers the correct per-study % estimand ...
+  expect_true(
+    te$lo < true_pct && te$hi > true_pct,
+    label = ci_label(te, true_pct)
+  )
+  # ... and is closer to it than to E[theta]/E[b] (i.e. it targets E[theta/b]).
+  expect_lt(abs(te$mean - true_pct), abs(te$mean - wrong_estimand))
+
+  # The per-study normalised fit converges robustly (baseline fixed at 1).
+  rhat <- fit$fit$summary("treatment_effect_mean")$rhat
+  expect_true(all(rhat < 1.05), label = paste("R-hat:", paste(round(rhat, 3), collapse = ", ")))
+})
