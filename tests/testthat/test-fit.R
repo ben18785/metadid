@@ -67,7 +67,7 @@ mock_meta_did_fit <- function(
     summary_data = NULL,
     individual_data = NULL,
     model_flags = list(
-      baseline_latent_mode                     = 1L,
+      is_baseline_normalised = 1L,
       is_correlation_coefficient_hierarchical = 0L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 0L
@@ -131,7 +131,7 @@ test_that("print (sample): shows Student-t df when robust_heterogeneity on", {
     method = "sample",
     summary_data = did_summary,
     model_flags = list(
-      baseline_latent_mode                     = 1L,
+      is_baseline_normalised = 1L,
       is_correlation_coefficient_hierarchical = 0L,
       is_student_t_heterogeneity = 1L,
       is_design_effect = 0L
@@ -153,7 +153,7 @@ test_that("print (sample): shows design offsets when design_effects on", {
     method = "sample",
     summary_data = did_summary,
     model_flags = list(
-      baseline_latent_mode                     = 1L,
+      is_baseline_normalised = 1L,
       is_correlation_coefficient_hierarchical = 0L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 1L
@@ -202,7 +202,7 @@ test_that("print (optimize): shows design offsets when design_effects on", {
     method = "optimize",
     summary_data = did_summary,
     model_flags = list(
-      baseline_latent_mode                     = 1L,
+      is_baseline_normalised = 1L,
       is_correlation_coefficient_hierarchical = 0L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 1L
@@ -265,7 +265,7 @@ test_that("summary (sample): includes design effects when enabled", {
     method = "sample",
     summary_data = did_summary,
     model_flags = list(
-      baseline_latent_mode                     = 1L,
+      is_baseline_normalised = 1L,
       is_correlation_coefficient_hierarchical = 0L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 1L
@@ -296,12 +296,12 @@ test_that("summary (sample): study-level params per design type", {
       treatment_effect_mean = -0.3,
       treatment_effect_sd = 0.05,
       treatment_effect_did_summary = -0.3,
-      treatment_effect_rct_summary = -0.25
+      treatment_effect_rct_summary_derived = -0.25
     )
   )
   s <- summary(fit)
   expect_true("treatment_effect_did_summary" %in% s$parameter)
-  expect_true("treatment_effect_rct_summary" %in% s$parameter)
+  expect_true("treatment_effect_rct_summary_derived" %in% s$parameter)
 })
 
 test_that("summary (sample): prob argument affects intervals", {

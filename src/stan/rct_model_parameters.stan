@@ -1,23 +1,18 @@
 // rct_model_parameters.stan
 
-vector[n_studies_rct] treatment_effect_rct_raw;
+// When normalised, we sample the "apparent" effect — what the RCT data directly
+// measures: theta / (alpha + beta).  The true treatment effect on the alpha-
+// normalised scale is derived in the transformed parameters block.
+// When NOT normalised, we sample treatment_effect_rct directly.
+// apparent_effect_rct is NOT non-centered (its prior is on the derived quantity).
+vector[n_studies_rct * is_baseline_normalised * (1 - is_time_trend_rct_zero)] apparent_effect_rct;
+vector[n_studies_rct * (1 - is_baseline_normalised * (1 - is_time_trend_rct_zero))] treatment_effect_rct_raw;
+
 vector[n_studies_rct * (1 - is_time_trend_rct_zero)] time_trend_rct_raw;
-
-// Non-centered raw for the hierarchical pop-level control baseline. Only
-// present in none mode; in modelled modes the per-study baseline is the
-// uniform-prior latent declared below.
-vector[n_studies_rct * is_none_mode] baseline_control_rct_raw;
-
-// Per-study latent baseline parameter for modelled normalisation modes.
-// Sized > 0 only when is_modelled == 1. Holds b_T_pre[i] in treatment-latent
-// mode and b_C_pre[i] in control-latent mode. For RCT studies neither pre
-// baseline is directly observed (no pre period); the latent is informed
-// jointly with the per-study θ, β, and γ via the post-period observations
-// and the hierarchical priors from the rest of the meta-analysis.
-vector<lower=0, upper=baseline_prior_upper>[n_studies_rct * is_modelled] baseline_per_study_latent_rct;
-
-// Per-study γ = (b_T - b_C) / b_C on the control-pre reference convention.
-// <lower=-1> keeps (1 + γ) positive in both parameterisations.
-vector<lower=-1>[n_studies_rct * is_baseline_difference_estimated] baseline_difference_rct;
+// When normalised: control baseline is fixed at 1, not estimated.
+// baseline_difference_rct_raw drives per-study imbalance under the unified
+// baseline-difference machinery (DiD identifies it via hierarchical prior).
+vector[n_studies_rct * (1 - is_baseline_normalised)] baseline_control_rct_raw;
+vector[n_studies_rct * is_baseline_difference_estimated] baseline_difference_rct_raw;
 vector<lower=0>[n_studies_rct] sigma_control_after_rct;
 vector<lower=0>[n_studies_rct] sigma_treatment_after_rct;

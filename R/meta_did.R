@@ -18,31 +18,10 @@
 #'   observation. Must include columns `study_id`, `design`, `group`,
 #'   `time`, and `value`. Valid designs: `"did"`, `"rct"`, `"pp"`.
 #'   No `study_id` may appear in both `summary_data` and `individual_data`.
-#' @param normalise Logical. If `TRUE` (default), population-level effects
-#'   (`treatment_effect_mean`, `time_trend_mean`, `baseline_difference_mean`)
-#'   are expressed as fractions of the treatment-arm pre-treatment baseline.
-#'   Stan receives the raw data unchanged and performs the normalisation
-#'   internally via per-study latent baseline parameters. If `FALSE`, no
-#'   per-study latent baseline is fit; population-level effects are pooled
-#'   on the **absolute** (user-units) scale instead. Equivalent to the
-#'   legacy `normalise_by_baseline = FALSE` behaviour.
-#' @param baseline_latent_arm Character. Advanced. Only used when
-#'   `normalise = TRUE`. Determines which arm's pre-treatment baseline is
-#'   the per-study latent parameter (the one with the wide data-vague
-#'   uniform prior); the other arm's baseline is derived via the
-#'   hierarchical baseline-difference parameter. One of:
-#'   * `"treatment"` (default): the treatment-arm pre-baseline is the
-#'     latent, informed directly by `mean_pre_treatment` observations.
-#'   * `"control"`: the control-arm pre-baseline is the latent, informed
-#'     directly by `mean_pre_control` observations.
-#'
-#'   The choice does **not** change the canonical scale on which effects
-#'   are reported — both options pool population-level effects on the
-#'   treatment-arm pre-baseline scale. It only controls which arm's data
-#'   most directly informs the per-study baseline's posterior, which can
-#'   matter when one arm has substantially more direct data than the
-#'   other. The two options are statistically equivalent in
-#'   well-identified problems.
+#' @param normalise_by_baseline Logical. If `TRUE` (default), all means and
+#'   SDs are divided by each study's pre-treatment control mean (or the
+#'   grand mean for change-only studies), placing outcomes on a common
+#'   fractional scale.
 #' @param robust_heterogeneity Logical. If `TRUE`, study-level treatment
 #'   effects are drawn from a Student-t distribution rather than a normal,
 #'   providing robustness to outlier studies. The degrees-of-freedom
@@ -184,8 +163,7 @@
 meta_did <- function(
     summary_data             = NULL,
     individual_data          = NULL,
-    normalise                = TRUE,
-    baseline_latent_arm      = c("treatment", "control"),
+    normalise_by_baseline    = TRUE,
     robust_heterogeneity     = FALSE,
     design_effects           = FALSE,
     hierarchical_rho         = TRUE,
@@ -206,8 +184,7 @@ meta_did <- function(
   .meta_did_core(
     summary_data             = summary_data,
     individual_data          = individual_data,
-    normalise                = normalise,
-    baseline_latent_arm      = baseline_latent_arm,
+    normalise_by_baseline    = normalise_by_baseline,
     robust_heterogeneity     = robust_heterogeneity,
     design_effects           = design_effects,
     hierarchical_rho         = hierarchical_rho,
@@ -312,8 +289,7 @@ meta_did <- function(
 meta_did_general <- function(
     summary_data             = NULL,
     individual_data          = NULL,
-    normalise                = TRUE,
-    baseline_latent_arm      = c("treatment", "control"),
+    normalise_by_baseline    = TRUE,
     robust_heterogeneity     = FALSE,
     design_effects           = FALSE,
     hierarchical_rho         = TRUE,
@@ -354,8 +330,7 @@ meta_did_general <- function(
   .meta_did_core(
     summary_data             = summary_data,
     individual_data          = individual_data,
-    normalise                = normalise,
-    baseline_latent_arm      = baseline_latent_arm,
+    normalise_by_baseline    = normalise_by_baseline,
     robust_heterogeneity     = robust_heterogeneity,
     design_effects           = design_effects,
     hierarchical_rho         = hierarchical_rho,
@@ -404,8 +379,7 @@ meta_did_general <- function(
 meta_did_naive <- function(
     summary_data             = NULL,
     individual_data          = NULL,
-    normalise                = TRUE,
-    baseline_latent_arm      = c("treatment", "control"),
+    normalise_by_baseline    = TRUE,
     robust_heterogeneity     = FALSE,
     design_effects           = FALSE,
     hierarchical_rho         = TRUE,
@@ -430,8 +404,7 @@ meta_did_naive <- function(
   meta_did_general(
     summary_data             = summary_data,
     individual_data          = individual_data,
-    normalise                = normalise,
-    baseline_latent_arm      = baseline_latent_arm,
+    normalise_by_baseline    = normalise_by_baseline,
     robust_heterogeneity     = robust_heterogeneity,
     design_effects           = design_effects,
     hierarchical_rho         = hierarchical_rho,
@@ -459,8 +432,7 @@ meta_did_naive <- function(
 .meta_did_core <- function(
     summary_data             = NULL,
     individual_data          = NULL,
-    normalise                = TRUE,
-    baseline_latent_arm      = c("treatment", "control"),
+    normalise_by_baseline    = TRUE,
     robust_heterogeneity     = FALSE,
     design_effects           = FALSE,
     hierarchical_rho         = TRUE,
@@ -479,12 +451,8 @@ meta_did_naive <- function(
     stan_data_overrides      = NULL,
     ...
 ) {
-  method              <- match.arg(method)
-  baseline_imbalance  <- match.arg(baseline_imbalance)
-  baseline_latent_arm <- match.arg(baseline_latent_arm)
-  if (!is.logical(normalise) || length(normalise) != 1 || is.na(normalise)) {
-    stop("`normalise` must be a single TRUE or FALSE.", call. = FALSE)
-  }
+  method             <- match.arg(method)
+  baseline_imbalance <- match.arg(baseline_imbalance)
 
   # --- Input checks ---
   if (is.null(summary_data) && is.null(individual_data)) {
@@ -543,15 +511,13 @@ meta_did_naive <- function(
                                     summary_data, individual_data)
 
   # --- Normalisation ---
-  # In modelled modes ("treatment" or "control") the data is passed to Stan
-  # raw and the per-study baselines are inferred as latent parameters. The
-  # R-side normalise_summary() helper is intentionally NOT called.
   normalisation_factors <- NULL
-
-  # Stan-side modelled-mode machinery is now wired up across all designs;
-  # both normalise = TRUE (with either baseline_latent_arm choice) and
-  # normalise = FALSE run end-to-end. The transitional guard that previously
-  # blocked normalise = TRUE has been removed.
+  if (normalise_by_baseline) {
+    norm_result           <- normalise_summary(summary_data, individual_data)
+    summary_data          <- norm_result$summary_data
+    individual_data       <- norm_result$individual_data
+    normalisation_factors <- norm_result$factors
+  }
 
   # --- Validate rho when hierarchical modelling is off ---
   if (!hierarchical_rho && !is.null(summary_data) && nrow(summary_data) > 0) {
@@ -590,20 +556,8 @@ meta_did_naive <- function(
   }
 
   # --- Model flags ---
-  # Combine the two user-facing arguments into the single Stan flag.
-  # Derived indicator flags (is_modelled, is_none_mode, is_modelled_treatment,
-  # is_modelled_control) are computed in shared_transformed_data.stan from
-  # baseline_latent_mode; we don't pass them as data.
-  baseline_latent_mode <- if (!normalise) {
-    3L  # "none"
-  } else if (baseline_latent_arm == "treatment") {
-    1L  # treatment-arm baseline is the per-study latent
-  } else {
-    2L  # control-arm baseline is the per-study latent
-  }
-
   model_flags <- list(
-    baseline_latent_mode                    = baseline_latent_mode,
+    is_baseline_normalised                  = as.integer(normalise_by_baseline),
     is_correlation_coefficient_hierarchical = as.integer(hierarchical_rho),
     is_student_t_heterogeneity              = as.integer(robust_heterogeneity),
     is_design_effect                        = as.integer(design_effects),
