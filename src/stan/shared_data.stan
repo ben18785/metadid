@@ -77,6 +77,15 @@ real<lower=0> sigma_prior_scale;
 int<lower=0> K_cov;               // number of covariates (0 = no meta-regression)
 real<lower=0> beta_cov_prior_sd;   // prior SD for covariate coefficients
 
+// Optional categorical multiplicative covariate(s): up to two, whose per-study
+// level codes (x_mult_*, x_mult2_*; 0 = reference) select factors whose product
+// scales the effect. n_effect_multipliers* = 0 turns a covariate off; the
+// log-normal prior hyperparameters are on the log scale.
+int<lower=0> n_effect_multipliers;
+int<lower=0> n_effect_multipliers2;
+real effect_multiplier_prior_meanlog;
+real<lower=0> effect_multiplier_prior_sdlog;
+
 // When is_student_t_heterogeneity == 1, study-level treatment effects are
 // drawn from a Student-t rather than a normal. The degrees-of-freedom
 // parameter nu_treatment (declared as a length-1 vector in the parameters

@@ -17,6 +17,11 @@ if(n_studies_rct > 0) {
     );
   }
 
+  // Multiplicative-covariate factor per study (vector of 1s when feature off)
+  vector[n_studies_rct] mult_rct;
+  for (i in 1:n_studies_rct)
+    mult_rct[i] = overall_mult(effect_multiplier, x_mult_rct[i], effect_multiplier2, x_mult2_rct[i]);
+
   for (i in 1:n_studies_rct) {
     // Bridge canonical fractional scale → absolute scale at the likelihood
     // call site. In modelled modes scale per-study θ and γ by the per-study
@@ -48,11 +53,11 @@ if(n_studies_rct > 0) {
     if (is_correlated_effects && !is_time_trend_rct_zero) {
       target += multi_normal_cholesky_lpdf(
         [treatment_effect_rct[i], time_trend_rct[i]]' |
-        [treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, time_trend_mean]',
+        [mult_rct[i] * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov), time_trend_mean]',
         L_Sigma_rct
       );
     } else if (is_student_t_heterogeneity) {
-      target += student_t_lpdf(treatment_effect_rct[i] | nu_treatment_vec[1], treatment_effect_mean_rct + X_cov_rct[i] * beta_cov, treatment_effect_sd);
+      target += student_t_lpdf(treatment_effect_rct[i] | nu_treatment_vec[1], mult_rct[i] * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov), treatment_effect_sd);
     }
     // Normal case: handled by treatment_effect_rct_raw ~ std_normal() below.
   }

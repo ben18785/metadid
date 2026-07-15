@@ -90,6 +90,9 @@ if(n_studies_pp > 0) {
     }
   }
 
+  vector[n_studies_pp] mult_pp;
+  for (i in 1:n_studies_pp)
+    mult_pp[i] = overall_mult(effect_multiplier, x_mult_pp[i], effect_multiplier2, x_mult2_pp[i]);
   if (is_correlated_effects && !is_time_trend_pp_zero) {
     matrix[2, 2] L_Sigma_pp = diag_pre_multiply(
       [treatment_effect_sd, time_trend_sd]', L_corr_theta_beta[1]
@@ -97,14 +100,14 @@ if(n_studies_pp > 0) {
     for (i in 1:n_studies_pp) {
       target += multi_normal_cholesky_lpdf(
         [treatment_effect_pp[i], time_trend_pp[i]]' |
-        [treatment_effect_mean_pp + X_cov_pp[i] * beta_cov, time_trend_mean]',
+        [mult_pp[i] * (treatment_effect_mean_pp + X_cov_pp[i] * beta_cov), time_trend_mean]',
         L_Sigma_pp
       );
     }
   } else {
     time_trend_pp_raw ~ std_normal();
     if (is_student_t_heterogeneity) {
-      treatment_effect_pp ~ student_t(nu_treatment_vec[1], treatment_effect_mean_pp + X_cov_pp * beta_cov, treatment_effect_sd);
+      treatment_effect_pp ~ student_t(nu_treatment_vec[1], mult_pp .* (treatment_effect_mean_pp + X_cov_pp * beta_cov), treatment_effect_sd);
     } else {
       treatment_effect_pp_raw ~ std_normal();
     }
