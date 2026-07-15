@@ -13,21 +13,23 @@ new_meta_did_fit <- function(
     normalisation_factors,
     method = "sample",
     covariate_names = NULL,
+    multiplicative_covariate = NULL,
     cov_centers = NULL,
     center_covariates = TRUE
 ) {
   structure(
     list(
-      fit                   = fit,
-      summary_data          = summary_data,
-      individual_data       = individual_data,
-      model_flags           = model_flags,
-      priors                = priors,
-      normalisation_factors = normalisation_factors,
-      method                = method,
-      covariate_names       = covariate_names,
-      cov_centers           = cov_centers,
-      center_covariates     = center_covariates
+      fit                      = fit,
+      summary_data             = summary_data,
+      individual_data          = individual_data,
+      model_flags              = model_flags,
+      priors                   = priors,
+      normalisation_factors    = normalisation_factors,
+      method                   = method,
+      covariate_names          = covariate_names,
+      multiplicative_covariate = multiplicative_covariate,
+      cov_centers              = cov_centers,
+      center_covariates        = center_covariates
     ),
     class = "meta_did_fit"
   )
@@ -36,6 +38,25 @@ new_meta_did_fit <- function(
 # ---------------------------------------------------------------------------
 # print()
 # ---------------------------------------------------------------------------
+
+#' Normalise a stored multiplicative_covariate descriptor to a list of covariates
+#'
+#' Reporting accepts three stored shapes: a bare column name (character), a
+#' single `list(name, levels)` descriptor (one covariate), or a list of such
+#' descriptors (two covariates). This returns a uniform list of
+#' `list(name, levels)` entries (empty list when the feature is off).
+#'
+#' @return A list of `list(name=, levels=)` entries (possibly empty).
+#' @keywords internal
+#' @noRd
+.mult_cov_list <- function(mc) {
+  if (is.null(mc)) return(list())
+  if (is.character(mc)) return(list(list(name = mc, levels = NULL)))
+  if (!is.null(mc$name)) return(list(mc))
+  mc
+}
+
+.mult_stan_var <- function(i) if (i == 1L) "effect_multiplier" else "effect_multiplier2"
 
 #' Print a meta_did_fit object
 #'
@@ -93,6 +114,22 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
         cat("  (covariates were mean-centered; treatment_effect_mean is the effect at covariate means)\n")
       }
     }
+    covs <- .mult_cov_list(x$multiplicative_covariate)
+    for (ci in seq_along(covs)) {
+      nm <- covs[[ci]]$name
+      lv <- covs[[ci]]$levels
+      mult_draws <- x$fit$draws(.mult_stan_var(ci), format = "matrix")
+      cat(sprintf("Multiplicative covariate (%s):\n", nm))
+      if (!is.null(lv)) cat(sprintf("  %s: 1  (reference)\n", lv[1]))
+      for (k in seq_len(ncol(mult_draws))) {
+        lab <- if (!is.null(lv)) lv[k + 1] else paste0("level ", k)
+        m_mean <- mean(mult_draws[, k])
+        m_lo   <- stats::quantile(mult_draws[, k], (1 - prob) / 2)
+        m_hi   <- stats::quantile(mult_draws[, k], 1 - (1 - prob) / 2)
+        cat(sprintf("  %s: %.3f  %g%% CI [%.3f, %.3f]\n",
+                    lab, m_mean, prob * 100, m_lo, m_hi))
+      }
+    }
   } else {
     mle <- x$fit$mle()
     m   <- mle[["treatment_effect_mean"]]
@@ -113,6 +150,19 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
       }
       if (x$center_covariates) {
         cat("  (covariates were mean-centered; treatment_effect_mean is the effect at covariate means)\n")
+      }
+    }
+    covs <- .mult_cov_list(x$multiplicative_covariate)
+    for (ci in seq_along(covs)) {
+      nm <- covs[[ci]]$name
+      lv <- covs[[ci]]$levels
+      stan_var <- .mult_stan_var(ci)
+      k_mult <- grep(paste0("^", stan_var, "\\["), names(mle))
+      cat(sprintf("Multiplicative covariate (%s):\n", nm))
+      if (!is.null(lv)) cat(sprintf("  %s: 1  (reference)\n", lv[1]))
+      for (j in seq_along(k_mult)) {
+        lab <- if (!is.null(lv)) lv[j + 1] else paste0("level ", j)
+        cat(sprintf("  %s: %.3f  (MAP estimate)\n", lab, mle[[k_mult[j]]]))
       }
     }
   }
@@ -187,6 +237,23 @@ summary.meta_did_fit <- function(object, prob = 0.9, ...) {
       beta_summary$parameter <- paste0("beta_cov[", object$covariate_names, "]")
       pop <- rbind(pop, beta_summary)
     }
+  }
+  covs <- .mult_cov_list(object$multiplicative_covariate)
+  for (ci in seq_along(covs)) {
+    mult_summary <- summarise_draws(.mult_stan_var(ci))
+    if (is.null(mult_summary)) next
+    mc <- covs[[ci]]
+    lv <- mc$levels
+    labs <- if (!is.null(lv) && length(lv) == nrow(mult_summary) + 1) {
+      lv[-1]
+    } else if (nrow(mult_summary) == 1) {
+      mc$name
+    } else {
+      paste0("level", seq_len(nrow(mult_summary)))
+    }
+    prefix <- if (length(covs) > 1L) paste0(mc$name, ":") else ""
+    mult_summary$parameter <- paste0("effect_multiplier[", prefix, labs, "]")
+    pop <- rbind(pop, mult_summary)
   }
 
   # Study-level treatment effects (all design types combined)

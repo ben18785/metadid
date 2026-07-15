@@ -1,6 +1,7 @@
 // master_model.stan
 
 functions {
+  #include "shared_functions.stan"
   #include "did_model_functions.stan"
   #include "rct_model_functions.stan"
   #include "prepost_model_functions.stan"

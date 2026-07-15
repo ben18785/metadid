@@ -17,7 +17,7 @@ vector[n_studies_rct * (1 - is_time_trend_rct_zero)] time_trend_rct;
 
 if (!is_student_t_heterogeneity && !is_correlated_effects) {
   for (i in 1:n_studies_rct)
-    treatment_effect_rct[i] = treatment_effect_mean_rct + X_cov_rct[i] * beta_cov + treatment_effect_sd * treatment_effect_rct_raw[i];
+    treatment_effect_rct[i] = overall_mult(effect_multiplier, x_mult_rct[i], effect_multiplier2, x_mult2_rct[i]) * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov) + treatment_effect_sd * treatment_effect_rct_raw[i];
 } else {
   treatment_effect_rct = treatment_effect_rct_raw;
 }

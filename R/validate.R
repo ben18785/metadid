@@ -337,6 +337,190 @@ if (!is.null(summary_data) && nrow(summary_data) > 0) {
 }
 
 # ---------------------------------------------------------------------------
+# validate_multiplicative_covariate()
+# ---------------------------------------------------------------------------
+
+#' Validate study-level multiplicative covariate(s)
+#'
+#' Validates the `multiplicative_covariate` specification (a single column name
+#' or a one-sided formula naming up to two columns, whose factors multiply) and
+#' checks each named column. For every column: it must exist, be categorical
+#' (numeric, logical, character, or factor; no `NA`s), be constant within each
+#' study for individual-level data, and not also appear in `covariate_names`.
+#' Numeric columns with more than five distinct values are rejected as likely
+#' continuous. One multiplier is estimated per non-reference level. Two
+#' identifiability checks are run per column:
+#'
+#' 1. The column must take at least two distinct levels across studies. If every
+#'    study sits at the same level, the multiplier(s) and the population mean
+#'    \eqn{\mu_\theta} are jointly unidentified — any (mean, multiplier) pair
+#'    with the same product gives identical likelihood. This is a hard error.
+#' 2. No non-reference level may be perfectly collinear with an additive
+#'    covariate. For each non-reference level the indicator
+#'    \eqn{1\{x_{\mathrm{mult}} = \mathrm{level}\}} is correlated with each
+#'    additive covariate; when `|cor| > 0.95` that level's multiplier and the
+#'    covariate's coefficient become weakly identified: the model still runs but
+#'    `effect_multiplier[level]` and `beta_cov[k]` will be highly correlated in
+#'    the posterior. This is a soft warning.
+#'
+#' @param multiplicative_covariate `NULL`, a single column name, or a one-sided
+#'   formula naming one or two columns (see [meta_did()]).
+#' @param covariate_names Character vector of additive covariate names (or NULL).
+#' @param summary_data Summary-level data frame (or NULL).
+#' @param individual_data Individual-level data frame (or NULL).
+#'
+#' @return Invisible NULL. Stops with an error or emits a warning if a
+#'   validation or identifiability check fails.
+#' @keywords internal
+validate_multiplicative_covariate <- function(multiplicative_covariate,
+                                              covariate_names,
+                                              summary_data, individual_data) {
+  cols <- .normalise_mult_covariate(multiplicative_covariate)
+  if (length(cols) == 0L) return(invisible(NULL))
+  for (col in cols) {
+    .validate_one_mult_covariate(col, covariate_names,
+                                 summary_data, individual_data)
+  }
+  invisible(NULL)
+}
+
+#' Validate one multiplicative-covariate column
+#'
+#' @return Invisible NULL; stops or warns on failure. See
+#'   [validate_multiplicative_covariate()] for the checks performed.
+#' @keywords internal
+#' @noRd
+.validate_one_mult_covariate <- function(col, covariate_names,
+                                         summary_data, individual_data) {
+
+  # Cannot overlap with the additive covariate list
+  if (col %in% covariate_names) {
+    stop(
+      "Column '", col, "' is listed in both 'covariates' and ",
+      "'multiplicative_covariate'. A covariate must be one or the other.",
+      call. = FALSE
+    )
+  }
+
+  .check_categorical <- function(values, context) {
+    if (any(is.na(values))) {
+      stop("Multiplicative covariate '", col,
+           "' in ", context, " contains NA values.", call. = FALSE)
+    }
+    if (!(is.numeric(values) || is.character(values) ||
+          is.factor(values) || is.logical(values))) {
+      stop("Multiplicative covariate '", col,
+           "' in ", context, " must be numeric, logical, character, or ",
+           "factor; one multiplier is estimated per non-reference level.",
+           call. = FALSE)
+    }
+    if (is.numeric(values) && length(unique(values)) > 5) {
+      stop(
+        "Multiplicative covariate '", col, "' in ", context,
+        " looks continuous (", length(unique(values)),
+        " distinct numeric values). meta_did() estimates one multiplier ",
+        "per level of a categorical covariate; convert the column to a ",
+        "factor explicitly if it is genuinely categorical.",
+        call. = FALSE
+      )
+    }
+  }
+
+  # Collect the per-study values across both data sources for identifiability checks
+  study_values <- character(0)
+  study_covs_for_collinearity <- NULL
+
+  if (!is.null(summary_data) && nrow(summary_data) > 0) {
+    if (!col %in% names(summary_data)) {
+      stop("Multiplicative covariate '", col,
+           "' not found in summary_data.", call. = FALSE)
+    }
+    .check_categorical(summary_data[[col]], "summary_data")
+    study_values <- c(study_values, as.character(summary_data[[col]]))
+    if (length(covariate_names) > 0) {
+      study_covs_for_collinearity <- summary_data[, covariate_names, drop = FALSE]
+    }
+  }
+
+  if (!is.null(individual_data) && nrow(individual_data) > 0) {
+    if (!col %in% names(individual_data)) {
+      stop("Multiplicative covariate '", col,
+           "' not found in individual_data.", call. = FALSE)
+    }
+    .check_categorical(individual_data[[col]], "individual_data")
+    # Constant within study
+    n_unique <- tapply(individual_data[[col]], individual_data$study_id,
+                       function(x) length(unique(x)))
+    bad_studies <- names(n_unique)[n_unique > 1]
+    if (length(bad_studies) > 0) {
+      stop(
+        "Multiplicative covariate '", col, "' varies within study in ",
+        "individual_data (must be constant within study). Problem studies: ",
+        paste(utils::head(bad_studies, 3), collapse = ", "),
+        if (length(bad_studies) > 3) ", ..." else "", ".",
+        call. = FALSE
+      )
+    }
+    # Collapse to one row per study for the identifiability checks
+    ind_one_per_study <- individual_data[!duplicated(individual_data$study_id), , drop = FALSE]
+    study_values <- c(study_values, as.character(ind_one_per_study[[col]]))
+    if (length(covariate_names) > 0) {
+      cov_block <- ind_one_per_study[, covariate_names, drop = FALSE]
+      study_covs_for_collinearity <- if (is.null(study_covs_for_collinearity)) {
+        cov_block
+      } else {
+        rbind(study_covs_for_collinearity, cov_block)
+      }
+    }
+  }
+
+  # --- Identifiability: x_mult must vary across studies ---
+  unique_vals <- unique(study_values)
+  if (length(unique_vals) < 2) {
+    common <- unique_vals[1]
+    stop(
+      "Multiplicative covariate '", col, "' is constant across all studies ",
+      "(every study has the value '", common, "'). With no variation in '",
+      col, "', the multiplier(s) and the population treatment effect mu ",
+      "are jointly unidentified — any rescaling with the same product ",
+      "gives an identical likelihood. Either remove the multiplicative ",
+      "covariate, or include studies at two or more levels.",
+      call. = FALSE
+    )
+  }
+
+  # --- Identifiability: warn on near-perfect collinearity with additive covariates ---
+  if (!is.null(study_covs_for_collinearity) && nrow(study_covs_for_collinearity) >= 3) {
+    threshold <- 0.95
+    mult_lv <- sort(unique(study_values))
+    for (cv in covariate_names) {
+      cv_vals <- study_covs_for_collinearity[[cv]]
+      # cor() is undefined when a column is constant; guard.
+      if (length(unique(cv_vals)) < 2) next
+      for (lv in mult_lv[-1]) {
+        d <- as.numeric(study_values == lv)
+        if (length(unique(d)) < 2) next
+        r <- suppressWarnings(stats::cor(d, cv_vals))
+        if (!is.na(r) && abs(r) > threshold) {
+          warning(
+            "Multiplicative covariate '", col, "' (level '", lv,
+            "') is nearly collinear with ",
+            "additive covariate '", cv, "' (|cor| = ", round(abs(r), 3),
+            " > ", threshold, "). The corresponding multiplier and beta_cov[",
+            which(covariate_names == cv), "] may be weakly identified; ",
+            "expect a strong posterior correlation between them and wider ",
+            "credible intervals than usual.",
+            call. = FALSE
+          )
+        }
+      }
+    }
+  }
+
+  invisible(NULL)
+}
+
+# ---------------------------------------------------------------------------
 # Internal helper
 # ---------------------------------------------------------------------------
 

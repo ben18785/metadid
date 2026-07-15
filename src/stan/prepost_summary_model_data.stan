@@ -9,6 +9,8 @@ vector<lower=0>[n_studies_pp_summary] sd_treatment_after_pp_summary;
 int<lower=0, upper=1> is_time_trend_pp_summary_zero;
 int<lower=0, upper=1> is_differenced_likelihood_pp_summary;
 matrix[n_studies_pp_summary, K_cov] X_cov_pp_summary;
+array[n_studies_pp_summary] int<lower=0, upper=n_effect_multipliers> x_mult_pp_summary;
+array[n_studies_pp_summary] int<lower=0, upper=n_effect_multipliers2> x_mult2_pp_summary;
 
 // Rho: split into known (data) and missing (to be inferred) studies.
 // When is_correlation_coefficient_hierarchical == 0, all rho are known:

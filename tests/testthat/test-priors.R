@@ -27,11 +27,23 @@ test_that("gamma() creates a valid did_prior", {
   expect_equal(p$rate, 0.1)
 })
 
+test_that("lognormal() creates a valid did_prior", {
+  p <- lognormal(0, 0.7)
+  expect_s3_class(p, "did_prior")
+  expect_equal(p$dist, "lognormal")
+  expect_equal(p$meanlog, 0)
+  expect_equal(p$sdlog, 0.7)
+})
+
 test_that("constructors reject invalid inputs", {
   expect_error(normal("a", 1))
   expect_error(normal(0, -1))
   expect_error(normal(0, 0))
   expect_error(normal(c(0, 1), 1))
+  expect_error(lognormal("a", 1))
+  expect_error(lognormal(0, -1))
+  expect_error(lognormal(0, 0))
+  expect_error(lognormal(c(0, 1), 1))
   expect_error(cauchy(-1))
   expect_error(cauchy(0))
   expect_error(gamma(0, 0.1))
@@ -61,7 +73,7 @@ test_that("set_priors() returns a did_priors with all parameters", {
     "delta_rct", "delta_pp", "sigma",
     "beta_cov", "lkj_eta",
     "baseline_difference_mean", "baseline_difference_sd",
-    "baseline_per_study"
+    "baseline_per_study", "multiplier"
   )
   expect_equal(names(p), expected_names)
 })

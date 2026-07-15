@@ -20,6 +20,28 @@ normal <- function(mean, sd) {
   structure(list(dist = "normal", mean = mean, sd = sd), class = "did_prior")
 }
 
+#' Specify a log-normal prior
+#'
+#' Used for strictly positive multiplicative factors (the
+#' `multiplicative_covariate` effect multiplier). The prior is placed on the
+#' natural logarithm of the parameter, so the parameter itself is log-normally
+#' distributed with median `exp(meanlog)` and strictly positive support. Unlike
+#' a normal prior truncated at zero, a log-normal has no probability mass piling
+#' up against a hard boundary and is the conventional choice for a ratio-scale
+#' quantity.
+#'
+#' @param meanlog Mean on the log scale. `meanlog = 0` gives a median of 1.
+#' @param sdlog Standard deviation on the log scale (must be positive). Larger
+#'   values allow the factor to depart further from 1 in either direction.
+#' @return A `did_prior` object.
+#' @export
+lognormal <- function(meanlog, sdlog) {
+  stopifnot(is.numeric(meanlog), length(meanlog) == 1)
+  stopifnot(is.numeric(sdlog), length(sdlog) == 1, sdlog > 0)
+  structure(list(dist = "lognormal", meanlog = meanlog, sdlog = sdlog),
+            class = "did_prior")
+}
+
 #' Specify a half-Cauchy prior
 #'
 #' Used for scale parameters. The distribution is implicitly half-Cauchy
@@ -86,11 +108,12 @@ uniform <- function(lower = 0, upper) {
 #' @export
 print.did_prior <- function(x, ...) {
   params <- switch(x$dist,
-    normal  = paste0("mean = ", x$mean, ", sd = ", x$sd),
-    cauchy  = paste0("scale = ", x$scale),
-    gamma   = paste0("shape = ", x$shape, ", rate = ", x$rate),
-    lkj     = paste0("eta = ", x$eta),
-    uniform = paste0("lower = ", x$lower, ", upper = ", x$upper)
+    normal    = paste0("mean = ", x$mean, ", sd = ", x$sd),
+    lognormal = paste0("meanlog = ", x$meanlog, ", sdlog = ", x$sdlog),
+    cauchy    = paste0("scale = ", x$scale),
+    gamma     = paste0("shape = ", x$shape, ", rate = ", x$rate),
+    lkj       = paste0("eta = ", x$eta),
+    uniform   = paste0("lower = ", x$lower, ", upper = ", x$upper)
   )
   cat(x$dist, "(", params, ")\n", sep = "")
   invisible(x)
@@ -112,6 +135,7 @@ print.did_prior <- function(x, ...) {
   delta_pp                 = c("normal"),
   sigma                    = c("cauchy"),
   beta_cov                 = c("normal"),
+  multiplier               = c("lognormal"),
   lkj_eta                  = c("lkj"),
   baseline_difference_mean = c("normal"),
   baseline_difference_sd   = c("cauchy", "normal"),
@@ -163,6 +187,15 @@ print.did_prior <- function(x, ...) {
 #' @param baseline_difference_sd Prior on the between-study SD of the
 #'   baseline imbalance. Only used when `baseline_imbalance = "estimated"`.
 #'   Default: `cauchy(0.1)`.
+#' @param multiplier Prior on the multiplicative-covariate effect multiplier
+#'   (only used when `multiplicative_covariate` is specified in [meta_did()]).
+#'   With one or two multiplicative covariates the same prior is applied
+#'   independently to every estimated non-reference-level factor (of either
+#'   covariate). Must be a [lognormal()] prior,
+#'   placed on the log of the multiplier so it is strictly positive with no
+#'   boundary at zero. Default: `lognormal(0, 0.7)` — a median of 1 (the
+#'   no-multiplicative-effect case), with a central 95% range of roughly
+#'   `[0.25, 3.9]` on the natural scale.
 #'
 #' @return A `did_priors` object.
 #' @export
@@ -188,7 +221,8 @@ set_priors <- function(
     lkj_eta                  = lkj(2),
     baseline_difference_mean = normal(0, 0.5),
     baseline_difference_sd   = cauchy(0.1),
-    baseline_per_study       = NULL
+    baseline_per_study       = NULL,
+    multiplier               = lognormal(0, 0.7)
 ) {
   priors <- list(
     treatment_effect_mean    = treatment_effect_mean,
@@ -205,7 +239,8 @@ set_priors <- function(
     lkj_eta                  = lkj_eta,
     baseline_difference_mean = baseline_difference_mean,
     baseline_difference_sd   = baseline_difference_sd,
-    baseline_per_study       = baseline_per_study  # NULL = compute from data
+    baseline_per_study       = baseline_per_study,  # NULL = compute from data
+    multiplier               = multiplier
   )
   validate_priors(priors)
   structure(priors, class = "did_priors")
@@ -233,8 +268,8 @@ validate_priors <- function(priors) {
     if (is.null(p) && nm == "baseline_per_study") next
     if (!inherits(p, "did_prior")) {
       stop(
-        "Prior for '", nm, "' must be created with normal(), cauchy(), gamma(), ",
-        "lkj(), or uniform().",
+        "Prior for '", nm, "' must be created with normal(), lognormal(), ",
+        "cauchy(), gamma(), lkj(), or uniform().",
         call. = FALSE
       )
     }
@@ -247,6 +282,7 @@ validate_priors <- function(priors) {
       )
     }
   }
+
   invisible(priors)
 }
 
@@ -298,7 +334,10 @@ as_stan_data.did_priors <- function(priors) {
     baseline_difference_mean_prior_mean = priors$baseline_difference_mean$mean,
     baseline_difference_mean_prior_sd   = priors$baseline_difference_mean$sd,
     baseline_difference_sd_prior_scale  = priors$baseline_difference_sd$scale %||%
-                                          priors$baseline_difference_sd$sd
+                                          priors$baseline_difference_sd$sd,
+    # effect_multiplier ~ lognormal(meanlog, sdlog), i.e. prior on log scale
+    effect_multiplier_prior_meanlog         = priors$multiplier$meanlog,
+    effect_multiplier_prior_sdlog           = priors$multiplier$sdlog
   )
 }
 

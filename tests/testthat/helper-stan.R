@@ -7,6 +7,7 @@
 
 skip_if_no_stan <- function() {
   skip_on_cran()
+  skip_on_covr()
   skip_if_not_installed("cmdstanr")
   skip_if_not(instantiate::stan_cmdstan_exists(), "CmdStan not available")
 }
