@@ -7,8 +7,7 @@
 meta_did_general(
   summary_data = NULL,
   individual_data = NULL,
-  normalise = TRUE,
-  baseline_latent_arm = c("treatment", "control"),
+  normalise_by_baseline = TRUE,
   robust_heterogeneity = FALSE,
   design_effects = FALSE,
   hierarchical_rho = TRUE,
@@ -40,34 +39,10 @@ observation. Must include columns \code{study_id}, \code{design}, \code{group},
 \code{time}, and \code{value}. Valid designs: \code{"did"}, \code{"rct"}, \code{"pp"}.
 No \code{study_id} may appear in both \code{summary_data} and \code{individual_data}.}
 
-\item{normalise}{Logical. If \code{TRUE} (default), population-level effects
-(\code{treatment_effect_mean}, \code{time_trend_mean}, \code{baseline_difference_mean})
-are expressed as fractions of the treatment-arm pre-treatment baseline.
-Stan receives the raw data unchanged and performs the normalisation
-internally via per-study latent baseline parameters. If \code{FALSE}, no
-per-study latent baseline is fit; population-level effects are pooled
-on the \strong{absolute} (user-units) scale instead. Equivalent to the
-legacy \code{normalise_by_baseline = FALSE} behaviour.}
-
-\item{baseline_latent_arm}{Character. Advanced. Only used when
-\code{normalise = TRUE}. Determines which arm's pre-treatment baseline is
-the per-study latent parameter (the one with the wide data-vague
-uniform prior); the other arm's baseline is derived via the
-hierarchical baseline-difference parameter. One of:
-\itemize{
-\item \code{"treatment"} (default): the treatment-arm pre-baseline is the
-latent, informed directly by \code{mean_pre_treatment} observations.
-\item \code{"control"}: the control-arm pre-baseline is the latent, informed
-directly by \code{mean_pre_control} observations.
-}
-
-The choice does \strong{not} change the canonical scale on which effects
-are reported — both options pool population-level effects on the
-treatment-arm pre-baseline scale. It only controls which arm's data
-most directly informs the per-study baseline's posterior, which can
-matter when one arm has substantially more direct data than the
-other. The two options are statistically equivalent in
-well-identified problems.}
+\item{normalise_by_baseline}{Logical. If \code{TRUE} (default), all means and
+SDs are divided by each study's pre-treatment control mean (or the
+grand mean for change-only studies), placing outcomes on a common
+fractional scale.}
 
 \item{robust_heterogeneity}{Logical. If \code{TRUE}, study-level treatment
 effects are drawn from a Student-t distribution rather than a normal,

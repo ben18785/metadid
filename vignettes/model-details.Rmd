@@ -15,9 +15,8 @@ knitr::opts_chunk$set(
 ```
 
 This vignette describes the statistical model underlying `meta_did()`, how
-baseline normalisation is performed (statistically inside Stan rather
-than by plug-in division in R), and what each study design can and
-cannot identify.
+baseline normalisation works, and what each study design can and cannot
+identify.
 
 ## The latent DiD model
 
@@ -203,127 +202,92 @@ additional nuisance parameters.
 
 ## Baseline normalisation
 
-By default (`normalise = TRUE`), `meta_did()` expresses treatment effects
-as fractions of each study's treatment-arm pre-treatment baseline. This
-places studies on a common relative scale (useful when raw outcomes are on
-incommensurable units across studies) and makes the population-level
-parameters interpretable as proportional effects.
+By default (`normalise_by_baseline = TRUE`), `meta_did()` normalises all
+outcome data by a design-appropriate baseline mean before fitting. This
+places all studies on a common relative scale, making the treatment effect
+interpretable as a proportional change.
 
-The normalisation is performed **statistically inside the Stan model**,
-not by dividing the observed data in R. Each study's pre-treatment
-baseline enters the model as a latent parameter with a wide data-vague
-uniform prior; the likelihood operates on the raw observations; and the
-hierarchical pooling layer over treatment effects, time trends, and
-baseline imbalances lives on the canonical fractional scale (fraction of
-the treatment-arm pre-treatment baseline). Bridging from the canonical
-scale to the absolute scale of the observed data happens at the
-likelihood call site through a multiplication by the per-study baseline.
+### How normalisation works per design
 
-Setting `normalise = FALSE` switches the model to absolute-scale pooling
-instead: there is no per-study baseline latent, and the population-level
-parameters are interpreted in the user's original outcome units. This is
-appropriate for meta-analyses where all studies share a common
-measurement scale and a meaningful absolute effect size is the quantity
-of interest.
+| Design | Normalisation denominator | Effect on parameters |
+|--------|--------------------------|----------------------|
+| **DiD** | Pre-treatment control mean | $\alpha_i = 1$ |
+| **DiD (change only)** | Grand mean of DiD pre-control means | Shared rescaling (see below) |
+| **Pre-post** | Pre-treatment treatment mean | $\alpha_i + \gamma_i = 1$ |
+| **RCT** | Post-treatment control mean | $\alpha_i + \beta_i = 1$ |
 
-### Why model the baseline rather than divide by the sample mean
+For DiD and pre-post studies, normalisation divides by a pre-treatment
+quantity, so the relevant baseline parameter is known to be exactly 1 and is
+fixed rather than estimated. The time trend and treatment effect remain as
+free parameters.
 
-A naive plug-in approach — dividing observed means and SDs by the sample
-control-pre mean before fitting — treats the baseline as if it were known
-exactly, ignoring its sampling uncertainty. By Jensen's inequality the
-ratio of sample means is not equal to the ratio of population means; the
-plug-in estimator picks up a finite-sample bias that scales with the
-variance of the baseline estimator. Modelling the baseline as a latent
-parameter inside the joint posterior correctly propagates that
-uncertainty, eliminating the Jensen contribution to bias and producing
-credible intervals on the fractional effect that have the right shape.
+DiD change-only studies report change scores (post minus pre) rather than
+level means, so they lack a study-specific pre-treatment level to normalise
+by. Instead, normalisation divides the change scores by the grand mean of
+the pre-control means across the full DiD studies in the meta-analysis. This
+places the change scores on the same relative scale as the other designs,
+but requires that at least some full DiD studies are present.
 
-The cost is computational: the model carries one additional latent
-parameter per study. The wide uniform prior on this parameter has an
-upper bound auto-computed in R as 100× the maximum observed baseline
-mean (overridable via
-`set_priors(baseline_per_study = uniform(0, X))`), which is effectively
-flat over the data-supported region.
-
-### Choice of which baseline is the latent: `baseline_latent_arm`
-
-The default `baseline_latent_arm = "treatment"` makes the treatment-arm
-pre-baseline the per-study latent with the wide prior. The control-arm
-pre-baseline is then a derived quantity, related to the latent via the
-hierarchical baseline-imbalance parameter $\gamma_i = (b_{T,i} -
-b_{C,i}) / b_{C,i}$ — defined relative to the control-pre baseline
-under the control-pre reference convention:
+For RCT studies, there is no pre-treatment data, so normalisation divides
+by the post-treatment control mean ($\alpha_i + \beta_i$). After
+normalisation, the control post-mean is fixed at 1. The normalised
+treatment post-mean is
 
 $$
-b_{C,i} = b_{T,i} / (1 + \gamma_i).
+\frac{\alpha_i + \gamma_i + \beta_i + \theta_i}{\alpha_i + \beta_i}
+= 1 + \frac{\gamma_i + \theta_i}{\alpha_i + \beta_i}.
 $$
 
-Setting `baseline_latent_arm = "control"` reverses the choice: the
-control-arm pre-baseline becomes the latent and the treatment-arm
-pre-baseline is derived as $b_{T,i} = b_{C,i} \cdot (1 + \gamma_i)$. The
-lower bound $\gamma_i > -1$ keeps $(1 + \gamma_i)$ strictly positive in
-both parameterisations. The
-**reported canonical scale is the same** under both options — both pool
-on the treatment-arm pre-baseline reference — so the choice does not
-change the estimand. What it does change is which arm's pre-period
-observations most directly anchor the per-study baseline's posterior,
-which matters when the two arms have substantially different sample
-sizes or precision. In well-identified problems the two parameterisations
-give numerically equivalent posteriors on every population-level
-parameter, modulo MCMC noise.
+When the model assumes equal baselines ($\gamma_i = 0$), the normalised
+treatment–control difference reduces to $\phi_i = \theta_i / (\alpha_i +
+\beta_i)$, the **apparent effect**. This is what the normalised data
+directly measures.
 
-### Per-design contribution to baseline identification
+To recover the treatment effect on the same scale as DiD studies
+(normalised by $\alpha_i$), we need to undo the RCT-specific
+normalisation. Writing $\tilde\theta_i = \theta_i / \alpha_i$ and
+$\tilde\beta_i = \beta_i / \alpha_i$ for the DiD-normalised quantities:
 
-For DiD studies, both arms' pre-period means are observed, so whichever
-baseline is chosen as the latent is directly informed by the
-corresponding pre-period observations; the other arm's baseline is
-identified via $\gamma_i$ from the cross-arm pre-period comparison.
+$$
+\phi_i
+= \frac{\theta_i}{\alpha_i + \beta_i}
+= \frac{\theta_i / \alpha_i}{1 + \beta_i / \alpha_i}
+= \frac{\tilde\theta_i}{1 + \tilde\beta_i},
+$$
 
-For RCT studies, no pre-period observations exist. The per-study latent
-baseline is identified jointly with the per-study time trend $\beta_i$,
-imbalance $\gamma_i$, and treatment effect $\theta_i$ via the
-post-period observations and the hierarchical priors pooled across the
-rest of the meta-analysis (notably the DiD studies, which directly
-identify $\beta_i$ and $\gamma_i$).
+so the normalised treatment effect is
 
-For pre-post studies, the treatment arm's pre-period mean is observed
-but no control arm exists. Under `baseline_latent_arm = "treatment"`
-(the natural choice) the latent is directly informed by that
-observation. The imbalance $\gamma_i$ is not identified per-study from
-pre-post data alone and is drawn from the hierarchical prior populated
-by DiD studies in the same fit.
+$$
+\tilde\theta_i = \phi_i \cdot (1 + \tilde\beta_i).
+$$
 
-For DiD change-only studies (which report only the change scores, not
-the pre/post split), no per-study baseline observation exists. The
-model does not attempt to infer a per-study baseline in this case — the
-double-differenced likelihood used for these studies cancels the
-baseline out, so the treatment effect on the canonical fractional scale
-is identified from the difference between treatment-arm and control-arm
-change scores. **Users supplying change-only data are responsible for
-ensuring those change scores are already on a comparable scale to the
-rest of the meta-analysis** (typically by pre-dividing each study's
-change scores by its own pre-period level before submission); the
-package does not pre-normalise change-only data.
+The model is reparameterised so that $\phi_i$ (apparent effect) and
+$\tilde\beta_i$ (normalised time trend) are the sampled parameters, and
+$\tilde\theta_i$ is derived via the formula above. A Jacobian correction
+$|1 + \tilde\beta_i|$ is applied to the log-posterior to account for this
+change of variables. The hierarchical prior on $\tilde\beta_i$ — informed
+primarily by DiD studies, which directly identify time trends — provides
+the regularisation needed to separate $\tilde\theta_i$ from
+$\tilde\beta_i$.
 
-### Interpreting the population treatment effect
+In the naive model (`meta_did_naive()`), the time trend is forced to zero
+for RCT studies, so $\phi_i = \tilde\theta_i$ and the reparameterisation
+is bypassed. This is equivalent to the standard assumption that the
+post-treatment control–treatment difference is an unbiased estimate of the
+treatment effect.
 
-Under `normalise = TRUE` the population treatment effect $\mu_\theta$ is
-the expected fractional shift in outcomes caused by the intervention,
-expressed as a fraction of the treatment-arm pre-treatment baseline. For
-example, $\mu_\theta = -0.33$ means a 33% reduction relative to the
-baseline level. Two studies on incommensurable raw-outcome scales (e.g.
-cholesterol in mg/dL vs in mmol/L) can both contribute to this estimand,
-because dividing each study's effect by its own arm-internal baseline
-removes the unit dependency. The cost of this scale-removal is the
-exchangeability assumption it implies on the per-study fractional
-effects — see the discussion in the package's
-`vignette("incommensurable-scales")` (forthcoming) for when this is and
-isn't appropriate.
+When data are not normalised, the RCT baselines $\alpha_i$ and
+$\alpha_i + \gamma_i$ are free parameters drawn from the same
+hierarchical distributions as in DiD studies, allowing the baseline
+difference $\gamma_i$ to be informed by DiD evidence. By default, the
+model allows $\gamma_i \neq 0$; this can be constrained to zero if
+randomisation is assumed to eliminate baseline imbalances.
 
-Under `normalise = FALSE` the population treatment effect $\mu_\theta$
-is on the user's original outcome units and represents a meaningful
-absolute effect size; this requires all studies to share a measurement
-scale.
+### Interpreting normalised treatment effects
+
+After normalisation, the population treatment effect $\mu_\theta$ is
+expressed in units relative to the baseline. For example,
+$\mu_\theta = -0.33$ means a 33% reduction relative to the baseline level.
 
 ## Hierarchical structure
 

@@ -261,18 +261,13 @@ summary.meta_did_fit <- function(object, prob = 0.9, ...) {
     if (is.null(data)) return(0L)
     sum(data$design == design, na.rm = TRUE)
   }
-  # Per-study treatment effect parameter names. The legacy
-  # *_rct_*_derived variables were removed when the apparent_effect
-  # reparameterisation was dropped — RCT now exposes treatment_effect_rct
-  # / treatment_effect_rct_summary directly on the same canonical scale
-  # as the other designs.
   study_params <- c(
     if (n_design(object$summary_data, "did")        > 0) "treatment_effect_did_summary"     else NULL,
-    if (n_design(object$summary_data, "rct")        > 0) "treatment_effect_rct_summary"     else NULL,
+    if (n_design(object$summary_data, "rct")        > 0) "treatment_effect_rct_summary_derived" else NULL,
     if (n_design(object$summary_data, "pp")         > 0) "treatment_effect_pp_summary"      else NULL,
     if (n_design(object$summary_data, "did_change") > 0) "treatment_effect_did_change_only" else NULL,
     if (n_design(object$individual_data, "did")     > 0) "treatment_effect_did"             else NULL,
-    if (n_design(object$individual_data, "rct")     > 0) "treatment_effect_rct"             else NULL,
+    if (n_design(object$individual_data, "rct")     > 0) "treatment_effect_rct_derived"     else NULL,
     if (n_design(object$individual_data, "pp")      > 0) "treatment_effect_pp"              else NULL
   )
   study <- do.call(rbind, lapply(study_params, summarise_draws))
