@@ -779,3 +779,64 @@ test_that("Fit 6: recovers the per-study percentage estimand E[theta/b] under la
   rhat <- fit$fit$summary("treatment_effect_mean")$rhat
   expect_true(all(rhat < 1.05), label = paste("R-hat:", paste(round(rhat, 3), collapse = ", ")))
 })
+
+# ---------------------------------------------------------------------------
+# Fit 8: metadid-sims scenario F4 — 50 DiD + 50 summary RCT, default model
+# ---------------------------------------------------------------------------
+# Emulates the F4 large-N bias probe from ben18785/metadid-sims: 50 DiD and
+# 50 summary-level RCT studies under the default normal-heterogeneity model,
+# with the sims' default DGP (this file's shared constants). RCT summary
+# studies observe no pre-period, so their time trends are informed purely by
+# pooling from the DiD studies — the structure that broke down in the
+# 2026-07-15 sims run (R-hat ~ 3, ~135 divergences per rep, EBFMI ~ 0.002).
+# This fit pins both sampler health and estimand recovery for that regime.
+
+test_that("Fit 8: F4-style 50 DiD + 50 summary RCT converges and recovers E[theta/b]", {
+  skip_if_no_stan()
+
+  f4_sim <- simulate_meta_did(
+    n_studies     = 100,
+    true_effect   = TRUE_EFFECT_RAW,
+    sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
+    true_trend    = TRUE_TREND_RAW,
+    sigma_trend   = TRUE_SIGMA_TREND_RAW,
+    baseline_mean = MEAN_BASELINE,
+    baseline_sd   = TRUE_BASELINE_SD,
+    n_control     = 100L,
+    n_treatment   = 100L,
+    seed          = 6120L
+  )
+  ids    <- unique(f4_sim$study_id)
+  rct_df <- as_summary_rct(f4_sim[f4_sim$study_id %in% ids[51:100], ])
+  rct_df$study_id <- paste0("rct_", rct_df$study_id)
+  f4_data <- dplyr::bind_rows(
+    as_summary_did(f4_sim[f4_sim$study_id %in% ids[1:50], ]),
+    rct_df
+  )
+
+  fit <- recovery_fit(summary_data = f4_data)
+
+  # Estimand: mean per-study % effect E[theta_i/b_i] (delta method, as Fit 6)
+  cv_b2    <- (TRUE_BASELINE_SD / MEAN_BASELINE)^2
+  true_te  <- TRUE_EFFECT_NORMALISED * (1 + cv_b2)
+  true_tt  <- TRUE_TREND_NORMALISED  * (1 + cv_b2)
+
+  res_te <- covers(fit, "treatment_effect_mean", true_te)
+  expect_true(res_te$covers, label = ci_label(res_te$ci, true_te))
+
+  res_tt <- covers(fit, "time_trend_mean", true_tt)
+  expect_true(res_tt$covers, label = ci_label(res_tt$ci, true_tt))
+
+  # Sampler health: the F4 regime must sample cleanly
+  diag_df <- fit$fit$summary(c("treatment_effect_mean", "treatment_effect_sd",
+                               "time_trend_mean", "time_trend_sd"))
+  expect_true(all(diag_df$rhat < 1.05),
+              label = paste("R-hat:", paste(round(diag_df$rhat, 3), collapse = ", ")))
+  expect_true(all(diag_df$ess_bulk > 200),
+              label = paste("ESS bulk:", paste(round(diag_df$ess_bulk), collapse = ", ")))
+
+  sampler <- fit$fit$diagnostic_summary(quiet = TRUE)
+  expect_lte(sum(sampler$num_divergent), 5)
+  expect_true(all(sampler$ebfmi > 0.2),
+              label = paste("EBFMI:", paste(round(sampler$ebfmi, 3), collapse = ", ")))
+})
