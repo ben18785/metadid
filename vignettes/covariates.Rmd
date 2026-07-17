@@ -76,7 +76,7 @@ Higher doses produce more negative treatment effects, as specified by `beta_cov 
 
 ## Understanding the true parameter values
 
-Because `meta_did()` expresses effects as fractions of each study's treatment-arm pre-treatment baseline (by default — `normalise = TRUE` performs this normalisation inside the Stan model rather than by dividing the data in R), the parameters the model estimates are on the normalised scale. With a baseline mean of 0.45 and no baseline imbalance in this simulation (so the treatment-arm and control-arm pre-baselines coincide on average):
+Because `meta_did()` normalises outcomes by the baseline mean (by default), the parameters the model estimates are on the normalised scale. With a baseline mean of 0.45:
 
 - **True normalised slope:** $\beta / \bar{\alpha} = -0.04 / 0.45 \approx -0.089$
 - **True normalised intercept at mean dose:** $(\mu_\theta + \beta \cdot \bar{d}) / \bar{\alpha} = (-0.15 + (-0.04) \times 2.5) / 0.45 \approx -0.556$

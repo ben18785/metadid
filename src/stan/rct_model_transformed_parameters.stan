@@ -1,22 +1,16 @@
 // rct_model_transformed_parameters.stan
-//
-// Reconstructs per-study RCT (individual-data) parameters from non-centered
-// raws and (in modelled modes) from the per-study latent baseline.
-//
-// As in the summary-data paths:
-//   * Likelihood operates on absolute scale.
-//   * Hierarchical pooling in modelled modes is on the canonical fractional
-//     scale; bridging happens at the likelihood call site.
-//   * In none mode the canonical and absolute scales coincide.
-//
-// The legacy `apparent_effect_rct` reparameterisation has been removed; raw
-// data with per-study latent baselines handles all cases uniformly.
+// Non-centered parameterization for study-level RCT (individual) parameters,
+// plus derivation of treatment_effect_rct_derived from apparent_effect when
+// normalised with time trends.
 
-vector[n_studies_rct] treatment_effect_rct;
+vector[n_studies_rct * (1 - is_baseline_normalised * (1 - is_time_trend_rct_zero))] treatment_effect_rct;
 vector[n_studies_rct * (1 - is_time_trend_rct_zero)] time_trend_rct;
+vector[n_studies_rct * (1 - is_baseline_normalised)] baseline_control_rct;
+vector[n_studies_rct * is_baseline_difference_estimated] baseline_difference_rct;
+vector[n_studies_rct * (1 - is_baseline_normalised)] baseline_treatment_rct;
 
 if (!is_student_t_heterogeneity && !is_correlated_effects) {
-  for (i in 1:n_studies_rct)
+  for (i in 1:size(treatment_effect_rct_raw))
     treatment_effect_rct[i] = overall_mult(effect_multiplier, x_mult_rct[i], effect_multiplier2, x_mult2_rct[i]) * (treatment_effect_mean_rct + X_cov_rct[i] * beta_cov) + treatment_effect_sd * treatment_effect_rct_raw[i];
 } else {
   treatment_effect_rct = treatment_effect_rct_raw;
@@ -29,46 +23,38 @@ if (!is_correlated_effects) {
   time_trend_rct = time_trend_rct_raw;
 }
 
-// baseline_difference_rct is sampled directly with <lower=-1> constraint
-// (see rct_model_parameters.stan).
+for (i in 1:size(baseline_control_rct_raw))
+  baseline_control_rct[i] = baseline_control_mean[1] + baseline_control_sd[1] * baseline_control_rct_raw[i];
 
-// ---- Per-study absolute baselines -----------------------------------------
-vector[n_studies_rct] baseline_control_rct;
-vector[n_studies_rct] baseline_treatment_rct;
+for (i in 1:size(baseline_difference_rct_raw))
+  baseline_difference_rct[i] = baseline_difference_mean + baseline_difference_sd * baseline_difference_rct_raw[i];
 
-// γ = baseline_difference uses the control-pre reference convention
-// (b_T - b_C) / b_C. b_T = b_C * (1 + γ); b_C = b_T / (1 + γ). The lower
-// bound γ > -1 keeps (1 + γ) positive in either parameterisation.
-if (is_modelled) {
-  if (is_modelled_treatment) {
-    for (i in 1:n_studies_rct) {
-      baseline_treatment_rct[i] = baseline_per_study_latent_rct[i];
-      if (is_baseline_difference_estimated) {
-        baseline_control_rct[i] = baseline_treatment_rct[i] /
-                                  (1 + baseline_difference_rct[i]);
-      } else {
-        baseline_control_rct[i] = baseline_treatment_rct[i];
-      }
-    }
-  } else {
-    for (i in 1:n_studies_rct) {
-      baseline_control_rct[i] = baseline_per_study_latent_rct[i];
-      if (is_baseline_difference_estimated) {
-        baseline_treatment_rct[i] = baseline_control_rct[i] *
-                                    (1 + baseline_difference_rct[i]);
-      } else {
-        baseline_treatment_rct[i] = baseline_control_rct[i];
-      }
-    }
+// baseline_treatment_rct exists only in unnormalised mode. When the imbalance
+// is estimated it equals baseline_control * (1 + baseline_difference); otherwise
+// it is constrained equal to baseline_control (was previously the
+// is_baseline_control_equal_treatment_rct = 1 path).
+for (i in 1:size(baseline_treatment_rct)) {
+  if (is_baseline_difference_estimated)
+    baseline_treatment_rct[i] = baseline_control_rct[i] * (1 + baseline_difference_rct[i]);
+  else
+    baseline_treatment_rct[i] = baseline_control_rct[i];
+}
+
+// Derive true treatment effect.
+// In the normalised + non-zero time-trend branch: the data measures the apparent
+// jump (gamma + theta) / (b_c + beta). apparent_total = apparent * (1 + time_trend)
+// recovers gamma + theta on the normalised scale; subtracting baseline_difference
+// isolates theta.
+// In all other branches, treatment_effect_rct is sampled directly and aliases through.
+vector[n_studies_rct] treatment_effect_rct_derived;
+if (is_baseline_normalised && !is_time_trend_rct_zero) {
+  for (i in 1:n_studies_rct) {
+    real apparent_total = apparent_effect_rct[i] * (1 + time_trend_rct[i]);
+    if (is_baseline_difference_estimated)
+      treatment_effect_rct_derived[i] = apparent_total - baseline_difference_rct[i];
+    else
+      treatment_effect_rct_derived[i] = apparent_total;
   }
 } else {
-  for (i in 1:n_studies_rct) {
-    baseline_control_rct[i] = baseline_control_mean[1] + baseline_control_sd[1] * baseline_control_rct_raw[i];
-    if (is_baseline_difference_estimated) {
-      baseline_treatment_rct[i] = baseline_control_rct[i] *
-                                  (1 + baseline_difference_rct[i]);
-    } else {
-      baseline_treatment_rct[i] = baseline_control_rct[i];
-    }
-  }
+  treatment_effect_rct_derived = treatment_effect_rct;
 }
