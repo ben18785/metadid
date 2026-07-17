@@ -1,31 +1,10 @@
 
 // shared_data.stan
 
-// baseline_latent_mode controls how per-study baselines are handled.
-//
-// 1 = "treatment": modelled mode with treatment-pre baseline as the per-study
-//     latent (wide uniform prior). Control-pre baseline derived via the
-//     baseline-difference relation. Hierarchical pooling on the treatment-pre
-//     canonical scale (treatment_effect_mean, time_trend_mean, and
-//     baseline_difference_mean all interpreted as fractions of treatment-pre).
-//
-// 2 = "control": modelled mode with control-pre baseline as the per-study
-//     latent (wide uniform prior). Treatment-pre baseline derived. Hierarchical
-//     pooling stays on the treatment-pre canonical scale; parameter meanings
-//     are mode-invariant between modes 1 and 2.
-//
-// 3 = "none": no per-study baseline latent; absolute-scale pooling. The
-//     existing unnormalised mode behaviour is preserved (pop-level
-//     baseline_control_mean / baseline_control_sd come back into use).
-//
-// In modelled modes (1 and 2) raw data are passed through and Stan performs
-// the normalisation via the per-study latent baselines.
-int<lower=1, upper=3> baseline_latent_mode;
-
-// Wide uniform upper bound on the per-study latent baseline parameters.
-// Computed in R as a large multiple of the observed baseline scale so that
-// the prior is data-vague but proper. Only used in modelled modes.
-real<lower=0> baseline_prior_upper;
+// When is_baseline_normalised == 1, pre-treatment baselines are fixed at 1
+// for all designs with pre-treatment data (DiD, Pre-Post).
+// Data should be divided by each group's pre-treatment mean before fitting.
+int<lower=0, upper=1> is_baseline_normalised;
 
 // When is_correlation_coefficient_hierarchical == 1, model rho hierarchically:
 //   z_i ~ normal(mu_z, sqrt(tau_z^2 + 1/(n_i - 3)))

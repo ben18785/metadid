@@ -12,13 +12,8 @@ treatment effects across studies with different designs:
 difference-in-differences (DiD), post-only randomised controlled trials
 (RCT), and pre-post studies. It uses a hierarchical Stan model that
 accounts for design-specific information and heterogeneity across
-studies, and by default expresses treatment effects as fractions of each
-study’s treatment-arm pre-treatment baseline — a scale that is
-comparable across studies even when raw outcomes are on incommensurable
-units. The per-study baseline is inferred as a latent parameter inside
-the Stan model rather than plugged in from sample means, which correctly
-propagates baseline uncertainty into the posterior of the relative
-effect.
+studies, with optional baseline normalisation to place outcomes on a
+common fractional scale.
 
 ## Model assumptions
 
@@ -205,15 +200,12 @@ sim <- simulate_meta_did(
   baseline_mean = 0.45,
   baseline_sd   = 0.02,
   rho           = 0.5,
-  seed          = 42
+  seed          = 7251
 )
 ```
 
 The true population treatment effect is `-0.15` on the raw scale, or
-approximately `-0.333` when expressed as a fraction of the treatment-arm
-pre-treatment baseline (≈ 0.45 here, since the simulation has no
-baseline imbalance). The fractional scale is what `meta_did()` reports
-by default; see `vignette("model-details")` for the precise definition.
+approximately `-0.333` after normalising by the baseline mean of `0.45`.
 
 ### 2. Two scenarios from the same data
 
@@ -225,11 +217,8 @@ per study:
 all_did <- as_summary_did(sim)
 
 fit_all_did <- meta_did(
-  summary_data  = all_did,
-  seed          = 42,
-  iter_warmup   = 2000,
-  iter_sampling = 2000,
-  adapt_delta   = 0.95
+  summary_data = all_did,
+  seed         = 7251
 )
 
 print(fit_all_did)
@@ -237,7 +226,7 @@ print(fit_all_did)
 
     #> Bayesian meta-analysis (metadid)
     #> Studies: DiD = 30 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0 
-    #> Population treatment effect: -0.323  90% CI [-0.349, -0.296]
+    #> Population treatment effect: -0.363  90% CI [-0.392, -0.334]
 
 Now suppose, from the same underlying data, only a third of studies
 provide full DiD information. Another third are RCTs (post-treatment
@@ -263,11 +252,8 @@ mixed <- bind_rows(
 )
 
 fit_mixed <- meta_did(
-  summary_data  = mixed,
-  seed          = 42,
-  iter_warmup   = 2000,
-  iter_sampling = 2000,
-  adapt_delta   = 0.95
+  summary_data = mixed,
+  seed         = 7251
 )
 
 print(fit_mixed)
@@ -275,7 +261,7 @@ print(fit_mixed)
 
     #> Bayesian meta-analysis (metadid)
     #> Studies: DiD = 10 | RCT = 10 | Pre-Post = 10 | DiD (change only) = 0 
-    #> Population treatment effect: -0.326  90% CI [-0.355, -0.297]
+    #> Population treatment effect: -0.362  90% CI [-0.394, -0.331]
 
 ### 3. Comparing posteriors
 

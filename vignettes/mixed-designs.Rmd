@@ -43,7 +43,7 @@ sim <- simulate_meta_did(
 )
 ```
 
-The true population treatment effect is -0.15 on the raw scale. With baseline normalisation (the default — effects expressed as fractions of the treatment-arm pre-treatment baseline), this corresponds to approximately -0.333 on the normalised scale.
+The true population treatment effect is -0.15 on the raw scale. With baseline normalisation (the default), this corresponds to approximately -0.333 on the normalised scale.
 
 ## Visualising the latent DiD structure
 

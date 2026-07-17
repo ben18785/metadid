@@ -9,6 +9,17 @@ if(n_studies_pp_summary > 0) {
   for (k in 1:n_rho_missing_pp_summary)
     rho_eff_pp_summary[idx_rho_missing_pp_summary[k]] = tanh(z_rho_missing_pp_summary[k]);
 
+  // Construct effective baseline (fixed at 1 when normalised)
+  vector[n_studies_pp_summary] baseline_treatment_pp_summary_eff;
+  // When differenced likelihood is active, baseline_treatment_pp_summary has
+  // size 0; this dummy value is set but never read (the differenced branch
+  // does not use baseline_treatment_pp_summary_eff).
+  if (is_baseline_normalised || is_differenced_likelihood_pp_summary) {
+    baseline_treatment_pp_summary_eff = rep_vector(1.0, n_studies_pp_summary);
+  } else {
+    baseline_treatment_pp_summary_eff = baseline_treatment_pp_summary;
+  }
+
   for (i in 1:n_studies_pp_summary) {
 
     real tt_pp_summary_temp = 0;
@@ -16,64 +27,28 @@ if(n_studies_pp_summary > 0) {
       tt_pp_summary_temp = time_trend_pp_summary[i];
 
     if(!is_differenced_likelihood_pp_summary) {
-      // Bridge from canonical fractional scale to absolute. In modelled
-      // modes we scale by the per-study b_T_pre to recover absolute units;
-      // in none mode treatment effect and time trend are already absolute.
-      real bl_t   = baseline_treatment_pp_summary[i];
-      real te_abs = is_modelled
-                    ? treatment_effect_pp_summary[i] * bl_t
-                    : treatment_effect_pp_summary[i];
-      real tt_abs = is_modelled
-                    ? tt_pp_summary_temp * bl_t
-                    : tt_pp_summary_temp;
-
       target += prepost_summary_study_lpdf_from_data(
         x_bar_treatment_before_pp_summary[i],
         x_bar_treatment_after_pp_summary[i],
-        bl_t,
-        tt_abs,
-        te_abs,
+        baseline_treatment_pp_summary_eff[i],
+        tt_pp_summary_temp,
+        treatment_effect_pp_summary[i],
         sd_treatment_before_pp_summary[i],
         sd_treatment_after_pp_summary[i],
         rho_eff_pp_summary[i],
         sample_size_treatment_pp_summary[i]
       );
     } else {
-      // Differenced likelihood: the mean of the difference cancels the
-      // baseline (mu = time_trend + treatment_effect), but in modelled
-      // mode we still need to bridge from the canonical fractional scale
-      // to the absolute scale before passing the quantities into the
-      // likelihood. We do that by multiplying by the per-study baseline,
-      // and we anchor the latent baseline by an explicit likelihood term
-      // on x_bar_treatment_before below (the differenced likelihood
-      // itself does not inform the baseline).
-      real bl_t   = is_modelled ? baseline_treatment_pp_summary[i] : 1.0;
-      real te_abs = is_modelled
-                    ? treatment_effect_pp_summary[i] * bl_t
-                    : treatment_effect_pp_summary[i];
-      real tt_abs = is_modelled
-                    ? tt_pp_summary_temp * bl_t
-                    : tt_pp_summary_temp;
-
       target += prepost_summary_study_lpdf_from_data_differenced_form(
         x_bar_treatment_before_pp_summary[i],
         x_bar_treatment_after_pp_summary[i],
-        tt_abs,
-        te_abs,
+        tt_pp_summary_temp,
+        treatment_effect_pp_summary[i],
         sd_treatment_before_pp_summary[i],
         sd_treatment_after_pp_summary[i],
         rho_eff_pp_summary[i],
         sample_size_treatment_pp_summary[i]
       );
-
-      // Anchor the per-study latent baseline directly from the observed
-      // pre-period mean. This is what makes the latent identifiable when
-      // the differenced effect-likelihood has cancelled it out.
-      if (is_modelled) {
-        x_bar_treatment_before_pp_summary[i]
-          ~ normal(bl_t, sd_treatment_before_pp_summary[i] /
-                          sqrt(sample_size_treatment_pp_summary[i] * 1.0));
-      }
     }
   }
 
@@ -91,7 +66,7 @@ if(n_studies_pp_summary > 0) {
     }
   }
 
-  if (is_none_mode) {
+  if (!is_baseline_normalised) {
     baseline_treatment_pp_summary_raw ~ std_normal();
   }
   vector[n_studies_pp_summary] mult_pp_summary;
@@ -117,3 +92,4 @@ if(n_studies_pp_summary > 0) {
     }
   }
 }
+

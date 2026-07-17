@@ -20,7 +20,7 @@ test_that("compute_observed_effects: did_change design", {
     summary_data = sdata,
     individual_data = NULL,
     model_flags = list(
-      baseline_latent_mode                     = 1L,
+      is_baseline_normalised = 1L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 0L
     ),
@@ -47,7 +47,7 @@ test_that("compute_observed_effects: individual RCT", {
     summary_data = NULL,
     individual_data = ind,
     model_flags = list(
-      baseline_latent_mode                     = 1L,
+      is_baseline_normalised = 1L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 0L
     ),
@@ -73,7 +73,7 @@ test_that("compute_observed_effects: individual PP", {
     summary_data = NULL,
     individual_data = ind,
     model_flags = list(
-      baseline_latent_mode                     = 1L,
+      is_baseline_normalised = 1L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 0L
     ),
@@ -109,7 +109,7 @@ test_that("compute_observed_effects: mixed summary + individual data", {
     summary_data = sdata,
     individual_data = ind,
     model_flags = list(
-      baseline_latent_mode                     = 1L,
+      is_baseline_normalised = 1L,
       is_student_t_heterogeneity = 0L,
       is_design_effect = 0L
     ),

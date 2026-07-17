@@ -1,16 +1,32 @@
 // rct_summary_model.stan
 
 if(n_studies_rct_summary > 0) {
+  // Construct effective baselines.
+  // When normalised: control = 1; treatment = 1 + baseline_difference (if estimated) else 1.
+  // When unnormalised: treatment baseline is the transformed parameter
+  // baseline_treatment_rct_summary, which itself is baseline_control * (1 + baseline_difference)
+  // when estimated, else baseline_control.
+  vector[n_studies_rct_summary] baseline_control_rct_summary_eff;
+  vector[n_studies_rct_summary] baseline_treatment_rct_summary_eff;
+  if (is_baseline_normalised) {
+    baseline_control_rct_summary_eff = rep_vector(1.0, n_studies_rct_summary);
+    if (is_baseline_difference_estimated)
+      baseline_treatment_rct_summary_eff = rep_vector(1.0, n_studies_rct_summary) + baseline_difference_rct_summary;
+    else
+      baseline_treatment_rct_summary_eff = rep_vector(1.0, n_studies_rct_summary);
+  } else {
+    baseline_control_rct_summary_eff = baseline_control_rct_summary;
+    baseline_treatment_rct_summary_eff = baseline_treatment_rct_summary;
+  }
 
-  // Effective time trend (zero when fixed).
+  // Construct effective time trends (zero when flag is set)
   vector[n_studies_rct_summary] time_trend_rct_summary_eff;
   if (is_time_trend_rct_summary_zero)
     time_trend_rct_summary_eff = rep_vector(0.0, n_studies_rct_summary);
   else
     time_trend_rct_summary_eff = time_trend_rct_summary;
 
-  // Precompute L_Sigma for joint prior (only used when correlated + time
-  // trends estimated).
+  // Precompute L_Sigma for joint prior (only used when correlated + time trends estimated)
   matrix[2, 2] L_Sigma_rct_summary;
   if (is_correlated_effects && !is_time_trend_rct_summary_zero) {
     L_Sigma_rct_summary = diag_pre_multiply(
@@ -24,59 +40,71 @@ if(n_studies_rct_summary > 0) {
     mult_rct_summary[i] = overall_mult(effect_multiplier, x_mult_rct_summary[i], effect_multiplier2, x_mult2_rct_summary[i]);
 
   for (i in 1:n_studies_rct_summary) {
-    // Bridge from the canonical fractional scale (where the hierarchical
-    // pooling lives) to the absolute scale (where the data and the
-    // likelihood live). In modelled modes we multiply by the per-study
-    // treatment-pre baseline to recover absolute units. In none mode the
-    // canonical and absolute scales coincide.
-    real bl_c   = baseline_control_rct_summary[i];
-    real bl_t   = baseline_treatment_rct_summary[i];
-    real te_abs = is_modelled
-                  ? treatment_effect_rct_summary[i] * bl_t
-                  : treatment_effect_rct_summary[i];
-    real tt_abs = is_modelled
-                  ? time_trend_rct_summary_eff[i] * bl_t
-                  : time_trend_rct_summary_eff[i];
-
-    target += rct_summary_study_lpdf_from_data(
-      x_bar_control_after_rct_summary[i],
-      x_bar_treatment_after_rct_summary[i],
-      bl_c,
-      bl_t,
-      tt_abs,
-      te_abs,
-      sd_control_after_rct_summary[i],
-      sd_treatment_after_rct_summary[i],
-      sample_size_control_rct_summary[i],
-      sample_size_treatment_rct_summary[i]
-    );
-
-    // Hierarchical prior on the per-study treatment effect (canonical
-    // fractional scale in modelled modes, absolute in none mode).
-    if (is_correlated_effects && !is_time_trend_rct_summary_zero) {
-      target += multi_normal_cholesky_lpdf(
-        [treatment_effect_rct_summary[i], time_trend_rct_summary[i]]' |
-        [mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), time_trend_mean]',
-        L_Sigma_rct_summary
+    if (is_baseline_normalised && !is_time_trend_rct_summary_zero) {
+      // Reparameterised: apparent_effect is sampled, control mean is 1 by construction.
+      target += rct_summary_study_normalised_lpdf_from_data(
+        x_bar_treatment_after_rct_summary[i],
+        apparent_effect_rct_summary[i],
+        sd_treatment_after_rct_summary[i],
+        sample_size_treatment_rct_summary[i]
       );
-    } else if (is_student_t_heterogeneity) {
-      target += student_t_lpdf(treatment_effect_rct_summary[i] | nu_treatment_vec[1], mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), treatment_effect_sd);
+
+      // Hierarchical prior on the derived true treatment effect (stays centered)
+      if (is_correlated_effects) {
+        target += multi_normal_cholesky_lpdf(
+          [treatment_effect_rct_summary_derived[i], time_trend_rct_summary[i]]' |
+          [mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), time_trend_mean]',
+          L_Sigma_rct_summary
+        );
+      } else if (is_student_t_heterogeneity) {
+        target += student_t_lpdf(treatment_effect_rct_summary_derived[i] | nu_treatment_vec[1], mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), treatment_effect_sd);
+      } else {
+        target += normal_lpdf(treatment_effect_rct_summary_derived[i] | mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), treatment_effect_sd);
+      }
+
+      // Jacobian: |d(te)/d(apparent)| = |1 + time_trend|
+      target += log(abs(1 + time_trend_rct_summary_eff[i]));
+
+    } else {
+      // Unnormalised or time trends forced to zero
+      target += rct_summary_study_lpdf_from_data(
+        x_bar_control_after_rct_summary[i],
+        x_bar_treatment_after_rct_summary[i],
+        baseline_control_rct_summary_eff[i],
+        baseline_treatment_rct_summary_eff[i],
+        time_trend_rct_summary_eff[i],
+        treatment_effect_rct_summary[i],
+        sd_control_after_rct_summary[i],
+        sd_treatment_after_rct_summary[i],
+        sample_size_control_rct_summary[i],
+        sample_size_treatment_rct_summary[i]
+      );
+
+      // Hierarchical prior on treatment effect (student-t and correlated stay centered)
+      if (is_correlated_effects && !is_time_trend_rct_summary_zero) {
+        target += multi_normal_cholesky_lpdf(
+          [treatment_effect_rct_summary[i], time_trend_rct_summary[i]]' |
+          [mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), time_trend_mean]',
+          L_Sigma_rct_summary
+        );
+      } else if (is_student_t_heterogeneity) {
+        target += student_t_lpdf(treatment_effect_rct_summary[i] | nu_treatment_vec[1], mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), treatment_effect_sd);
+      }
+      // Normal case: handled by treatment_effect_rct_summary_raw ~ std_normal() below
     }
-    // Normal case: handled by treatment_effect_rct_summary_raw ~ std_normal()
-    // below.
   }
 
-  // Non-centered priors. In modelled modes the per-study latent baseline
-  // has a uniform prior from its declared bounds, so no explicit ~
-  // statement is needed for it.
-  if (is_none_mode) {
+  if (!is_baseline_normalised) {
     baseline_control_rct_summary_raw ~ std_normal();
   }
   if (is_baseline_difference_estimated) {
-    baseline_difference_rct_summary ~ normal(baseline_difference_mean, baseline_difference_sd);
+    baseline_difference_rct_summary_raw ~ std_normal();
   }
+  // Time trend prior (non-centered; when correlated, included in joint prior above)
   if (!is_time_trend_rct_summary_zero && !is_correlated_effects)
     time_trend_rct_summary_raw ~ std_normal();
+  // Treatment effect prior for the non-apparent-effect branch (normal non-centered case).
   if (!is_student_t_heterogeneity && !(is_correlated_effects && !is_time_trend_rct_summary_zero))
     treatment_effect_rct_summary_raw ~ std_normal();
 }
+
