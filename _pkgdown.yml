@@ -28,6 +28,7 @@ reference:
       - cauchy
       - gamma
       - lkj
+      - lognormal
 
   - title: Results
     desc: Summarise and inspect fitted models.
