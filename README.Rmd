@@ -168,7 +168,7 @@ library(dplyr)
 library(ggplot2)
 
 sim <- simulate_meta_did(
-  n_studies     = 30,
+  n_studies     = 50,
   n_control     = 80,
   n_treatment   = 80,
   true_effect   = -0.15,
@@ -178,11 +178,17 @@ sim <- simulate_meta_did(
   baseline_mean = 0.45,
   baseline_sd   = 0.02,
   rho           = 0.5,
-  seed          = 7251
+  seed          = 495
 )
 ```
 
-The true population treatment effect is `-0.15` on the raw scale, or approximately `-0.333` after normalising by the baseline mean of `0.45`.
+The raw population treatment effect is `-0.15`. Because `metadid` normalises each
+study by its **own** baseline, the estimand is the mean of per-study normalised
+effects, \(E[\theta_i / b_i]\), rather than the ratio of population means,
+\(E[\theta] / E[b]\). These two quantities differ by the between-study baseline
+coefficient of variation squared, which is negligible here (baseline SD `0.02` on
+a mean of `0.45`), so both are approximately `-0.333`. For this simulated dataset
+the realised \(E[\theta_i / b_i]\) is `-0.333`, which is what the model targets.
 
 ### 2. Two scenarios from the same data
 
@@ -193,7 +199,7 @@ all_did <- as_summary_did(sim)
 
 fit_all_did <- meta_did(
   summary_data = all_did,
-  seed         = 7251
+  seed         = 495
 )
 
 print(fit_all_did)
@@ -201,8 +207,8 @@ print(fit_all_did)
 
 ```
 #> Bayesian meta-analysis (metadid)
-#> Studies: DiD = 30 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0 
-#> Population treatment effect: -0.363  90% CI [-0.392, -0.334]
+#> Studies: DiD = 50 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0
+#> Population treatment effect: -0.332  90% CI [-0.348, -0.314]
 ```
 
 Now suppose, from the same underlying data, only a third of studies provide full DiD information. Another third are RCTs (post-treatment outcomes only), and the remaining third are pre-post studies (treatment arm only):
@@ -211,13 +217,13 @@ Now suppose, from the same underlying data, only a third of studies provide full
 study_ids <- unique(sim$study_id)
 true_params <- attr(sim, "true_params")
 
-sim_did <- sim |> filter(study_id %in% study_ids[1:10])
-sim_rct <- sim |> filter(study_id %in% study_ids[11:20])
-sim_pp  <- sim |> filter(study_id %in% study_ids[21:30])
+sim_did <- sim |> filter(study_id %in% study_ids[1:17])
+sim_rct <- sim |> filter(study_id %in% study_ids[18:34])
+sim_pp  <- sim |> filter(study_id %in% study_ids[35:50])
 
-attr(sim_did, "true_params") <- true_params |> filter(study_id %in% study_ids[1:10])
-attr(sim_rct, "true_params") <- true_params |> filter(study_id %in% study_ids[11:20])
-attr(sim_pp, "true_params")  <- true_params |> filter(study_id %in% study_ids[21:30])
+attr(sim_did, "true_params") <- true_params |> filter(study_id %in% study_ids[1:17])
+attr(sim_rct, "true_params") <- true_params |> filter(study_id %in% study_ids[18:34])
+attr(sim_pp, "true_params")  <- true_params |> filter(study_id %in% study_ids[35:50])
 
 mixed <- bind_rows(
   as_summary_did(sim_did),
@@ -227,7 +233,7 @@ mixed <- bind_rows(
 
 fit_mixed <- meta_did(
   summary_data = mixed,
-  seed         = 7251
+  seed         = 495
 )
 
 print(fit_mixed)
@@ -235,13 +241,13 @@ print(fit_mixed)
 
 ```
 #> Bayesian meta-analysis (metadid)
-#> Studies: DiD = 10 | RCT = 10 | Pre-Post = 10 | DiD (change only) = 0 
-#> Population treatment effect: -0.362  90% CI [-0.394, -0.331]
+#> Studies: DiD = 17 | RCT = 17 | Pre-Post = 16 | DiD (change only) = 0
+#> Population treatment effect: -0.330  90% CI [-0.349, -0.311]
 ```
 
 ### 3. Comparing posteriors
 
-Both fits recover the true normalised effect (−0.333, dashed line). The mixed-design posterior is slightly wider, reflecting the information lost by having two-thirds of the studies provide incomplete data — but the difference is modest.
+Both fits recover the true normalised effect \(E[\theta_i / b_i] \approx -0.333\) (dashed line). The mixed-design posterior is slightly wider, reflecting the information lost by having two-thirds of the studies provide incomplete data — but the difference is modest.
 
 ```{r comparison, eval = FALSE}
 draws_did <- as.numeric(
@@ -253,7 +259,7 @@ draws_mix <- as.numeric(
 
 comp_df <- data.frame(
   value = c(draws_did, draws_mix),
-  scenario = rep(c("All DiD (30 studies)", "Mixed designs (10 DiD + 10 RCT + 10 PP)"),
+  scenario = rep(c("All DiD (50 studies)", "Mixed designs (17 DiD + 17 RCT + 16 PP)"),
                  each = length(draws_did))
 )
 
