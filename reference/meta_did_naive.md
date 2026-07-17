@@ -22,12 +22,12 @@ analysing each design in isolation:
 meta_did_naive(
   summary_data = NULL,
   individual_data = NULL,
-  normalise = TRUE,
-  baseline_latent_arm = c("treatment", "control"),
+  normalise_by_baseline = TRUE,
   robust_heterogeneity = FALSE,
   design_effects = FALSE,
   hierarchical_rho = TRUE,
   covariates = NULL,
+  multiplicative_covariate = NULL,
   center_covariates = TRUE,
   priors = set_priors(),
   method = c("sample", "optimize"),
@@ -57,39 +57,18 @@ meta_did_naive(
   designs: `"did"`, `"rct"`, `"pp"`. No `study_id` may appear in both
   `summary_data` and `individual_data`.
 
-- normalise:
+- normalise_by_baseline:
 
-  Logical. If `TRUE` (default), population-level effects
-  (`treatment_effect_mean`, `time_trend_mean`,
-  `baseline_difference_mean`) are expressed as fractions of the
-  treatment-arm pre-treatment baseline. Stan receives the raw data
-  unchanged and performs the normalisation internally via per-study
-  latent baseline parameters. If `FALSE`, no per-study latent baseline
-  is fit; population-level effects are pooled on the **absolute**
-  (user-units) scale instead. Equivalent to the legacy
-  `normalise_by_baseline = FALSE` behaviour.
-
-- baseline_latent_arm:
-
-  Character. Advanced. Only used when `normalise = TRUE`. Determines
-  which arm's pre-treatment baseline is the per-study latent parameter
-  (the one with the wide data-vague uniform prior); the other arm's
-  baseline is derived via the hierarchical baseline-difference
-  parameter. One of:
-
-  - `"treatment"` (default): the treatment-arm pre-baseline is the
-    latent, informed directly by `mean_pre_treatment` observations.
-
-  - `"control"`: the control-arm pre-baseline is the latent, informed
-    directly by `mean_pre_control` observations.
-
-  The choice does **not** change the canonical scale on which effects
-  are reported — both options pool population-level effects on the
-  treatment-arm pre-baseline scale. It only controls which arm's data
-  most directly informs the per-study baseline's posterior, which can
-  matter when one arm has substantially more direct data than the other.
-  The two options are statistically equivalent in well-identified
-  problems.
+  Logical. If `TRUE` (default), all means and SDs are divided by each
+  study's pre-treatment control mean (or the grand mean for change-only
+  studies), placing outcomes on a common fractional scale. The reported
+  `treatment_effect_mean` is then the population mean of the per-study
+  proportional effects, \\E\[\theta_i / b_i\]\\ (a percentage-scale
+  effect, each study expressed as a fraction of its own baseline), which
+  is the appropriate estimand when studies are on heterogeneous scales.
+  Note this is **not** \\E\[\theta\] / E\[b\]\\: when baselines vary
+  across studies the two differ by the between-study baseline
+  coefficient of variation squared (Jensen's inequality).
 
 - robust_heterogeneity:
 
@@ -120,6 +99,44 @@ meta_did_naive(
   `individual_data` (whichever are provided). For individual-level data,
   covariate values must be constant within each study. Default `NULL`
   (no meta-regression).
+
+- multiplicative_covariate:
+
+  Optional specification of one or two *categorical* study-level
+  covariates that modify the population treatment effect
+  *multiplicatively* rather than additively. Either a single column name
+  (character of length 1) for one covariate, or a one-sided formula
+  naming one or two columns (`~ a` or `~ a + b`). At most two are
+  allowed. One factor is estimated per non-reference level of each
+  covariate: studies at a covariate's reference level keep their
+  population-mean linear predictor \\\mu\_\theta +
+  X\_{\mathrm{cov},i}^{\top}\beta\_{\mathrm{cov}}\\ unchanged (factor
+  fixed at 1), while studies at level \\k\\ have it multiplied by the
+  estimated `effect_multiplier[k]`. With **two** covariates the study's
+  overall factor is the *product* of the two per-covariate factors,
+  \\\alpha\_{a(i)} \cdot \beta\_{b(i)}\\ — i.e. each covariate scales
+  the effect independently (a log-additive structure). The reference
+  level is the first factor level (declare the column as a factor to
+  control it, with identical levels declared in every data frame), the
+  lowest value for numeric input, or the alphabetically first value for
+  character input. A numeric `{0, 1}` indicator is the simplest case: 0
+  is the reference (factor fixed at 1) and 1 selects the single
+  estimated multiplier. Useful when a study attribute attenuates or
+  amplifies the underlying effect by a shared factor — e.g. how an
+  intervention was delivered, optionally crossed with a second attribute
+  such as how long it ran. Each column must contain no `NA`s, be
+  constant within study for individual-level data, must not also appear
+  in `covariates`, and must take at least two distinct values across
+  studies for its multipliers to be identified; the two columns must be
+  distinct. Numeric columns with more than 5 distinct values are
+  rejected as likely continuous (convert genuinely categorical numeric
+  codes to a factor). The same `multiplier` prior from
+  [`set_priors()`](https://ben18785.github.io/metadid/reference/set_priors.md)
+  is applied independently to every estimated factor. On the returned
+  object, `fit$multiplicative_covariate` is a list with elements `name`
+  and `levels` (reference first) for one covariate, or a list of two
+  such descriptors for two covariates. Default `NULL` (no multiplicative
+  structure).
 
 - center_covariates:
 

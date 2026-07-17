@@ -57,7 +57,7 @@ population-level parameter. Any parameter not supplied takes a default.</p>
 <span>  lkj_eta <span class="op">=</span> <span class="fu"><a href="lkj.html">lkj</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
 <span>  baseline_difference_mean <span class="op">=</span> <span class="fu"><a href="normal.html">normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span>,</span>
 <span>  baseline_difference_sd <span class="op">=</span> <span class="fu"><a href="cauchy.html">cauchy</a></span><span class="op">(</span><span class="fl">0.1</span><span class="op">)</span>,</span>
-<span>  baseline_per_study <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  multiplier <span class="op">=</span> <span class="fu"><a href="lognormal.html">lognormal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.7</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -127,20 +127,27 @@ regularises toward zero correlation.</p></dd>
 
 <dt id="arg-baseline-difference-mean">baseline_difference_mean<a class="anchor" aria-label="anchor" href="#arg-baseline-difference-mean"></a></dt>
 <dd><p>Prior on the population mean of the
-per-study baseline imbalance \(\delta_i = (b_{T,i} - b_{C,i}) / b_{C,i}\),
-defined as the fractional difference between the treatment-arm and
-control-arm pre-treatment baselines, expressed as a fraction of the
-control-arm baseline (the control-pre reference convention).
-Constrained to \(\delta_i &gt; -1\) so that the derived
-\((1 + \delta_i)\) factor remains positive in both modelled-mode
-parameterisations. Only used when <code>baseline_imbalance = "estimated"</code>.
-Default: <code>normal(0, 0.5)</code>.</p></dd>
+per-study baseline imbalance (treatment-arm vs control-arm pre-treatment
+mean, on the normalised fractional scale). Only used when
+<code>baseline_imbalance = "estimated"</code>. Default: <code>normal(0, 0.5)</code>.</p></dd>
 
 
 <dt id="arg-baseline-difference-sd">baseline_difference_sd<a class="anchor" aria-label="anchor" href="#arg-baseline-difference-sd"></a></dt>
 <dd><p>Prior on the between-study SD of the
 baseline imbalance. Only used when <code>baseline_imbalance = "estimated"</code>.
 Default: <code>cauchy(0.1)</code>.</p></dd>
+
+
+<dt id="arg-multiplier">multiplier<a class="anchor" aria-label="anchor" href="#arg-multiplier"></a></dt>
+<dd><p>Prior on the multiplicative-covariate effect multiplier
+(only used when <code>multiplicative_covariate</code> is specified in <code><a href="meta_did.html">meta_did()</a></code>).
+With one or two multiplicative covariates the same prior is applied
+independently to every estimated non-reference-level factor (of either
+covariate). Must be a <code><a href="lognormal.html">lognormal()</a></code> prior,
+placed on the log of the multiplier so it is strictly positive with no
+boundary at zero. Default: <code>lognormal(0, 0.7)</code> — a median of 1 (the
+no-multiplicative-effect case), with a central 95% range of roughly
+<code>[0.25, 3.9]</code> on the natural scale.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -167,7 +174,7 @@ Default: <code>cauchy(0.1)</code>.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   lkj_eta ~ lkj(eta = 2)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_difference_mean ~ normal(mean = 0, sd = 0.5)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_difference_sd ~ cauchy(scale = 0.1)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_per_study ~ NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   multiplier ~ lognormal(meanlog = 0, sdlog = 0.7)</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Override one prior</span></span></span>
 <span class="r-in"><span><span class="fu">set_priors</span><span class="op">(</span>treatment_effect_sd <span class="op">=</span> <span class="fu"><a href="cauchy.html">cauchy</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
@@ -186,7 +193,7 @@ Default: <code>cauchy(0.1)</code>.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   lkj_eta ~ lkj(eta = 2)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_difference_mean ~ normal(mean = 0, sd = 0.5)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_difference_sd ~ cauchy(scale = 0.1)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_per_study ~ NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   multiplier ~ lognormal(meanlog = 0, sdlog = 0.7)</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -198,7 +205,7 @@ Default: <code>cauchy(0.1)</code>.</p></dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

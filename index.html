@@ -50,7 +50,7 @@
 <div class="page-header"><h1 id="metadid">metadid<a class="anchor" aria-label="anchor" href="#metadid"></a>
 </h1></div>
 <p><a href="https://github.com/ben18785/metadid/actions" class="external-link"><img src="https://github.com/ben18785/metadid/actions/workflows/tests.yaml/badge.svg" alt="tests"></a> <a href="https://app.codecov.io/gh/ben18785/metadid" class="external-link"><img src="https://codecov.io/gh/ben18785/metadid/graph/badge.svg" alt="Codecov test coverage"></a></p>
-<p><strong>metadid</strong> is an R package for Bayesian meta-analysis that synthesises treatment effects across studies with different designs: difference-in-differences (DiD), post-only randomised controlled trials (RCT), and pre-post studies. It uses a hierarchical Stan model that accounts for design-specific information and heterogeneity across studies, and by default expresses treatment effects as fractions of each study’s treatment-arm pre-treatment baseline — a scale that is comparable across studies even when raw outcomes are on incommensurable units. The per-study baseline is inferred as a latent parameter inside the Stan model rather than plugged in from sample means, which correctly propagates baseline uncertainty into the posterior of the relative effect.</p>
+<p><strong>metadid</strong> is an R package for Bayesian meta-analysis that synthesises treatment effects across studies with different designs: difference-in-differences (DiD), post-only randomised controlled trials (RCT), and pre-post studies. It uses a hierarchical Stan model that accounts for design-specific information and heterogeneity across studies, with optional baseline normalisation to place outcomes on a common fractional scale.</p>
 <div class="section level2">
 <h2 id="model-assumptions">Model assumptions<a class="anchor" aria-label="anchor" href="#model-assumptions"></a>
 </h2>
@@ -219,9 +219,9 @@ Y_{i,t,\mathrm{post}}
 <span>  baseline_mean <span class="op">=</span> <span class="fl">0.45</span>,</span>
 <span>  baseline_sd   <span class="op">=</span> <span class="fl">0.02</span>,</span>
 <span>  rho           <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  seed          <span class="op">=</span> <span class="fl">42</span></span>
+<span>  seed          <span class="op">=</span> <span class="fl">7251</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The true population treatment effect is <code>-0.15</code> on the raw scale, or approximately <code>-0.333</code> when expressed as a fraction of the treatment-arm pre-treatment baseline (≈ 0.45 here, since the simulation has no baseline imbalance). The fractional scale is what <code><a href="reference/meta_did.html">meta_did()</a></code> reports by default; see <code><a href="articles/model-details.html">vignette("model-details")</a></code> for the precise definition.</p>
+<p>The true population treatment effect is <code>-0.15</code> on the raw scale, or approximately <code>-0.333</code> after normalising by the baseline mean of <code>0.45</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="id_2-two-scenarios-from-the-same-data">2. Two scenarios from the same data<a class="anchor" aria-label="anchor" href="#id_2-two-scenarios-from-the-same-data"></a>
@@ -231,17 +231,14 @@ Y_{i,t,\mathrm{post}}
 <code class="sourceCode R"><span><span class="va">all_did</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/as_summary_did.html">as_summary_did</a></span><span class="op">(</span><span class="va">sim</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit_all_did</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/meta_did.html">meta_did</a></span><span class="op">(</span></span>
-<span>  summary_data  <span class="op">=</span> <span class="va">all_did</span>,</span>
-<span>  seed          <span class="op">=</span> <span class="fl">42</span>,</span>
-<span>  iter_warmup   <span class="op">=</span> <span class="fl">2000</span>,</span>
-<span>  iter_sampling <span class="op">=</span> <span class="fl">2000</span>,</span>
-<span>  adapt_delta   <span class="op">=</span> <span class="fl">0.95</span></span>
+<span>  summary_data <span class="op">=</span> <span class="va">all_did</span>,</span>
+<span>  seed         <span class="op">=</span> <span class="fl">7251</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit_all_did</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co">#&gt; Bayesian meta-analysis (metadid)</span></span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co">#&gt; Studies: DiD = 30 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0 </span></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt; Population treatment effect: -0.323  90% CI [-0.349, -0.296]</span></span></code></pre></div>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt; Population treatment effect: -0.363  90% CI [-0.392, -0.334]</span></span></code></pre></div>
 <p>Now suppose, from the same underlying data, only a third of studies provide full DiD information. Another third are RCTs (post-treatment outcomes only), and the remaining third are pre-post studies (treatment arm only):</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">study_ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">study_id</span><span class="op">)</span></span>
@@ -262,17 +259,14 @@ Y_{i,t,\mathrm{post}}
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit_mixed</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/meta_did.html">meta_did</a></span><span class="op">(</span></span>
-<span>  summary_data  <span class="op">=</span> <span class="va">mixed</span>,</span>
-<span>  seed          <span class="op">=</span> <span class="fl">42</span>,</span>
-<span>  iter_warmup   <span class="op">=</span> <span class="fl">2000</span>,</span>
-<span>  iter_sampling <span class="op">=</span> <span class="fl">2000</span>,</span>
-<span>  adapt_delta   <span class="op">=</span> <span class="fl">0.95</span></span>
+<span>  summary_data <span class="op">=</span> <span class="va">mixed</span>,</span>
+<span>  seed         <span class="op">=</span> <span class="fl">7251</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit_mixed</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb7"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co">#&gt; Bayesian meta-analysis (metadid)</span></span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co">#&gt; Studies: DiD = 10 | RCT = 10 | Pre-Post = 10 | DiD (change only) = 0 </span></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt; Population treatment effect: -0.326  90% CI [-0.355, -0.297]</span></span></code></pre></div>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt; Population treatment effect: -0.362  90% CI [-0.394, -0.331]</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="id_3-comparing-posteriors">3. Comparing posteriors<a class="anchor" aria-label="anchor" href="#id_3-comparing-posteriors"></a>
@@ -361,7 +355,7 @@ Y_{i,t,\mathrm{post}}
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

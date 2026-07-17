@@ -60,9 +60,8 @@
     
     
 <p>This vignette describes the statistical model underlying
-<code><a href="../reference/meta_did.html">meta_did()</a></code>, how baseline normalisation is performed
-(statistically inside Stan rather than by plug-in division in R), and
-what each study design can and cannot identify.</p>
+<code><a href="../reference/meta_did.html">meta_did()</a></code>, how baseline normalisation works, and what each
+study design can and cannot identify.</p>
 <div class="section level2">
 <h2 id="the-latent-did-model">The latent DiD model<a class="anchor" aria-label="anchor" href="#the-latent-did-model"></a>
 </h2>
@@ -375,144 +374,134 @@ model, at the cost of estimating additional nuisance parameters.</p>
 <div class="section level2">
 <h2 id="baseline-normalisation">Baseline normalisation<a class="anchor" aria-label="anchor" href="#baseline-normalisation"></a>
 </h2>
-<p>By default (<code>normalise = TRUE</code>), <code><a href="../reference/meta_did.html">meta_did()</a></code>
-expresses treatment effects as fractions of each study’s treatment-arm
-pre-treatment baseline. This places studies on a common relative scale
-(useful when raw outcomes are on incommensurable units across studies)
-and makes the population-level parameters interpretable as proportional
-effects.</p>
-<p>The normalisation is performed <strong>statistically inside the Stan
-model</strong>, not by dividing the observed data in R. Each study’s
-pre-treatment baseline enters the model as a latent parameter with a
-wide data-vague uniform prior; the likelihood operates on the raw
-observations; and the hierarchical pooling layer over treatment effects,
-time trends, and baseline imbalances lives on the canonical fractional
-scale (fraction of the treatment-arm pre-treatment baseline). Bridging
-from the canonical scale to the absolute scale of the observed data
-happens at the likelihood call site through a multiplication by the
-per-study baseline.</p>
-<p>Setting <code>normalise = FALSE</code> switches the model to
-absolute-scale pooling instead: there is no per-study baseline latent,
-and the population-level parameters are interpreted in the user’s
-original outcome units. This is appropriate for meta-analyses where all
-studies share a common measurement scale and a meaningful absolute
-effect size is the quantity of interest.</p>
+<p>By default (<code>normalise_by_baseline = TRUE</code>),
+<code><a href="../reference/meta_did.html">meta_did()</a></code> normalises all outcome data by a
+design-appropriate baseline mean before fitting. This places all studies
+on a common relative scale, making the treatment effect interpretable as
+a proportional change.</p>
 <div class="section level3">
-<h3 id="why-model-the-baseline-rather-than-divide-by-the-sample-mean">Why model the baseline rather than divide by the sample mean<a class="anchor" aria-label="anchor" href="#why-model-the-baseline-rather-than-divide-by-the-sample-mean"></a>
+<h3 id="how-normalisation-works-per-design">How normalisation works per design<a class="anchor" aria-label="anchor" href="#how-normalisation-works-per-design"></a>
 </h3>
-<p>A naive plug-in approach — dividing observed means and SDs by the
-sample control-pre mean before fitting — treats the baseline as if it
-were known exactly, ignoring its sampling uncertainty. By Jensen’s
-inequality the ratio of sample means is not equal to the ratio of
-population means; the plug-in estimator picks up a finite-sample bias
-that scales with the variance of the baseline estimator. Modelling the
-baseline as a latent parameter inside the joint posterior correctly
-propagates that uncertainty, eliminating the Jensen contribution to bias
-and producing credible intervals on the fractional effect that have the
-right shape.</p>
-<p>The cost is computational: the model carries one additional latent
-parameter per study. The wide uniform prior on this parameter has an
-upper bound auto-computed in R as 100× the maximum observed baseline
-mean (overridable via
-<code>set_priors(baseline_per_study = uniform(0, X))</code>), which is
-effectively flat over the data-supported region.</p>
-</div>
-<div class="section level3">
-<h3 id="choice-of-which-baseline-is-the-latent-baseline_latent_arm">Choice of which baseline is the latent:
-<code>baseline_latent_arm</code><a class="anchor" aria-label="anchor" href="#choice-of-which-baseline-is-the-latent-baseline_latent_arm"></a>
-</h3>
-<p>The default <code>baseline_latent_arm = "treatment"</code> makes the
-treatment-arm pre-baseline the per-study latent with the wide prior. The
-control-arm pre-baseline is then a derived quantity, related to the
-latent via the hierarchical baseline-imbalance parameter
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>b</mi><mrow><mi>T</mi><mo>,</mo><mi>i</mi></mrow></msub><mo>−</mo><msub><mi>b</mi><mrow><mi>C</mi><mo>,</mo><mi>i</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo><mi>/</mi><msub><mi>b</mi><mrow><mi>C</mi><mo>,</mo><mi>i</mi></mrow></msub></mrow><annotation encoding="application/x-tex">\gamma_i = (b_{T,i} -
-b_{C,i}) / b_{C,i}</annotation></semantics></math> — defined relative to
-the control-pre baseline under the control-pre reference convention:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>b</mi><mrow><mi>C</mi><mo>,</mo><mi>i</mi></mrow></msub><mo>=</mo><msub><mi>b</mi><mrow><mi>T</mi><mo>,</mo><mi>i</mi></mrow></msub><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
-b_{C,i} = b_{T,i} / (1 + \gamma_i).
+<table class="table">
+<colgroup>
+<col width="14%">
+<col width="46%">
+<col width="39%">
+</colgroup>
+<thead><tr class="header">
+<th>Design</th>
+<th>Normalisation denominator</th>
+<th>Effect on parameters</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><strong>DiD</strong></td>
+<td>Pre-treatment control mean</td>
+<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\alpha_i = 1</annotation></semantics></math></td>
+</tr>
+<tr class="even">
+<td><strong>DiD (change only)</strong></td>
+<td>Grand mean of DiD pre-control means</td>
+<td>Shared rescaling (see below)</td>
+</tr>
+<tr class="odd">
+<td><strong>Pre-post</strong></td>
+<td>Pre-treatment treatment mean</td>
+<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\alpha_i + \gamma_i = 1</annotation></semantics></math></td>
+</tr>
+<tr class="even">
+<td><strong>RCT</strong></td>
+<td>Post-treatment control mean</td>
+<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\alpha_i + \beta_i = 1</annotation></semantics></math></td>
+</tr>
+</tbody>
+</table>
+<p>For DiD and pre-post studies, normalisation divides by a
+pre-treatment quantity, so the relevant baseline parameter is known to
+be exactly 1 and is fixed rather than estimated. The time trend and
+treatment effect remain as free parameters.</p>
+<p>DiD change-only studies report change scores (post minus pre) rather
+than level means, so they lack a study-specific pre-treatment level to
+normalise by. Instead, normalisation divides the change scores by the
+grand mean of the pre-control means across the full DiD studies in the
+meta-analysis. This places the change scores on the same relative scale
+as the other designs, but requires that at least some full DiD studies
+are present.</p>
+<p>For RCT studies, there is no pre-treatment data, so normalisation
+divides by the post-treatment control mean
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\alpha_i + \beta_i</annotation></semantics></math>).
+After normalisation, the control post-mean is fixed at 1. The normalised
+treatment post-mean is</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mfrac><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub></mrow><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow></mfrac><mo>=</mo><mn>1</mn><mo>+</mo><mfrac><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub></mrow><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\frac{\alpha_i + \gamma_i + \beta_i + \theta_i}{\alpha_i + \beta_i}
+= 1 + \frac{\gamma_i + \theta_i}{\alpha_i + \beta_i}.
 </annotation></semantics></math></p>
-<p>Setting <code>baseline_latent_arm = "control"</code> reverses the
-choice: the control-arm pre-baseline becomes the latent and the
-treatment-arm pre-baseline is derived as
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>b</mi><mrow><mi>T</mi><mo>,</mo><mi>i</mi></mrow></msub><mo>=</mo><msub><mi>b</mi><mrow><mi>C</mi><mo>,</mo><mi>i</mi></mrow></msub><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">b_{T,i} = b_{C,i} \cdot (1 + \gamma_i)</annotation></semantics></math>.
-The lower bound
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>&gt;</mo><mi>−</mi><mn>1</mn></mrow><annotation encoding="application/x-tex">\gamma_i &gt; -1</annotation></semantics></math>
-keeps
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(1 + \gamma_i)</annotation></semantics></math>
-strictly positive in both parameterisations. The <strong>reported
-canonical scale is the same</strong> under both options — both pool on
-the treatment-arm pre-baseline reference — so the choice does not change
-the estimand. What it does change is which arm’s pre-period observations
-most directly anchor the per-study baseline’s posterior, which matters
-when the two arms have substantially different sample sizes or
-precision. In well-identified problems the two parameterisations give
-numerically equivalent posteriors on every population-level parameter,
-modulo MCMC noise.</p>
-</div>
-<div class="section level3">
-<h3 id="per-design-contribution-to-baseline-identification">Per-design contribution to baseline identification<a class="anchor" aria-label="anchor" href="#per-design-contribution-to-baseline-identification"></a>
-</h3>
-<p>For DiD studies, both arms’ pre-period means are observed, so
-whichever baseline is chosen as the latent is directly informed by the
-corresponding pre-period observations; the other arm’s baseline is
-identified via
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-from the cross-arm pre-period comparison.</p>
-<p>For RCT studies, no pre-period observations exist. The per-study
-latent baseline is identified jointly with the per-study time trend
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>,
-imbalance
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>,
-and treatment effect
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>
-via the post-period observations and the hierarchical priors pooled
-across the rest of the meta-analysis (notably the DiD studies, which
-directly identify
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
+<p>When the model assumes equal baselines
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\gamma_i = 0</annotation></semantics></math>),
+the normalised treatment–control difference reduces to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi>i</mi></msub><mo>=</mo><msub><mi>θ</mi><mi>i</mi></msub><mi>/</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\phi_i = \theta_i / (\alpha_i +
+\beta_i)</annotation></semantics></math>, the <strong>apparent
+effect</strong>. This is what the normalised data directly measures.</p>
+<p>To recover the treatment effect on the same scale as DiD studies
+(normalised by
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>α</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\alpha_i</annotation></semantics></math>),
+we need to undo the RCT-specific normalisation. Writing
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>θ</mi><mi>i</mi></msub><mi>/</mi><msub><mi>α</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\tilde\theta_i = \theta_i / \alpha_i</annotation></semantics></math>
 and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>).</p>
-<p>For pre-post studies, the treatment arm’s pre-period mean is observed
-but no control arm exists. Under
-<code>baseline_latent_arm = "treatment"</code> (the natural choice) the
-latent is directly informed by that observation. The imbalance
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>β</mi><mi>i</mi></msub><mi>/</mi><msub><mi>α</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\tilde\beta_i = \beta_i / \alpha_i</annotation></semantics></math>
+for the DiD-normalised quantities:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi>i</mi></msub><mo>=</mo><mfrac><msub><mi>θ</mi><mi>i</mi></msub><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow></mfrac><mo>=</mo><mfrac><mrow><msub><mi>θ</mi><mi>i</mi></msub><mi>/</mi><msub><mi>α</mi><mi>i</mi></msub></mrow><mrow><mn>1</mn><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mi>/</mi><msub><mi>α</mi><mi>i</mi></msub></mrow></mfrac><mo>=</mo><mfrac><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mrow><mn>1</mn><mo>+</mo><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub></mrow></mfrac><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\phi_i
+= \frac{\theta_i}{\alpha_i + \beta_i}
+= \frac{\theta_i / \alpha_i}{1 + \beta_i / \alpha_i}
+= \frac{\tilde\theta_i}{1 + \tilde\beta_i},
+</annotation></semantics></math></p>
+<p>so the normalised treatment effect is</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>ϕ</mi><mi>i</mi></msub><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\tilde\theta_i = \phi_i \cdot (1 + \tilde\beta_i).
+</annotation></semantics></math></p>
+<p>The model is reparameterised so that
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ϕ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\phi_i</annotation></semantics></math>
+(apparent effect) and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\beta_i</annotation></semantics></math>
+(normalised time trend) are the sampled parameters, and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\theta_i</annotation></semantics></math>
+is derived via the formula above. A Jacobian correction
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">|</mo><mn>1</mn><mo>+</mo><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo stretchy="false" form="prefix">|</mo></mrow><annotation encoding="application/x-tex">|1 + \tilde\beta_i|</annotation></semantics></math>
+is applied to the log-posterior to account for this change of variables.
+The hierarchical prior on
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\beta_i</annotation></semantics></math>
+— informed primarily by DiD studies, which directly identify time trends
+— provides the regularisation needed to separate
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\theta_i</annotation></semantics></math>
+from
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\beta_i</annotation></semantics></math>.</p>
+<p>In the naive model (<code><a href="../reference/meta_did_naive.html">meta_did_naive()</a></code>), the time trend is
+forced to zero for RCT studies, so
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi>i</mi></msub><mo>=</mo><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\phi_i = \tilde\theta_i</annotation></semantics></math>
+and the reparameterisation is bypassed. This is equivalent to the
+standard assumption that the post-treatment control–treatment difference
+is an unbiased estimate of the treatment effect.</p>
+<p>When data are not normalised, the RCT baselines
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>α</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\alpha_i</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\alpha_i + \gamma_i</annotation></semantics></math>
+are free parameters drawn from the same hierarchical distributions as in
+DiD studies, allowing the baseline difference
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-is not identified per-study from pre-post data alone and is drawn from
-the hierarchical prior populated by DiD studies in the same fit.</p>
-<p>For DiD change-only studies (which report only the change scores, not
-the pre/post split), no per-study baseline observation exists. The model
-does not attempt to infer a per-study baseline in this case — the
-double-differenced likelihood used for these studies cancels the
-baseline out, so the treatment effect on the canonical fractional scale
-is identified from the difference between treatment-arm and control-arm
-change scores. <strong>Users supplying change-only data are responsible
-for ensuring those change scores are already on a comparable scale to
-the rest of the meta-analysis</strong> (typically by pre-dividing each
-study’s change scores by its own pre-period level before submission);
-the package does not pre-normalise change-only data.</p>
+to be informed by DiD evidence. By default, the model allows
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>≠</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\gamma_i \neq 0</annotation></semantics></math>;
+this can be constrained to zero if randomisation is assumed to eliminate
+baseline imbalances.</p>
 </div>
 <div class="section level3">
-<h3 id="interpreting-the-population-treatment-effect">Interpreting the population treatment effect<a class="anchor" aria-label="anchor" href="#interpreting-the-population-treatment-effect"></a>
+<h3 id="interpreting-normalised-treatment-effects">Interpreting normalised treatment effects<a class="anchor" aria-label="anchor" href="#interpreting-normalised-treatment-effects"></a>
 </h3>
-<p>Under <code>normalise = TRUE</code> the population treatment effect
+<p>After normalisation, the population treatment effect
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\mu_\theta</annotation></semantics></math>
-is the expected fractional shift in outcomes caused by the intervention,
-expressed as a fraction of the treatment-arm pre-treatment baseline. For
-example,
+is expressed in units relative to the baseline. For example,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mi>θ</mi></msub><mo>=</mo><mi>−</mi><mn>0.33</mn></mrow><annotation encoding="application/x-tex">\mu_\theta = -0.33</annotation></semantics></math>
-means a 33% reduction relative to the baseline level. Two studies on
-incommensurable raw-outcome scales (e.g. cholesterol in mg/dL vs in
-mmol/L) can both contribute to this estimand, because dividing each
-study’s effect by its own arm-internal baseline removes the unit
-dependency. The cost of this scale-removal is the exchangeability
-assumption it implies on the per-study fractional effects — see the
-discussion in the package’s
-<code>vignette("incommensurable-scales")</code> (forthcoming) for when
-this is and isn’t appropriate.</p>
-<p>Under <code>normalise = FALSE</code> the population treatment effect
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\mu_\theta</annotation></semantics></math>
-is on the user’s original outcome units and represents a meaningful
-absolute effect size; this requires all studies to share a measurement
-scale.</p>
+means a 33% reduction relative to the baseline level.</p>
 </div>
 </div>
 <div class="section level2">
@@ -725,7 +714,7 @@ defaults.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

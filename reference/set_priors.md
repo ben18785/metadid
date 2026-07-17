@@ -22,7 +22,7 @@ set_priors(
   lkj_eta = lkj(2),
   baseline_difference_mean = normal(0, 0.5),
   baseline_difference_sd = cauchy(0.1),
-  baseline_per_study = NULL
+  multiplier = lognormal(0, 0.7)
 )
 ```
 
@@ -92,18 +92,28 @@ set_priors(
 - baseline_difference_mean:
 
   Prior on the population mean of the per-study baseline imbalance
-  \\\delta_i = (b\_{T,i} - b\_{C,i}) / b\_{C,i}\\, defined as the
-  fractional difference between the treatment-arm and control-arm
-  pre-treatment baselines, expressed as a fraction of the control-arm
-  baseline (the control-pre reference convention). Constrained to
-  \\\delta_i \> -1\\ so that the derived \\(1 + \delta_i)\\ factor
-  remains positive in both modelled-mode parameterisations. Only used
-  when `baseline_imbalance = "estimated"`. Default: `normal(0, 0.5)`.
+  (treatment-arm vs control-arm pre-treatment mean, on the normalised
+  fractional scale). Only used when `baseline_imbalance = "estimated"`.
+  Default: `normal(0, 0.5)`.
 
 - baseline_difference_sd:
 
   Prior on the between-study SD of the baseline imbalance. Only used
   when `baseline_imbalance = "estimated"`. Default: `cauchy(0.1)`.
+
+- multiplier:
+
+  Prior on the multiplicative-covariate effect multiplier (only used
+  when `multiplicative_covariate` is specified in
+  [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)).
+  With one or two multiplicative covariates the same prior is applied
+  independently to every estimated non-reference-level factor (of either
+  covariate). Must be a
+  [`lognormal()`](https://ben18785.github.io/metadid/reference/lognormal.md)
+  prior, placed on the log of the multiplier so it is strictly positive
+  with no boundary at zero. Default: `lognormal(0, 0.7)` — a median of 1
+  (the no-multiplicative-effect case), with a central 95% range of
+  roughly `[0.25, 3.9]` on the natural scale.
 
 ## Value
 
@@ -129,7 +139,7 @@ set_priors()
 #>   lkj_eta ~ lkj(eta = 2)
 #>   baseline_difference_mean ~ normal(mean = 0, sd = 0.5)
 #>   baseline_difference_sd ~ cauchy(scale = 0.1)
-#>   baseline_per_study ~ NULL
+#>   multiplier ~ lognormal(meanlog = 0, sdlog = 0.7)
 
 # Override one prior
 set_priors(treatment_effect_sd = cauchy(2))
@@ -148,5 +158,5 @@ set_priors(treatment_effect_sd = cauchy(2))
 #>   lkj_eta ~ lkj(eta = 2)
 #>   baseline_difference_mean ~ normal(mean = 0, sd = 0.5)
 #>   baseline_difference_sd ~ cauchy(scale = 0.1)
-#>   baseline_per_study ~ NULL
+#>   multiplier ~ lognormal(meanlog = 0, sdlog = 0.7)
 ```

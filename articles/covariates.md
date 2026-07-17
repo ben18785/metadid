@@ -84,12 +84,9 @@ accounting for dose.
 
 Because
 [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)
-expresses effects as fractions of each study’s treatment-arm
-pre-treatment baseline (by default — `normalise = TRUE` performs this
-normalisation inside the Stan model rather than by dividing the data in
-R), the parameters the model estimates are on the normalised scale. With
-a baseline mean of 0.45 and no baseline imbalance in this simulation (so
-the treatment-arm and control-arm pre-baselines coincide on average):
+normalises outcomes by the baseline mean (by default), the parameters
+the model estimates are on the normalised scale. With a baseline mean of
+0.45:
 
 - **True normalised slope:**
   $`\beta / \bar{\alpha} = -0.04 / 0.45 \approx -0.089`$
@@ -290,3 +287,215 @@ print(fit_mixed)
 
 The credible intervals are somewhat wider with mixed designs, but both
 the intercept and slope are still recovered.
+
+## Multiplicative covariates
+
+The covariates discussed so far enter the treatment-effect model
+*additively*: each unit change in `dose` shifts the expected effect by a
+fixed amount. Sometimes a covariate is better described as *scaling* the
+effect — multiplying it by a factor rather than shifting it. A common
+motivating example: experimental (“artificial”) settings often produce
+larger effect sizes than real-world deployments, and we’d like to
+estimate how much the real-world effect is attenuated relative to the
+experimental one, jointly with the experimental effect itself.
+
+metadid supports this through the `multiplicative_covariate` argument.
+The covariate is categorical with a reference level: one `multiplier` is
+estimated per non-reference level and applied to the studies at that
+level, while the reference level’s factor is fixed at 1. A two-level
+indicator $`m_i \in \{0, 1\}`$ is the simplest case, with a single
+estimated `multiplier` applied to the studies where it equals 1:
+
+``` math
+\mu_i = \begin{cases} \mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}} & m_i = 0 \\ \mathrm{multiplier} \cdot \bigl(\mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}}\bigr) & m_i = 1. \end{cases}
+```
+
+Studies with $`m_i = 0`$ identify the linear predictor directly; studies
+with $`m_i = 1`$ see it multiplied by the `multiplier`. The multiplier
+is strictly positive, with a log-normal `lognormal(0, 0.7)` prior: a
+median of 1 (the no-effect case, where every study contributes to the
+same population mean) and no boundary at zero, so a small attenuating
+multiplier is not pushed up against a hard limit. The prior is placed on
+$`\log(\mathrm{multiplier})`$, so the factor is symmetric in “halving”
+versus “doubling”.
+
+### Example: experimental vs real-world studies
+
+We build an illustrative summary data frame of 30 DiD studies in three
+settings (10 each): an experimental batch and two real-world batches
+whose true effects are attenuated relative to it. Each study is tagged
+with its `setting`.
+
+``` r
+
+make_batch <- function(effect, setting, seed) {
+  sim <- simulate_meta_did(
+    n_studies = 10, n_control = 100, n_treatment = 100,
+    true_effect = effect, sigma_effect = 0.05,
+    true_trend = 0, baseline_mean = 0.45, seed = seed
+  )
+  sim$study_id <- paste0(setting, "_", sim$study_id)  # keep IDs unique across batches
+  out <- as_summary_did(sim)
+  out$setting <- setting
+  out
+}
+
+studies <- rbind(
+  make_batch(-0.41, "experimental", 11),
+  make_batch(-0.27, "rw_lab",       22),
+  make_batch(-0.14, "rw_field",     33)
+)
+```
+
+A first pass collapses the two real-world settings into a single
+`{0, 1}` indicator, estimating one multiplier for “any real-world”
+relative to experimental:
+
+``` r
+
+studies$real_world <- ifelse(studies$setting == "experimental", 0, 1)
+
+fit <- meta_did(
+  summary_data             = studies,
+  multiplicative_covariate = "real_world",
+  priors = set_priors(
+    multiplier = lognormal(0, 0.7)
+  ),
+  seed = 9931
+)
+
+print(fit)
+```
+
+    #> Bayesian meta-analysis (metadid)
+    #> Studies: DiD = 30 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0
+    #> Population treatment effect: -0.410  90% CI [-0.450, -0.372]
+    #> Multiplicative covariate (real_world):
+    #>   0: 1  (reference)
+    #>   1: 0.503  90% CI [0.412, 0.598]
+
+The reference level (`0`, experimental) is fixed at 1. The
+interpretation: experimental studies produce an effect around -0.41,
+while real-world studies produce roughly half of that (multiplier ≈
+0.50). The combination yields the per-study mean used in the
+meta-analysis.
+
+### Identifiability
+
+A multiplicative covariate is only identifiable when the data contain
+variation in both directions.
+[`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)
+enforces this with two checks:
+
+- **Hard error: constant indicator.** If every study has $`m_i = 0`$ or
+  every study has $`m_i = 1`$, then $`\mu_\theta`$ and the `multiplier`
+  are jointly unidentified — any pair with the same product gives
+  identical likelihood.
+  [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)
+  stops with an error pointing to the column.
+- **Soft warning: collinearity with an additive covariate.** If
+  `multiplicative_covariate` is nearly perfectly correlated with one of
+  the `covariates` (`|cor| > 0.95`), the multiplier and that covariate’s
+  coefficient will be weakly identified. The model still runs but the
+  posterior correlation between them will be high. A warning is issued
+  so you can investigate before trusting the result.
+
+### Categorical multiplicative covariates
+
+The covariate is not restricted to a two-level indicator. With a column
+such as `setting` taking the values `experimental`, `rw_lab`, and
+`rw_field`, one multiplier is estimated for each non-reference level:
+
+``` r
+
+studies$setting <- factor(studies$setting,
+                          levels = c("experimental", "rw_lab", "rw_field"))
+fit <- meta_did(
+  summary_data             = studies,
+  multiplicative_covariate = "setting"
+)
+summary(fit)
+```
+
+    #>                     parameter   mean    sd     lo     hi
+    #> 1       treatment_effect_mean -0.410 0.019 -0.442 -0.379
+    #> 2         treatment_effect_sd  0.052 0.011  0.036  0.072
+    #> 3   effect_multiplier[rw_lab]  0.659 0.071  0.548  0.781
+    #> 4 effect_multiplier[rw_field]  0.341 0.058  0.252  0.443
+
+Each non-reference level gets its own row, labelled
+`effect_multiplier[<level>]` (the same name
+[`print()`](https://rdrr.io/r/base/print.html) uses): the lab setting
+retains about two-thirds of the experimental effect, the field setting
+about a third. The reference level (`experimental`) is fixed at 1 and is
+not shown as a row.
+
+The reference is the first factor level — declare the column as a factor
+to control it, with identical levels declared in every data frame. For
+numeric input the levels sort in ascending order (so a `{0, 1}`
+indicator makes 0 the reference and 1 the single non-reference level),
+and for character input alphabetically. The same `multiplier` prior from
+[`set_priors()`](https://ben18785.github.io/metadid/reference/set_priors.md)
+is applied independently to each estimated factor, and the data must
+contain studies at two or more levels for the multipliers to be
+identified.
+
+### Two multiplicative covariates (a product of factors)
+
+A single fit may carry up to **two** multiplicative covariates. Pass a
+one-sided formula naming both columns; each is estimated independently
+and a study’s overall multiplier is the **product** of the two
+per-covariate factors, $`\alpha_{a(i)} \cdot \beta_{b(i)}`$. This suits
+a design where the effect is scaled by two distinct study attributes at
+once — for example how the intervention was delivered, crossed with how
+intensively it was applied.
+
+``` r
+
+# Two independent study attributes, each scaling the effect multiplicatively.
+studies$delivery  <- rep(c("in_person", "remote"), length.out = nrow(studies))
+studies$intensity <- rep(c("high", "low"),         length.out = nrow(studies))
+
+fit <- meta_did(
+  summary_data             = studies,
+  multiplicative_covariate = ~ delivery + intensity,
+  priors = set_priors(multiplier = lognormal(0, 0.7))
+)
+summary(fit)
+```
+
+    #>                             parameter   mean    sd     lo     hi
+    #> 1               treatment_effect_mean -0.410 0.020 -0.443 -0.377
+    #> 2                 treatment_effect_sd  0.055 0.011  0.039  0.075
+    #> 3  effect_multiplier[delivery:remote]  0.620 0.082  0.498  0.761
+    #> 4   effect_multiplier[intensity:low]  0.550 0.073  0.441  0.679
+
+Each factor’s reference level (`in_person` for `delivery`, `high` for
+`intensity`, both alphabetically first) is fixed at 1, so the rows
+report the remaining levels. Here remote delivery retains about 62% of
+the in-person effect and a low-intensity programme about 55% of a
+high-intensity one; a remote, low-intensity study is scaled by the
+product (≈ 0.62 × 0.55 ≈ 0.34). With two covariates the summary rows are
+prefixed by the covariate name to disambiguate them. At most two
+multiplicative covariates are supported.
+
+### When to use a multiplicative vs additive covariate
+
+The two parameterisations encode different beliefs about the world:
+
+- Use **additive** when each study’s effect is shifted by a fixed amount
+  linked to the covariate, with the same shift size regardless of the
+  underlying effect’s magnitude.
+- Use **multiplicative** when the covariate attenuates or amplifies the
+  underlying effect — e.g. a real-world implementation that captures a
+  fraction of what an experiment showed, and a stronger experimental
+  effect would also produce a proportionally stronger real-world effect.
+
+The choice matters most for prediction at unobserved covariate values:
+under the multiplicative model, the predicted real-world effect tracks
+the experimental effect’s posterior; under the additive model it differs
+by a fixed offset.
+
+A multiplicative covariate can be combined with one or more additive
+covariates in the same fit — provided they are not collinear with each
+other, as flagged above.
