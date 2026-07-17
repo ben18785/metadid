@@ -729,3 +729,114 @@ test_that("Fit 7: estimated baseline imbalance recovers treatment effect under D
                              bd$lo, bd$hi))
   expect_lt(abs(bd$mean - 0.05 / MEAN_BASELINE), 0.05)
 })
+
+# ---------------------------------------------------------------------------
+# Fit 6: the population estimand is the mean per-study % effect E[theta/b]
+# ---------------------------------------------------------------------------
+# `treatment_effect_mean` is the population mean of the per-study proportional
+# (percentage-scale) effects, E[theta_i / b_i] -- each study expressed as a
+# fraction of its own baseline, then pooled. This is the right estimand for a
+# meta-analysis of studies on heterogeneous scales (averaging raw absolute
+# effects across studies is meaningless). It is NOT E[theta]/E[baseline]: when
+# baselines vary across studies the two differ by the between-study baseline
+# CV^2 (Jensen). This fit checks recovery of E[theta/b] at large baseline
+# variation, where the distinction is material. See ben18785/metadid#39.
+
+test_that("Fit 6: recovers the per-study percentage estimand E[theta/b] under large baseline variation", {
+  skip_if_no_stan()
+
+  baseline_sd <- 0.10  # amplified between-study variation (the regime that exposes the estimand)
+  jensen_sim <- simulate_meta_did(
+    n_studies     = 100,
+    true_effect   = TRUE_EFFECT_RAW,
+    sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
+    true_trend    = TRUE_TREND_RAW,
+    sigma_trend   = TRUE_SIGMA_TREND_RAW,
+    baseline_mean = MEAN_BASELINE,
+    baseline_sd   = baseline_sd,
+    n_control     = 100L,
+    n_treatment   = 100L,
+    seed          = 4242L
+  )
+  fit <- recovery_fit(summary_data = as_summary_did(jensen_sim))
+  te  <- summary(fit)
+  te  <- te[te$parameter == "treatment_effect_mean", ]
+
+  # Target: E[theta_i/b_i] = E[theta] * E[1/b] ~= (true_effect/bm)(1 + CV_b^2).
+  cv_b2          <- (baseline_sd / MEAN_BASELINE)^2
+  true_pct       <- (TRUE_EFFECT_RAW / MEAN_BASELINE) * (1 + cv_b2)  # ~ -0.350
+  wrong_estimand <- TRUE_EFFECT_RAW / MEAN_BASELINE                  # E[theta]/E[b] = -0.333
+
+  # Covers the correct per-study % estimand ...
+  expect_true(
+    te$lo < true_pct && te$hi > true_pct,
+    label = ci_label(te, true_pct)
+  )
+  # ... and is closer to it than to E[theta]/E[b] (i.e. it targets E[theta/b]).
+  expect_lt(abs(te$mean - true_pct), abs(te$mean - wrong_estimand))
+
+  # The per-study normalised fit converges robustly (baseline fixed at 1).
+  rhat <- fit$fit$summary("treatment_effect_mean")$rhat
+  expect_true(all(rhat < 1.05), label = paste("R-hat:", paste(round(rhat, 3), collapse = ", ")))
+})
+
+# ---------------------------------------------------------------------------
+# Fit 8: metadid-sims scenario F4 — 50 DiD + 50 summary RCT, default model
+# ---------------------------------------------------------------------------
+# Emulates the F4 large-N bias probe from ben18785/metadid-sims: 50 DiD and
+# 50 summary-level RCT studies under the default normal-heterogeneity model,
+# with the sims' default DGP (this file's shared constants). RCT summary
+# studies observe no pre-period, so their time trends are informed purely by
+# pooling from the DiD studies — the structure that broke down in the
+# 2026-07-15 sims run (R-hat ~ 3, ~135 divergences per rep, EBFMI ~ 0.002).
+# This fit pins both sampler health and estimand recovery for that regime.
+
+test_that("Fit 8: F4-style 50 DiD + 50 summary RCT converges and recovers E[theta/b]", {
+  skip_if_no_stan()
+
+  f4_sim <- simulate_meta_did(
+    n_studies     = 100,
+    true_effect   = TRUE_EFFECT_RAW,
+    sigma_effect  = TRUE_SIGMA_EFFECT_RAW,
+    true_trend    = TRUE_TREND_RAW,
+    sigma_trend   = TRUE_SIGMA_TREND_RAW,
+    baseline_mean = MEAN_BASELINE,
+    baseline_sd   = TRUE_BASELINE_SD,
+    n_control     = 100L,
+    n_treatment   = 100L,
+    seed          = 6120L
+  )
+  ids    <- unique(f4_sim$study_id)
+  rct_df <- as_summary_rct(f4_sim[f4_sim$study_id %in% ids[51:100], ])
+  rct_df$study_id <- paste0("rct_", rct_df$study_id)
+  f4_data <- dplyr::bind_rows(
+    as_summary_did(f4_sim[f4_sim$study_id %in% ids[1:50], ]),
+    rct_df
+  )
+
+  fit <- recovery_fit(summary_data = f4_data)
+
+  # Estimand: mean per-study % effect E[theta_i/b_i] (delta method, as Fit 6)
+  cv_b2    <- (TRUE_BASELINE_SD / MEAN_BASELINE)^2
+  true_te  <- TRUE_EFFECT_NORMALISED * (1 + cv_b2)
+  true_tt  <- TRUE_TREND_NORMALISED  * (1 + cv_b2)
+
+  res_te <- covers(fit, "treatment_effect_mean", true_te)
+  expect_true(res_te$covers, label = ci_label(res_te$ci, true_te))
+
+  res_tt <- covers(fit, "time_trend_mean", true_tt)
+  expect_true(res_tt$covers, label = ci_label(res_tt$ci, true_tt))
+
+  # Sampler health: the F4 regime must sample cleanly
+  diag_df <- fit$fit$summary(c("treatment_effect_mean", "treatment_effect_sd",
+                               "time_trend_mean", "time_trend_sd"))
+  expect_true(all(diag_df$rhat < 1.05),
+              label = paste("R-hat:", paste(round(diag_df$rhat, 3), collapse = ", ")))
+  expect_true(all(diag_df$ess_bulk > 200),
+              label = paste("ESS bulk:", paste(round(diag_df$ess_bulk), collapse = ", ")))
+
+  sampler <- fit$fit$diagnostic_summary(quiet = TRUE)
+  expect_lte(sum(sampler$num_divergent), 5)
+  expect_true(all(sampler$ebfmi > 0.2),
+              label = paste("EBFMI:", paste(round(sampler$ebfmi, 3), collapse = ", ")))
+})

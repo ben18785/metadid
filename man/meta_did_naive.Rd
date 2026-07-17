@@ -38,7 +38,14 @@ No \code{study_id} may appear in both \code{summary_data} and \code{individual_d
 \item{normalise_by_baseline}{Logical. If \code{TRUE} (default), all means and
 SDs are divided by each study's pre-treatment control mean (or the
 grand mean for change-only studies), placing outcomes on a common
-fractional scale.}
+fractional scale. The reported \code{treatment_effect_mean} is then the
+population mean of the per-study proportional effects,
+\eqn{E[\theta_i / b_i]} (a percentage-scale effect, each study expressed
+as a fraction of its own baseline), which is the appropriate estimand
+when studies are on heterogeneous scales. Note this is \strong{not}
+\eqn{E[\theta] / E[b]}: when baselines vary across studies the two differ
+by the between-study baseline coefficient of variation squared (Jensen's
+inequality).}
 
 \item{robust_heterogeneity}{Logical. If \code{TRUE}, study-level treatment
 effects are drawn from a Student-t distribution rather than a normal,
