@@ -21,7 +21,14 @@
 #' @param normalise_by_baseline Logical. If `TRUE` (default), all means and
 #'   SDs are divided by each study's pre-treatment control mean (or the
 #'   grand mean for change-only studies), placing outcomes on a common
-#'   fractional scale.
+#'   fractional scale. The reported `treatment_effect_mean` is then the
+#'   population mean of the per-study proportional effects,
+#'   \eqn{E[\theta_i / b_i]} (a percentage-scale effect, each study expressed
+#'   as a fraction of its own baseline), which is the appropriate estimand
+#'   when studies are on heterogeneous scales. Note this is **not**
+#'   \eqn{E[\theta] / E[b]}: when baselines vary across studies the two differ
+#'   by the between-study baseline coefficient of variation squared (Jensen's
+#'   inequality).
 #' @param robust_heterogeneity Logical. If `TRUE`, study-level treatment
 #'   effects are drawn from a Student-t distribution rather than a normal,
 #'   providing robustness to outlier studies. The degrees-of-freedom
