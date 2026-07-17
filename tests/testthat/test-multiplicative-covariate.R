@@ -319,6 +319,34 @@ test_that("prepare_stan_data() populates x_mult_did from individual data", {
   expect_true(is.integer(sd$x_mult_did))
 })
 
+test_that("x_mult_did lines up with study order when names sort non-numerically", {
+  # Regression test for the individual-data ordering bug: study indices in the
+  # Stan data follow sorted study_id (did_1, did_10, did_2, ...), while the
+  # covariate vector used to be built in first-appearance order (did_1, did_2,
+  # ..., did_10), silently attaching multipliers to the wrong studies.
+  ids <- paste0("did_", 1:10)                      # did_10 sorts before did_2
+  lev <- rep(c(0, 1), 5)                            # alternating by appearance
+  ind <- data.frame(
+    study_id   = rep(ids, each = 8),
+    subject_id = rep(1:4, times = 20),
+    design     = "did",
+    group      = rep(c("control", "control", "treatment", "treatment"), 20),
+    time       = rep(c("pre", "post"), 40),
+    value      = rnorm(80, mean = 0.45, sd = 0.1),
+    real_world = rep(lev, each = 8)
+  )
+  sd <- prepare_stan_data(
+    summary_data    = NULL,
+    individual_data = ind,
+    model_flags     = list(),
+    priors          = set_priors(),
+    covariate_names = NULL,
+    multiplicative_covariate = "real_world"
+  )
+  expected <- lev[order(ids)]                       # level of each sorted study
+  expect_equal(as.integer(sd$x_mult_did), as.integer(expected))
+})
+
 # ---------------------------------------------------------------------------
 # meta_did() plumbing
 # ---------------------------------------------------------------------------
@@ -762,13 +790,25 @@ test_that(".normalise_mult_covariate() rejects invalid specifications", {
   expect_error(.normalise_mult_covariate(42), "single column name or a")
 })
 
-test_that(".study_first_value() returns one value per study in first-appearance order", {
+test_that(".study_first_value() returns one value per study in study_id order", {
   ind <- data.frame(
     study_id = c("a", "a", "b", "b", "b"),
     setting  = c("p", "p", "q", "q", "q"),
     stringsAsFactors = FALSE
   )
   expect_equal(.study_first_value(ind, "setting"), c("p", "q"))
+})
+
+test_that(".study_first_value() sorts by study_id when appearance order differs", {
+  # study_10 sorts before study_2, so appearance order and sorted order
+  # disagree; values must follow sorted order to line up with the study
+  # indexing in prepare_individual_did().
+  ind <- data.frame(
+    study_id = rep(c("study_2", "study_10", "study_1"), each = 2),
+    setting  = rep(c("q", "r", "p"), each = 2),
+    stringsAsFactors = FALSE
+  )
+  expect_equal(.study_first_value(ind, "setting"), c("p", "r", "q"))
 })
 
 test_that(".study_first_value() returns character(0) for NULL or empty input", {

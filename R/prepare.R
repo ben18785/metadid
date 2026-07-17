@@ -540,13 +540,16 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
 #'
 #' @param data Individual-level data frame, or `NULL`.
 #' @param column Name of the column to extract.
-#' @return The column vector with one entry per distinct `study_id`, in
-#'   first-appearance order. `character(0)` for `NULL` or empty input.
+#' @return The column vector with one entry per distinct `study_id`, sorted by
+#'   `study_id` to match the study index order used by
+#'   `prepare_individual_did()` and friends (which `arrange()` by `study_id`
+#'   before building the Stan data). `character(0)` for `NULL` or empty input.
 #' @keywords internal
 #' @noRd
 .study_first_value <- function(data, column) {
   if (is.null(data) || nrow(data) == 0) return(character(0))
-  data[!duplicated(data$study_id), , drop = FALSE][[column]]
+  studies <- data[!duplicated(data$study_id), , drop = FALSE]
+  dplyr::arrange(studies, .data$study_id)[[column]]
 }
 
 #' Derive globally consistent levels for the multiplicative covariate
