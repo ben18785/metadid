@@ -382,6 +382,26 @@ test_that("meta_did() errors when hierarchical_rho = FALSE and rho column absent
   )
 })
 
+# ---------------------------------------------------------------------------
+# hierarchical_rho = TRUE with no rho anchor
+# ---------------------------------------------------------------------------
+
+test_that("meta_did() errors when hierarchical_rho = TRUE but no rho is provided", {
+  did_df <- make_did_summary(3)  # no rho column at all
+  expect_error(
+    meta_did(summary_data = did_df, hierarchical_rho = TRUE),
+    "no study provides a pre-post correlation"
+  )
+})
+
+test_that("meta_did() errors when hierarchical_rho = TRUE and all rho are missing", {
+  did_df <- make_did_summary(3, rho = c(NA, NA, NA))
+  expect_error(
+    meta_did(summary_data = did_df, hierarchical_rho = TRUE),
+    "no study provides a pre-post correlation"
+  )
+})
+
 test_that("meta_did() errors when correlated_effects and robust_heterogeneity are both TRUE", {
   did_df <- make_did_summary(2, rho = c(0.5, 0.6))
   expect_error(
