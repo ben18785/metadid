@@ -59,71 +59,33 @@
 <div class="section level3">
 <h3 id="latent-did-model">Latent DiD model<a class="anchor" aria-label="anchor" href="#latent-did-model"></a>
 </h3>
-<p>For study <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>, outcomes in the <strong>control group</strong> satisfy</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>∼</mo><mi>𝒩</mi><mrow><mo stretchy="true" form="prefix">[</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>α</mi><mi>i</mi></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msubsup><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow><mn>2</mn></msubsup></mtd><mtd columnalign="center" style="text-align: center"><msub><mi>ρ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi></mrow></msub><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>ρ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi></mrow></msub><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd><mtd columnalign="center" style="text-align: center"><msubsup><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow><mn>2</mn></msubsup></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">]</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">
-\begin{pmatrix}
+<p>For study (i), outcomes in the <strong>control group</strong> satisfy</p>
+[
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\begin{pmatrix}
 Y_{i,c,\mathrm{pre}} \\
 Y_{i,c,\mathrm{post}}
-\end{pmatrix}
-\sim
-\mathcal{N}
-\left[
-\begin{pmatrix}
-\alpha_i \\
-\alpha_i + \beta_i
-\end{pmatrix}
-,
-\begin{pmatrix}
-\sigma^2_{i,c,\mathrm{pre}} &amp;
-\rho_{i,c}\sigma_{i,c,\mathrm{pre}}\sigma_{i,c,\mathrm{post}} \\
-\rho_{i,c}\sigma_{i,c,\mathrm{pre}}\sigma_{i,c,\mathrm{post}} &amp;
-\sigma^2_{i,c,\mathrm{post}}
-\end{pmatrix}
-\right],
-</annotation></semantics></math></p>
+\end{pmatrix}</annotation></semantics></math><p>  , ]</p>
 <p>and outcomes in the <strong>treatment group</strong> satisfy</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>∼</mo><mi>𝒩</mi><mrow><mo stretchy="true" form="prefix">[</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msubsup><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow><mn>2</mn></msubsup></mtd><mtd columnalign="center" style="text-align: center"><msub><mi>ρ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi></mrow></msub><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>ρ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi></mrow></msub><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd><mtd columnalign="center" style="text-align: center"><msubsup><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow><mn>2</mn></msubsup></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">]</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">
-\begin{pmatrix}
+[
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\begin{pmatrix}
 Y_{i,t,\mathrm{pre}} \\
 Y_{i,t,\mathrm{post}}
-\end{pmatrix}
-\sim
-\mathcal{N}
-\left[
-\begin{pmatrix}
-\alpha_i + \gamma_i \\
-\alpha_i + \gamma_i + \beta_i + \theta_i
-\end{pmatrix}
-,
-\begin{pmatrix}
-\sigma^2_{i,t,\mathrm{pre}} &amp;
-\rho_{i,t}\sigma_{i,t,\mathrm{pre}}\sigma_{i,t,\mathrm{post}} \\
-\rho_{i,t}\sigma_{i,t,\mathrm{pre}}\sigma_{i,t,\mathrm{post}} &amp;
-\sigma^2_{i,t,\mathrm{post}}
-\end{pmatrix}
-\right].
-</annotation></semantics></math></p>
+\end{pmatrix}</annotation></semantics></math><p>  . ]</p>
 <p>Here:</p>
 <ul>
-<li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>α</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\alpha_i</annotation></semantics></math>: baseline mean in the control group<br>
+<li>(_i): baseline mean in the control group<br>
 </li>
-<li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>: time trend shared across groups<br>
+<li>(_i): time trend shared across groups<br>
 </li>
-<li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>: baseline difference between treatment and control<br>
+<li>(_i): baseline difference between treatment and control<br>
 </li>
-<li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>: study-specific treatment effect<br>
+<li>(_i): study-specific treatment effect<br>
 </li>
-<li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi></mrow></msub><annotation encoding="application/x-tex">\rho_{i,c}</annotation></semantics></math>, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi></mrow></msub><annotation encoding="application/x-tex">\rho_{i,t}</annotation></semantics></math>: pre/post correlations<br>
+<li>(<em>{i,c}), (</em>{i,t}): pre/post correlations<br>
 </li>
-<li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>g</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub><annotation encoding="application/x-tex">\sigma_{i,g,\mathrm{pre}}</annotation></semantics></math>, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>g</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub><annotation encoding="application/x-tex">\sigma_{i,g,\mathrm{post}}</annotation></semantics></math>: marginal standard deviations</li>
+<li>(<em>{i,g,}), (</em>{i,g,}): marginal standard deviations</li>
 </ul>
-<p>The key identifying assumption is that, in the absence of treatment, the treatment group would have followed the same time trend <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math> as the control group.</p>
+<p>The key identifying assumption is that, in the absence of treatment, the treatment group would have followed the same time trend (_i) as the control group.</p>
 <hr>
 </div>
 <div class="section level3">
@@ -150,15 +112,11 @@ Y_{i,t,\mathrm{post}}
 <h3 id="hierarchical-treatment-effects">Hierarchical treatment effects<a class="anchor" aria-label="anchor" href="#hierarchical-treatment-effects"></a>
 </h3>
 <p>Study-specific treatment effects are modelled hierarchically, for example as</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>θ</mi><mi>i</mi></msub><mo>∼</mo><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>μ</mi><mi>θ</mi></msub><mo>,</mo><msubsup><mi>τ</mi><mi>θ</mi><mn>2</mn></msubsup><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
-\theta_i \sim \mathcal{N}(\mu_\theta, \tau_\theta^2),
-</annotation></semantics></math></p>
-<p>where <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\mu_\theta</annotation></semantics></math> is the overall treatment effect and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>τ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\tau_\theta</annotation></semantics></math> captures between-study heterogeneity.</p>
+<p>[ <em>i (</em>, _^2), ]</p>
+<p>where (<em>) is the overall treatment effect and (</em>) captures between-study heterogeneity.</p>
 <p>For robustness to outlying study effects, the model can alternatively use a Student-t distribution,</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>θ</mi><mi>i</mi></msub><mo>∼</mo><msub><mi>t</mi><mi>ν</mi></msub><mo stretchy="false" form="prefix">(</mo><msub><mi>μ</mi><mi>θ</mi></msub><mo>,</mo><msub><mi>τ</mi><mi>θ</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
-\theta_i \sim t_\nu(\mu_\theta, \tau_\theta),
-</annotation></semantics></math></p>
-<p>where <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ν</mi><annotation encoding="application/x-tex">\nu</annotation></semantics></math> controls the tail-heaviness.</p>
+<p>[ <em>i t</em>(<em>, </em>), ]</p>
+<p>where () controls the tail-heaviness.</p>
 <hr>
 </div>
 <div class="section level3">
@@ -209,7 +167,7 @@ Y_{i,t,\mathrm{post}}
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/simulate_meta_did.html">simulate_meta_did</a></span><span class="op">(</span></span>
-<span>  n_studies     <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>  n_studies     <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  n_control     <span class="op">=</span> <span class="fl">80</span>,</span>
 <span>  n_treatment   <span class="op">=</span> <span class="fl">80</span>,</span>
 <span>  true_effect   <span class="op">=</span> <span class="op">-</span><span class="fl">0.15</span>,</span>
@@ -219,9 +177,9 @@ Y_{i,t,\mathrm{post}}
 <span>  baseline_mean <span class="op">=</span> <span class="fl">0.45</span>,</span>
 <span>  baseline_sd   <span class="op">=</span> <span class="fl">0.02</span>,</span>
 <span>  rho           <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  seed          <span class="op">=</span> <span class="fl">7251</span></span>
+<span>  seed          <span class="op">=</span> <span class="fl">495</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The true population treatment effect is <code>-0.15</code> on the raw scale, or approximately <code>-0.333</code> after normalising by the baseline mean of <code>0.45</code>.</p>
+<p>The raw population treatment effect is <code>-0.15</code>. Because <code>metadid</code> normalises each study by its <strong>own</strong> baseline, the estimand is the mean of per-study normalised effects, (E[_i / b_i]), rather than the ratio of population means, (E[] / E[b]). These two quantities differ by the between-study baseline coefficient of variation squared, which is negligible here (baseline SD <code>0.02</code> on a mean of <code>0.45</code>), so both are approximately <code>-0.333</code>. For this simulated dataset the realised (E[_i / b_i]) is <code>-0.333</code>, which is what the model targets.</p>
 </div>
 <div class="section level3">
 <h3 id="id_2-two-scenarios-from-the-same-data">2. Two scenarios from the same data<a class="anchor" aria-label="anchor" href="#id_2-two-scenarios-from-the-same-data"></a>
@@ -232,25 +190,25 @@ Y_{i,t,\mathrm{post}}
 <span></span>
 <span><span class="va">fit_all_did</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/meta_did.html">meta_did</a></span><span class="op">(</span></span>
 <span>  summary_data <span class="op">=</span> <span class="va">all_did</span>,</span>
-<span>  seed         <span class="op">=</span> <span class="fl">7251</span></span>
+<span>  seed         <span class="op">=</span> <span class="fl">495</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit_all_did</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co">#&gt; Bayesian meta-analysis (metadid)</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co">#&gt; Studies: DiD = 30 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0 </span></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt; Population treatment effect: -0.363  90% CI [-0.392, -0.334]</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Bayesian meta-analysis (metadid)</span></span>
+<span><span class="co">#&gt; Studies: DiD = 50 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0</span></span>
+<span><span class="co">#&gt; Population treatment effect: -0.332  90% CI [-0.348, -0.314]</span></span></code></pre>
 <p>Now suppose, from the same underlying data, only a third of studies provide full DiD information. Another third are RCTs (post-treatment outcomes only), and the remaining third are pre-post studies (treatment arm only):</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">study_ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">study_id</span><span class="op">)</span></span>
 <span><span class="va">true_params</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim</span>, <span class="st">"true_params"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">sim_did</span> <span class="op">&lt;-</span> <span class="va">sim</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">sim_rct</span> <span class="op">&lt;-</span> <span class="va">sim</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">11</span><span class="op">:</span><span class="fl">20</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">sim_pp</span>  <span class="op">&lt;-</span> <span class="va">sim</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">21</span><span class="op">:</span><span class="fl">30</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">sim_did</span> <span class="op">&lt;-</span> <span class="va">sim</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">17</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">sim_rct</span> <span class="op">&lt;-</span> <span class="va">sim</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">18</span><span class="op">:</span><span class="fl">34</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">sim_pp</span>  <span class="op">&lt;-</span> <span class="va">sim</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">35</span><span class="op">:</span><span class="fl">50</span><span class="op">]</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim_did</span>, <span class="st">"true_params"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">true_params</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim_rct</span>, <span class="st">"true_params"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">true_params</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">11</span><span class="op">:</span><span class="fl">20</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim_pp</span>, <span class="st">"true_params"</span><span class="op">)</span>  <span class="op">&lt;-</span> <span class="va">true_params</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">21</span><span class="op">:</span><span class="fl">30</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim_did</span>, <span class="st">"true_params"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">true_params</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">17</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim_rct</span>, <span class="st">"true_params"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">true_params</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">18</span><span class="op">:</span><span class="fl">34</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim_pp</span>, <span class="st">"true_params"</span><span class="op">)</span>  <span class="op">&lt;-</span> <span class="va">true_params</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">35</span><span class="op">:</span><span class="fl">50</span><span class="op">]</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">mixed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="reference/as_summary_did.html">as_summary_did</a></span><span class="op">(</span><span class="va">sim_did</span><span class="op">)</span>,</span>
@@ -260,18 +218,18 @@ Y_{i,t,\mathrm{post}}
 <span></span>
 <span><span class="va">fit_mixed</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/meta_did.html">meta_did</a></span><span class="op">(</span></span>
 <span>  summary_data <span class="op">=</span> <span class="va">mixed</span>,</span>
-<span>  seed         <span class="op">=</span> <span class="fl">7251</span></span>
+<span>  seed         <span class="op">=</span> <span class="fl">495</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit_mixed</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co">#&gt; Bayesian meta-analysis (metadid)</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co">#&gt; Studies: DiD = 10 | RCT = 10 | Pre-Post = 10 | DiD (change only) = 0 </span></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt; Population treatment effect: -0.362  90% CI [-0.394, -0.331]</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Bayesian meta-analysis (metadid)</span></span>
+<span><span class="co">#&gt; Studies: DiD = 17 | RCT = 17 | Pre-Post = 16 | DiD (change only) = 0</span></span>
+<span><span class="co">#&gt; Population treatment effect: -0.330  90% CI [-0.349, -0.311]</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="id_3-comparing-posteriors">3. Comparing posteriors<a class="anchor" aria-label="anchor" href="#id_3-comparing-posteriors"></a>
 </h3>
-<p>Both fits recover the true normalised effect (−0.333, dashed line). The mixed-design posterior is slightly wider, reflecting the information lost by having two-thirds of the studies provide incomplete data — but the difference is modest.</p>
+<p>Both fits recover the true normalised effect (E[_i / b_i] ) (dashed line). The mixed-design posterior is slightly wider, reflecting the information lost by having two-thirds of the studies provide incomplete data — but the difference is modest.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">draws_did</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span></span>
 <span>  <span class="va">fit_all_did</span><span class="op">$</span><span class="va">fit</span><span class="op">$</span><span class="fu">draws</span><span class="op">(</span><span class="st">"treatment_effect_mean"</span>, format <span class="op">=</span> <span class="st">"draws_matrix"</span><span class="op">)</span></span>
@@ -282,7 +240,7 @@ Y_{i,t,\mathrm{post}}
 <span></span>
 <span><span class="va">comp_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">draws_did</span>, <span class="va">draws_mix</span><span class="op">)</span>,</span>
-<span>  scenario <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"All DiD (30 studies)"</span>, <span class="st">"Mixed designs (10 DiD + 10 RCT + 10 PP)"</span><span class="op">)</span>,</span>
+<span>  scenario <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"All DiD (50 studies)"</span>, <span class="st">"Mixed designs (17 DiD + 17 RCT + 16 PP)"</span><span class="op">)</span>,</span>
 <span>                 each <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">draws_did</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>

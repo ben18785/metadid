@@ -26,67 +26,42 @@ DiD evidence.
 
 ### Latent DiD model
 
-For study $`i`$, outcomes in the **control group** satisfy
+For study (i), outcomes in the **control group** satisfy
 
+\[
 ``` math
 \begin{pmatrix}
 Y_{i,c,\mathrm{pre}} \\
 Y_{i,c,\mathrm{post}}
 \end{pmatrix}
-\sim
-\mathcal{N}
-\left[
-\begin{pmatrix}
-\alpha_i \\
-\alpha_i + \beta_i
-\end{pmatrix}
-,
-\begin{pmatrix}
-\sigma^2_{i,c,\mathrm{pre}} &
-\rho_{i,c}\sigma_{i,c,\mathrm{pre}}\sigma_{i,c,\mathrm{post}} \\
-\rho_{i,c}\sigma_{i,c,\mathrm{pre}}\sigma_{i,c,\mathrm{post}} &
-\sigma^2_{i,c,\mathrm{post}}
-\end{pmatrix}
-\right],
 ```
+
+, \]
 
 and outcomes in the **treatment group** satisfy
 
+\[
 ``` math
 \begin{pmatrix}
 Y_{i,t,\mathrm{pre}} \\
 Y_{i,t,\mathrm{post}}
 \end{pmatrix}
-\sim
-\mathcal{N}
-\left[
-\begin{pmatrix}
-\alpha_i + \gamma_i \\
-\alpha_i + \gamma_i + \beta_i + \theta_i
-\end{pmatrix}
-,
-\begin{pmatrix}
-\sigma^2_{i,t,\mathrm{pre}} &
-\rho_{i,t}\sigma_{i,t,\mathrm{pre}}\sigma_{i,t,\mathrm{post}} \\
-\rho_{i,t}\sigma_{i,t,\mathrm{pre}}\sigma_{i,t,\mathrm{post}} &
-\sigma^2_{i,t,\mathrm{post}}
-\end{pmatrix}
-\right].
 ```
+
+. \]
 
 Here:
 
-- $`\alpha_i`$: baseline mean in the control group  
-- $`\beta_i`$: time trend shared across groups  
-- $`\gamma_i`$: baseline difference between treatment and control  
-- $`\theta_i`$: study-specific treatment effect  
-- $`\rho_{i,c}`$, $`\rho_{i,t}`$: pre/post correlations  
-- $`\sigma_{i,g,\mathrm{pre}}`$, $`\sigma_{i,g,\mathrm{post}}`$:
-  marginal standard deviations
+- (\_i): baseline mean in the control group  
+- (\_i): time trend shared across groups  
+- (\_i): baseline difference between treatment and control  
+- (\_i): study-specific treatment effect  
+- (*{i,c}), (*{i,t}): pre/post correlations  
+- (*{i,g,}), (*{i,g,}): marginal standard deviations
 
 The key identifying assumption is that, in the absence of treatment, the
-treatment group would have followed the same time trend $`\beta_i`$ as
-the control group.
+treatment group would have followed the same time trend (\_i) as the
+control group.
 
 ------------------------------------------------------------------------
 
@@ -110,21 +85,17 @@ across studies.
 Study-specific treatment effects are modelled hierarchically, for
 example as
 
-``` math
-\theta_i \sim \mathcal{N}(\mu_\theta, \tau_\theta^2),
-```
+\[ *i (*, \_^2), \]
 
-where $`\mu_\theta`$ is the overall treatment effect and $`\tau_\theta`$
-captures between-study heterogeneity.
+where (*) is the overall treatment effect and (*) captures between-study
+heterogeneity.
 
 For robustness to outlying study effects, the model can alternatively
 use a Student-t distribution,
 
-``` math
-\theta_i \sim t_\nu(\mu_\theta, \tau_\theta),
-```
+\[ *i t*(*,* ), \]
 
-where $`\nu`$ controls the tail-heaviness.
+where () controls the tail-heaviness.
 
 ------------------------------------------------------------------------
 
@@ -191,7 +162,7 @@ library(dplyr)
 library(ggplot2)
 
 sim <- simulate_meta_did(
-  n_studies     = 30,
+  n_studies     = 50,
   n_control     = 80,
   n_treatment   = 80,
   true_effect   = -0.15,
@@ -201,12 +172,18 @@ sim <- simulate_meta_did(
   baseline_mean = 0.45,
   baseline_sd   = 0.02,
   rho           = 0.5,
-  seed          = 7251
+  seed          = 495
 )
 ```
 
-The true population treatment effect is `-0.15` on the raw scale, or
-approximately `-0.333` after normalising by the baseline mean of `0.45`.
+The raw population treatment effect is `-0.15`. Because `metadid`
+normalises each study by its **own** baseline, the estimand is the mean
+of per-study normalised effects, (E\[\_i / b_i\]), rather than the ratio
+of population means, (E\[\] / E\[b\]). These two quantities differ by
+the between-study baseline coefficient of variation squared, which is
+negligible here (baseline SD `0.02` on a mean of `0.45`), so both are
+approximately `-0.333`. For this simulated dataset the realised (E\[\_i
+/ b_i\]) is `-0.333`, which is what the model targets.
 
 ### 2. Two scenarios from the same data
 
@@ -220,17 +197,15 @@ all_did <- as_summary_did(sim)
 
 fit_all_did <- meta_did(
   summary_data = all_did,
-  seed         = 7251
+  seed         = 495
 )
 
 print(fit_all_did)
 ```
 
-``` R
-#> Bayesian meta-analysis (metadid)
-#> Studies: DiD = 30 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0 
-#> Population treatment effect: -0.363  90% CI [-0.392, -0.334]
-```
+    #> Bayesian meta-analysis (metadid)
+    #> Studies: DiD = 50 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0
+    #> Population treatment effect: -0.332  90% CI [-0.348, -0.314]
 
 Now suppose, from the same underlying data, only a third of studies
 provide full DiD information. Another third are RCTs (post-treatment
@@ -242,13 +217,13 @@ arm only):
 study_ids <- unique(sim$study_id)
 true_params <- attr(sim, "true_params")
 
-sim_did <- sim |> filter(study_id %in% study_ids[1:10])
-sim_rct <- sim |> filter(study_id %in% study_ids[11:20])
-sim_pp  <- sim |> filter(study_id %in% study_ids[21:30])
+sim_did <- sim |> filter(study_id %in% study_ids[1:17])
+sim_rct <- sim |> filter(study_id %in% study_ids[18:34])
+sim_pp  <- sim |> filter(study_id %in% study_ids[35:50])
 
-attr(sim_did, "true_params") <- true_params |> filter(study_id %in% study_ids[1:10])
-attr(sim_rct, "true_params") <- true_params |> filter(study_id %in% study_ids[11:20])
-attr(sim_pp, "true_params")  <- true_params |> filter(study_id %in% study_ids[21:30])
+attr(sim_did, "true_params") <- true_params |> filter(study_id %in% study_ids[1:17])
+attr(sim_rct, "true_params") <- true_params |> filter(study_id %in% study_ids[18:34])
+attr(sim_pp, "true_params")  <- true_params |> filter(study_id %in% study_ids[35:50])
 
 mixed <- bind_rows(
   as_summary_did(sim_did),
@@ -258,24 +233,22 @@ mixed <- bind_rows(
 
 fit_mixed <- meta_did(
   summary_data = mixed,
-  seed         = 7251
+  seed         = 495
 )
 
 print(fit_mixed)
 ```
 
-``` R
-#> Bayesian meta-analysis (metadid)
-#> Studies: DiD = 10 | RCT = 10 | Pre-Post = 10 | DiD (change only) = 0 
-#> Population treatment effect: -0.362  90% CI [-0.394, -0.331]
-```
+    #> Bayesian meta-analysis (metadid)
+    #> Studies: DiD = 17 | RCT = 17 | Pre-Post = 16 | DiD (change only) = 0
+    #> Population treatment effect: -0.330  90% CI [-0.349, -0.311]
 
 ### 3. Comparing posteriors
 
-Both fits recover the true normalised effect (−0.333, dashed line). The
-mixed-design posterior is slightly wider, reflecting the information
-lost by having two-thirds of the studies provide incomplete data — but
-the difference is modest.
+Both fits recover the true normalised effect (E\[\_i / b_i\] ) (dashed
+line). The mixed-design posterior is slightly wider, reflecting the
+information lost by having two-thirds of the studies provide incomplete
+data — but the difference is modest.
 
 ``` r
 
@@ -288,7 +261,7 @@ draws_mix <- as.numeric(
 
 comp_df <- data.frame(
   value = c(draws_did, draws_mix),
-  scenario = rep(c("All DiD (30 studies)", "Mixed designs (10 DiD + 10 RCT + 10 PP)"),
+  scenario = rep(c("All DiD (50 studies)", "Mixed designs (17 DiD + 17 RCT + 16 PP)"),
                  each = length(draws_did))
 )
 
