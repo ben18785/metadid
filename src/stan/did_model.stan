@@ -42,7 +42,7 @@ if(n_studies_did > 0) {
   if (is_correlation_coefficient_hierarchical) {
     for (i in 1:n_studies_did) {
       int n_i = sample_size_control_did[i] + sample_size_treatment_did[i];
-      atanh(rho_did[i]) ~ normal(mu_z, sqrt(square(tau_z) + 1.0 / (n_i - 3)));
+      atanh(rho_did[i]) ~ normal(mu_z[1], sqrt(square(tau_z[1]) + 1.0 / (n_i - 3)));
       target += -log1m(square(rho_did[i]));
     }
   }

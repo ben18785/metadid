@@ -11,8 +11,8 @@ treatment_effect_mean ~ normal(treatment_effect_mean_prior_mean, treatment_effec
 treatment_effect_sd ~ cauchy(0, treatment_effect_sd_prior_scale);
 
 if (is_correlation_coefficient_hierarchical) {
-  mu_z ~ normal(mu_z_prior_mean, mu_z_prior_sd);
-  tau_z ~ normal(tau_z_prior_mean, tau_z_prior_sd);
+  mu_z[1] ~ normal(mu_z_prior_mean, mu_z_prior_sd);
+  tau_z[1] ~ normal(tau_z_prior_mean, tau_z_prior_sd);
 }
 
 if (is_student_t_heterogeneity) {

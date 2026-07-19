@@ -552,6 +552,37 @@ meta_did_naive <- function(
     }
   }
 
+  # --- Validate rho when hierarchical modelling is on ---
+  # The hierarchy imputes rho for summary-level studies that don't report it,
+  # but only by borrowing strength from studies that DO carry correlation
+  # information: summary studies with a reported rho, or individual-level
+  # DiD/Pre-Post studies (whose rho is identified from the paired data). With
+  # no such anchor the population rho parameters are informed only by the prior,
+  # producing a funnel and non-convergence (see E6). Rho cannot be inferred from
+  # nothing, so refuse rather than impute.
+  if (hierarchical_rho && !is.null(summary_data) && nrow(summary_data) > 0) {
+    designs_needing_rho <- summary_data$design %in% c("did", "pp")
+    if (any(designs_needing_rho)) {
+      rho_col <- if ("rho" %in% names(summary_data)) summary_data$rho
+                 else rep(NA_real_, nrow(summary_data))
+      n_summary_known   <- sum(designs_needing_rho & !is.na(rho_col))
+      n_summary_missing <- sum(designs_needing_rho &  is.na(rho_col))
+      has_individual_rho <- !is.null(individual_data) &&
+        nrow(individual_data) > 0 &&
+        any(individual_data$design %in% c("did", "pp"))
+      if (n_summary_missing > 0 && n_summary_known == 0 && !has_individual_rho) {
+        stop(
+          "hierarchical_rho = TRUE but no study provides a pre-post correlation ",
+          "to anchor the hierarchy: all ", n_summary_missing, " summary-level ",
+          "DiD/Pre-Post studies have missing rho and there is no individual-level ",
+          "DiD/Pre-Post data from which rho could be identified. Correlations ",
+          "cannot be inferred from nothing. Provide rho for at least one study.",
+          call. = FALSE
+        )
+      }
+    }
+  }
+
   # --- Validate correlated_effects ---
   if (correlated_effects && robust_heterogeneity) {
     stop(

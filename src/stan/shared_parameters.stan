@@ -18,9 +18,12 @@ real<lower=0> baseline_difference_sd;
 real treatment_effect_mean;
 real<lower=0> treatment_effect_sd;
 
-// Hierarchical rho parameters (always declared; unused when flag is 0)
-real mu_z;
-real<lower=0> tau_z;
+// Hierarchical rho parameters. Zero-length (not sampled) when the rho
+// hierarchy is off; length 1 otherwise. Declaring them unconditionally as
+// scalars left them prior-free and unconstrained when the flag was 0, which
+// gave an improper flat posterior and non-convergence (see A13 known_rho).
+vector[is_correlation_coefficient_hierarchical] mu_z;
+vector<lower=0>[is_correlation_coefficient_hierarchical] tau_z;
 
 // Degrees of freedom for Student-t between-study heterogeneity.
 // Length 1 when is_student_t_heterogeneity == 1, length 0 otherwise (not sampled).
