@@ -69,12 +69,12 @@ if(n_studies_did_summary > 0) {
     for (k in 1:n_rho_known_did_summary) {
       int idx = idx_rho_known_did_summary[k];
       int n_i = sample_size_control_did_summary[idx] + sample_size_treatment_did_summary[idx];
-      atanh(rho_known_did_summary[k]) ~ normal(mu_z, sqrt(square(tau_z) + 1.0 / (n_i - 3)));
+      atanh(rho_known_did_summary[k]) ~ normal(mu_z[1], sqrt(square(tau_z[1]) + 1.0 / (n_i - 3)));
     }
     for (k in 1:n_rho_missing_did_summary) {
       int idx = idx_rho_missing_did_summary[k];
       int n_i = sample_size_control_did_summary[idx] + sample_size_treatment_did_summary[idx];
-      z_rho_missing_did_summary[k] ~ normal(mu_z, sqrt(square(tau_z) + 1.0 / (n_i - 3)));
+      z_rho_missing_did_summary[k] ~ normal(mu_z[1], sqrt(square(tau_z[1]) + 1.0 / (n_i - 3)));
     }
   }
 
