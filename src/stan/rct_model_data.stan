@@ -14,3 +14,9 @@ int<lower=0, upper=1> is_time_trend_rct_zero;
 matrix[n_studies_rct, K_cov] X_cov_rct;
 array[n_studies_rct] int<lower=0, upper=n_effect_multipliers> x_mult_rct;
 array[n_studies_rct] int<lower=0, upper=n_effect_multipliers2> x_mult2_rct;
+
+// Baseline-imbalance mode per study (0 fixed zero, 1 non-randomised,
+// 2 randomised -- see shared_data.stan). Unlike the summary-data blocks there
+// is no gamma_scale here: the observation SDs are parameters, so s_i is built
+// in the transformed parameters block instead.
+array[n_studies_rct] int<lower=0, upper=2> gamma_mode_rct;

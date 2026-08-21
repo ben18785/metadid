@@ -24,9 +24,16 @@ if (is_design_effect) {
   delta_pp_raw  ~ normal(0, delta_pp_prior_sd);
 }
 
-baseline_difference_mean ~ normal(baseline_difference_mean_prior_mean,
-                                  baseline_difference_mean_prior_sd);
-baseline_difference_sd   ~ cauchy(0, baseline_difference_sd_prior_scale);
+if (is_mu_gamma_estimated) {
+  mu_gamma_vec[1] ~ normal(baseline_difference_mean_prior_mean,
+                           baseline_difference_mean_prior_sd);
+}
+baseline_difference_sd ~ cauchy(0, baseline_difference_sd_prior_scale);
+
+// Half-normal via the <lower=0> declaration on kappa_vec.
+if (is_kappa_estimated) {
+  kappa_vec[1] ~ normal(0, kappa_prior_scale);
+}
 
 beta_cov ~ normal(0, beta_cov_prior_sd);
 

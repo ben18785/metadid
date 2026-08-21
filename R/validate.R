@@ -534,3 +534,89 @@ validate_multiplicative_covariate <- function(multiplicative_covariate,
     )
   }
 }
+
+# ---------------------------------------------------------------------------
+# validate_randomisation()
+# ---------------------------------------------------------------------------
+
+.valid_randomisation <- c("individual", "cluster", "none")
+
+#' Validate the assignment-mechanism columns
+#'
+#' Checks the optional `randomisation` column (and its `cluster_size` / `icc`
+#' companions) in either data source. Randomisation is deliberately **never**
+#' inferred from `design`: a post-only study may be a randomised trial or an
+#' unrandomised matched cohort, and a DiD study may be a cluster-randomised
+#' roll-out. Treating `design == "rct"` as a randomisation claim is exactly the
+#' error this column exists to prevent, so an absent or `NA` value is read as
+#' `"none"` (imbalance estimated) rather than as randomisation.
+#'
+#' @param summary_data Summary-level data frame (or NULL).
+#' @param individual_data Individual-level data frame (or NULL).
+#'
+#' @return Invisible NULL. Stops with an error if validation fails.
+#' @keywords internal
+validate_randomisation <- function(summary_data, individual_data) {
+
+  check_one <- function(data, context, constant_within_study) {
+    if (is.null(data) || nrow(data) == 0) return(invisible(NULL))
+    if (!"randomisation" %in% names(data)) return(invisible(NULL))
+
+    vals <- as.character(data$randomisation)
+    bad  <- setdiff(unique(vals[!is.na(vals)]), .valid_randomisation)
+    if (length(bad) > 0) {
+      stop(
+        context, "$randomisation contains unrecognised values: ",
+        paste(bad, collapse = ", "),
+        ". Must be one of: ", paste(.valid_randomisation, collapse = ", "),
+        ", or NA (treated as 'none').",
+        call. = FALSE
+      )
+    }
+
+    # Cluster companions: optional, but must be usable when supplied.
+    for (col in intersect(c("cluster_size", "icc"), names(data))) {
+      if (!is.numeric(data[[col]])) {
+        stop("Column '", col, "' in ", context, " must be numeric.", call. = FALSE)
+      }
+    }
+    if ("cluster_size" %in% names(data)) {
+      bad_m <- data$study_id[!is.na(data$cluster_size) & data$cluster_size < 1]
+      if (length(bad_m) > 0) {
+        stop("Column 'cluster_size' in ", context, " must be >= 1. Problem studies: ",
+             paste(unique(bad_m), collapse = ", "), ".", call. = FALSE)
+      }
+    }
+    if ("icc" %in% names(data)) {
+      bad_i <- data$study_id[!is.na(data$icc) & (data$icc < 0 | data$icc >= 1)]
+      if (length(bad_i) > 0) {
+        stop("Column 'icc' in ", context, " must lie in [0, 1). Problem studies: ",
+             paste(unique(bad_i), collapse = ", "), ".", call. = FALSE)
+      }
+    }
+
+    if (constant_within_study) {
+      for (col in intersect(c("randomisation", "cluster_size", "icc"), names(data))) {
+        n_unique <- tapply(data[[col]], data$study_id,
+                           function(x) length(unique(x)))
+        bad_studies <- names(n_unique)[n_unique > 1]
+        if (length(bad_studies) > 0) {
+          stop(
+            "Column '", col, "' varies within study in ", context,
+            " (must be constant within study). Problem studies: ",
+            paste(utils::head(bad_studies, 3), collapse = ", "),
+            if (length(bad_studies) > 3) ", ..." else "", ".",
+            call. = FALSE
+          )
+        }
+      }
+    }
+
+    invisible(NULL)
+  }
+
+  check_one(summary_data,    "summary_data",    constant_within_study = FALSE)
+  check_one(individual_data, "individual_data", constant_within_study = TRUE)
+
+  invisible(NULL)
+}

@@ -17,8 +17,9 @@ set_priors(
   sigma = cauchy(5),
   beta_cov = normal(0, 10),
   lkj_eta = lkj(2),
-  baseline_difference_mean = normal(0, 0.5),
+  baseline_difference_mean = normal(0, 0.05),
   baseline_difference_sd = cauchy(0.1),
+  kappa = normal(0, 0.5),
   multiplier = lognormal(0, 0.7)
 )
 }
@@ -60,13 +61,29 @@ between treatment effects and time trends (only used when
 regularises toward zero correlation.}
 
 \item{baseline_difference_mean}{Prior on the population mean of the
-per-study baseline imbalance (treatment-arm vs control-arm pre-treatment
-mean, on the normalised fractional scale). Only used when
-\code{baseline_imbalance = "estimated"}. Default: \code{normal(0, 0.5)}.}
+per-study baseline imbalance among \strong{non-randomised} studies
+(treatment-arm vs control-arm pre-treatment mean, on the normalised
+fractional scale). Only used when \code{mu_gamma = "estimated"} in
+\code{\link[=meta_did]{meta_did()}}; under the default \code{mu_gamma = "zero"} the population mean is
+pinned at zero and this prior is ignored. Default: \code{normal(0, 0.05)}.
+
+The old default was \code{normal(0, 0.5)}, which was both internally
+inconsistent with the \code{cauchy(0.1)} prior on the between-study SD (it
+asserted the \emph{average} imbalance could be far larger than the \emph{spread}
+around it) and materially informative about the pooled treatment effect,
+because baseline imbalance is unidentified for post-only studies and
+subtracts directly from their estimated effect.}
 
 \item{baseline_difference_sd}{Prior on the between-study SD of the
-baseline imbalance. Only used when \code{baseline_imbalance = "estimated"}.
-Default: \code{cauchy(0.1)}.}
+baseline imbalance among non-randomised studies. Default: \code{cauchy(0.1)}.}
+
+\item{kappa}{Prior on the excess-imbalance factor for \strong{randomised}
+studies, interpreted as half-normal because \code{kappa} is constrained
+positive. Only used when \code{kappa = "estimate"} in \code{\link[=meta_did]{meta_did()}}.
+\code{kappa^2} is the variance inflation of a randomised study's baseline
+contrast beyond simple random sampling, so \code{kappa = 0} is perfect
+randomisation. Default: \code{normal(0, 0.5)}, which places most mass below
+\code{kappa = 1} (a doubling of the baseline-contrast variance).}
 
 \item{multiplier}{Prior on the multiplicative-covariate effect multiplier
 (only used when \code{multiplicative_covariate} is specified in \code{\link[=meta_did]{meta_did()}}).

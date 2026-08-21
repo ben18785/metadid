@@ -47,28 +47,94 @@
 #'   correlation is parameterised via a Cholesky factor of a 2×2 correlation
 #'   matrix with an LKJ prior (see [set_priors()]). Cannot be combined with
 #'   `robust_heterogeneity = TRUE`. Default `FALSE`.
-#' @param baseline_imbalance How to handle the per-study baseline
-#'   difference \eqn{\gamma_i} for **non-DiD** designs. DiD studies
-#'   always estimate \eqn{\gamma_i} per-study because the pre-treatment
-#'   means on both arms identify it directly from the data; this
-#'   argument controls only the RCT branch.
-#'   One of:
+#' @param baseline_imbalance How the per-study baseline difference
+#'   \eqn{\gamma_i} is modelled. One of:
 #'   \describe{
-#'     \item{`"estimated"`}{(Default) RCT studies also have per-study
-#'       `baseline_difference_i` parameters, drawn from a hierarchical
-#'       prior shared with DiD studies. Because RCT data cannot identify
-#'       per-study \eqn{\gamma_i} alone (only one post-treatment
-#'       observation per arm), the hierarchical prior \-\- informed by
-#'       DiD's per-study estimates \-\- is what pins down the
-#'       decomposition into baseline imbalance and treatment effect.
-#'       Priors on the population hyperparameters are set via
-#'       `baseline_difference_mean` and `baseline_difference_sd` in
-#'       [set_priors()].}
-#'     \item{`"fixed_zero"`}{Fix \eqn{\gamma_i = 0} for RCT studies. The
-#'       treatment-arm baseline is constrained equal to the control-arm
-#'       baseline. Use when randomisation can be assumed to eliminate
-#'       baseline imbalances. DiD studies are unaffected.}
+#'     \item{`"by_randomisation"`}{(Default) Each study's \eqn{\gamma_i}
+#'       follows from its `randomisation` column. **Non-randomised** studies
+#'       draw \eqn{\gamma_i \sim N(\mu_\gamma, \tau_\gamma)};
+#'       **randomised** studies draw
+#'       \eqn{\gamma_i \sim N(0, \kappa^2 s_i^2)}, where \eqn{s_i} is the
+#'       sampling SD of that study's baseline contrast. The two populations do
+#'       not share a mean: randomisation implies a zero population imbalance
+#'       structurally, so it is imposed rather than estimated.}
+#'     \item{`"estimated"`}{Every DiD and RCT study draws
+#'       \eqn{\gamma_i \sim N(\mu_\gamma, \tau_\gamma)}, ignoring the
+#'       `randomisation` column entirely. This was the previous default.}
+#'     \item{`"fixed_zero"`}{Fix \eqn{\gamma_i = 0} for RCT studies; DiD
+#'       studies are unaffected and still estimate \eqn{\gamma_i} from their
+#'       own pre-treatment means. Note this is a *hard* constraint, which costs
+#'       a DiD study its robustness to baseline imbalance: with
+#'       \eqn{\gamma_i} pinned at zero the model averages the pre- and
+#'       post-period information instead of differencing it, so a real
+#'       imbalance leaks into \eqn{\theta_i}. Prefer `"by_randomisation"`
+#'       with a small `kappa`, which shrinks toward zero without imposing it.}
 #'   }
+#'
+#'   Baseline imbalance is **unidentified** for post-only studies: it subtracts
+#'   directly from their estimated effect, so whatever the model assumes about
+#'   \eqn{\gamma} propagates straight into the pooled treatment effect for
+#'   those studies. The default exists to keep that propagation honest.
+#' @param mu_gamma Whether the population mean baseline imbalance among
+#'   **non-randomised** studies is estimated. One of:
+#'   \describe{
+#'     \item{`"zero"`}{(Default) \eqn{\mu_\gamma = 0}. The *magnitude* of
+#'       selection-driven imbalance is pooled across non-randomised studies,
+#'       but its *direction* is not transported between them.}
+#'     \item{`"estimated"`}{\eqn{\mu_\gamma} is estimated, with the prior
+#'       from `baseline_difference_mean` in [set_priors()].}
+#'   }
+#'
+#'   The default is deliberate. Whether a treated group starts above or below
+#'   its control is a property of each programme's targeting rule -- some
+#'   interventions go to high-need (high-baseline) populations, others to
+#'   easy-to-reach (low-baseline) ones -- not of the outcome or the
+#'   intervention. Estimating a single \eqn{\mu_\gamma} asserts that a whole
+#'   literature shares a direction of selection, and then applies that
+#'   direction to every post-only study, whose own data cannot contradict it.
+#'   Worse, the resulting bias does not shrink with more data: it *sharpens*,
+#'   because \eqn{\mu_\gamma} is estimated more precisely. Set to
+#'   `"estimated"` only when the studies plausibly share a targeting
+#'   mechanism -- for example, several evaluations of the same programme.
+#' @param kappa Excess-imbalance factor for **randomised** studies. Either a
+#'   single non-negative number (default `0.5`) or the string `"estimate"`.
+#'
+#'   \eqn{\kappa^2} is the variance inflation of a randomised study's baseline
+#'   contrast beyond simple random sampling, so \eqn{\kappa^2 = }`DEFF`\eqn{ - 1}
+#'   and \eqn{\kappa = 0} is perfect randomisation. Note \eqn{\kappa = 0} is
+#'   *not* the same as ignoring finite-sample imbalance: the realised imbalance
+#'   of a randomised allocation is already carried by the likelihood's
+#'   \eqn{\sigma^2/n} terms (and, for DiD, propagated into the post period by
+#'   the pre-post correlation). \eqn{\kappa} governs only the *extra*
+#'   allowance for randomisation not having held exactly -- imperfect
+#'   allocation, attrition, post-randomisation selection.
+#'
+#'   Because \eqn{s_i} scales as \eqn{1/\sqrt{n_i}}, this automatically
+#'   down-weights small randomised studies more than large ones. For a
+#'   post-only randomised study, where \eqn{\gamma_i} is unidentified, the
+#'   mechanism is equivalent to inflating that study's standard error by
+#'   \eqn{\sqrt{1 + \kappa^2}}.
+#'
+#'   `"estimate"` samples \eqn{\kappa} with the prior from `kappa` in
+#'   [set_priors()], but by default is only permitted when at least one
+#'   randomised study carries pre-treatment data (a randomised DiD). Post-only
+#'   randomised studies constrain \eqn{\kappa} not at all. With no such anchor,
+#'   either fix \eqn{\kappa} or set `allow_unidentified_kappa = TRUE`. The
+#'   default of `0.5` is a reasonable central choice rather than a value to
+#'   trust on its own, so it is worth refitting at a few values to see whether
+#'   any conclusion turns on it.
+#' @param cluster_deff_default Design effect assumed for studies with
+#'   `randomisation = "cluster"` that do not supply `cluster_size` and `icc`
+#'   columns. Default `2`, which corresponds to roughly 50 units per cluster at
+#'   an ICC of 0.02. When both columns are supplied, the study's own
+#'   \eqn{1 + (m - 1)\rho_{ICC}} is used instead. The design effect inflates
+#'   \eqn{s_i} so that \eqn{\kappa} keeps one meaning across designs.
+#'
+#'   This corrects the *baseline contrast* only. A cluster-randomised study's
+#'   likelihood still uses \eqn{\sigma^2/n} for the post-treatment period, so
+#'   it remains over-precise about its own treatment effect. Correcting that
+#'   needs cluster identifiers and a random effect, which this model does not
+#'   carry.
 #' @param priors A `did_priors` object from [set_priors()]. Controls the
 #'   prior distributions on all population-level parameters.
 #' @param covariates An optional one-sided formula specifying study-level
@@ -131,6 +197,22 @@
 #' @param iter_sampling Number of sampling iterations per chain. Ignored when
 #'   `method = "optimize"`. Default `1000`.
 #' @param seed Integer random seed for reproducibility. Default `NULL`.
+#' @param allow_unidentified_kappa Logical. If `FALSE` (default),
+#'   `kappa = "estimate"` errors when no randomised study carries pre-treatment
+#'   data, because \eqn{\kappa} is then not identified by anything. Set to
+#'   `TRUE` to sample it anyway (the posterior for \eqn{\kappa} will reproduce
+#'   its prior).
+#'
+#'   Doing so is a modelling choice rather than an estimate. Sampling
+#'   \eqn{\kappa} instead of fixing it makes the marginal prior on
+#'   \eqn{\gamma_i} a scale mixture of normals rather than a normal --
+#'   simultaneously more peaked at zero and much heavier-tailed than any fixed
+#'   \eqn{\kappa}. That is a better description of "most randomised trials
+#'   achieved balance, occasionally one badly did not" than a single scale can
+#'   give, and it propagates the uncertainty in \eqn{\kappa} into the pooled
+#'   effect rather than conditioning on one value. What it does *not* do is
+#'   learn \eqn{\kappa} from the data, which is why it must be asked for
+#'   explicitly.
 #' @param allow_no_did Logical. If `FALSE` (default), `meta_did()` will
 #'   stop with an error when no DiD studies are present, because the
 #'   treatment effect is not identified from the data without the
@@ -175,7 +257,10 @@ meta_did <- function(
     design_effects           = FALSE,
     hierarchical_rho         = TRUE,
     correlated_effects       = FALSE,
-    baseline_imbalance       = c("estimated", "fixed_zero"),
+    baseline_imbalance       = c("by_randomisation", "estimated", "fixed_zero"),
+    mu_gamma                 = c("zero", "estimated"),
+    kappa                    = 0.5,
+    cluster_deff_default     = 2,
     covariates               = NULL,
     multiplicative_covariate = NULL,
     center_covariates        = TRUE,
@@ -186,6 +271,7 @@ meta_did <- function(
     iter_sampling            = 1000L,
     seed                     = NULL,
     allow_no_did             = FALSE,
+    allow_unidentified_kappa = FALSE,
     ...
 ) {
   .meta_did_core(
@@ -197,6 +283,9 @@ meta_did <- function(
     hierarchical_rho         = hierarchical_rho,
     correlated_effects       = correlated_effects,
     baseline_imbalance       = baseline_imbalance,
+    mu_gamma                 = mu_gamma,
+    kappa                    = kappa,
+    cluster_deff_default     = cluster_deff_default,
     covariates               = covariates,
     multiplicative_covariate = multiplicative_covariate,
     center_covariates        = center_covariates,
@@ -207,6 +296,7 @@ meta_did <- function(
     iter_sampling            = iter_sampling,
     seed                     = seed,
     allow_no_did             = allow_no_did,
+    allow_unidentified_kappa = allow_unidentified_kappa,
     ...
   )
 }
@@ -237,18 +327,13 @@ meta_did <- function(
 #'       attributed entirely to treatment. For RCT studies, the
 #'       reparameterised time trend correction is bypassed.}
 #'   }
-#' @param baseline_imbalance How to handle the baseline difference
-#'   \eqn{\gamma_i} between treatment and control groups for **RCT**
-#'   studies. DiD studies always estimate \eqn{\gamma_i} per-study (the
-#'   pre-treatment means identify it from data).
-#'   One of:
-#'   \describe{
-#'     \item{`"estimated"`}{(Default) Estimate per-study \eqn{\gamma_i}
-#'       for RCT, drawing from a hierarchical prior shared with DiD's
-#'       per-study estimates. This is the same behaviour as [meta_did()].}
-#'     \item{`"fixed_zero"`}{Fix \eqn{\gamma_i = 0} for RCT studies,
-#'       assuming randomisation eliminates baseline imbalances.}
-#'   }
+#' @inheritParams meta_did
+#' @param baseline_imbalance How the per-study baseline difference
+#'   \eqn{\gamma_i} is modelled: `"by_randomisation"` (default),
+#'   `"estimated"`, or `"fixed_zero"`. Identical in meaning and default to the
+#'   [meta_did()] argument of the same name -- see there for the full
+#'   description, and for `mu_gamma`, `kappa` and `cluster_deff_default`, which
+#'   this function also accepts.
 #' @param pp_likelihood Likelihood form for pre-post studies. One of:
 #'   \describe{
 #'     \item{`"differenced"`}{(Default) Use the differenced (post minus pre)
@@ -301,7 +386,10 @@ meta_did_general <- function(
     design_effects           = FALSE,
     hierarchical_rho         = TRUE,
     correlated_effects       = FALSE,
-    baseline_imbalance       = c("estimated", "fixed_zero"),
+    baseline_imbalance       = c("by_randomisation", "estimated", "fixed_zero"),
+    mu_gamma                 = c("zero", "estimated"),
+    kappa                    = 0.5,
+    cluster_deff_default     = 2,
     covariates               = NULL,
     multiplicative_covariate = NULL,
     center_covariates        = TRUE,
@@ -314,10 +402,12 @@ meta_did_general <- function(
     iter_sampling            = 1000L,
     seed                     = NULL,
     allow_no_did             = FALSE,
+    allow_unidentified_kappa = FALSE,
     ...
 ) {
   time_trend         <- match.arg(time_trend)
   baseline_imbalance <- match.arg(baseline_imbalance)
+  mu_gamma           <- match.arg(mu_gamma)
   pp_likelihood      <- match.arg(pp_likelihood)
 
   overrides <- list()
@@ -343,6 +433,9 @@ meta_did_general <- function(
     hierarchical_rho         = hierarchical_rho,
     correlated_effects       = correlated_effects,
     baseline_imbalance       = baseline_imbalance,
+    mu_gamma                 = mu_gamma,
+    kappa                    = kappa,
+    cluster_deff_default     = cluster_deff_default,
     covariates               = covariates,
     multiplicative_covariate = multiplicative_covariate,
     center_covariates        = center_covariates,
@@ -353,6 +446,7 @@ meta_did_general <- function(
     iter_sampling            = iter_sampling,
     seed                     = seed,
     allow_no_did             = allow_no_did,
+    allow_unidentified_kappa = allow_unidentified_kappa,
     stan_data_overrides      = if (length(overrides) > 0) overrides else NULL,
     ...
   )
@@ -400,6 +494,7 @@ meta_did_naive <- function(
     iter_sampling            = 1000L,
     seed                     = NULL,
     allow_no_did             = FALSE,
+    allow_unidentified_kappa = FALSE,
     ...
 ) {
   .Deprecated("meta_did_general",
@@ -421,12 +516,14 @@ meta_did_naive <- function(
     priors                   = priors,
     time_trend               = "fixed_zero",
     baseline_imbalance       = "fixed_zero",
+    mu_gamma                 = "estimated",
     method                   = method,
     chains                   = chains,
     iter_warmup              = iter_warmup,
     iter_sampling            = iter_sampling,
     seed                     = seed,
     allow_no_did             = allow_no_did,
+    allow_unidentified_kappa = allow_unidentified_kappa,
     ...
   )
 }
@@ -444,7 +541,10 @@ meta_did_naive <- function(
     design_effects           = FALSE,
     hierarchical_rho         = TRUE,
     correlated_effects       = FALSE,
-    baseline_imbalance       = c("estimated", "fixed_zero"),
+    baseline_imbalance       = c("by_randomisation", "estimated", "fixed_zero"),
+    mu_gamma                 = c("zero", "estimated"),
+    kappa                    = 0.5,
+    cluster_deff_default     = 2,
     covariates               = NULL,
     multiplicative_covariate = NULL,
     center_covariates        = TRUE,
@@ -455,11 +555,13 @@ meta_did_naive <- function(
     iter_sampling            = 1000L,
     seed                     = NULL,
     allow_no_did             = FALSE,
+    allow_unidentified_kappa = FALSE,
     stan_data_overrides      = NULL,
     ...
 ) {
   method             <- match.arg(method)
   baseline_imbalance <- match.arg(baseline_imbalance)
+  mu_gamma           <- match.arg(mu_gamma)
 
   # --- Input checks ---
   if (is.null(summary_data) && is.null(individual_data)) {
@@ -469,6 +571,20 @@ meta_did_naive <- function(
 
   validate_summary_data(summary_data)
   validate_individual_data(individual_data)
+  validate_randomisation(summary_data, individual_data)
+
+  # kappa: a fixed non-negative scalar, or "estimate" to sample it.
+  estimate_kappa <- identical(kappa, "estimate")
+  if (!estimate_kappa) {
+    if (!is.numeric(kappa) || length(kappa) != 1L || is.na(kappa) || kappa < 0) {
+      stop("'kappa' must be a single non-negative number, or the string ",
+           "\"estimate\".", call. = FALSE)
+    }
+  }
+  if (!is.numeric(cluster_deff_default) || length(cluster_deff_default) != 1L ||
+      cluster_deff_default < 1) {
+    stop("'cluster_deff_default' must be a single number >= 1.", call. = FALSE)
+  }
 
   # Check no study_id overlap between the two inputs
   if (!is.null(summary_data) && !is.null(individual_data)) {
@@ -600,14 +716,83 @@ meta_did_naive <- function(
     is_student_t_heterogeneity              = as.integer(robust_heterogeneity),
     is_design_effect                        = as.integer(design_effects),
     is_correlated_effects                   = as.integer(correlated_effects),
-    is_baseline_difference_estimated        = as.integer(baseline_imbalance == "estimated")
+    is_mu_gamma_estimated                   = as.integer(mu_gamma == "estimated"),
+    # Provisionally on when requested; downgraded below if nothing anchors it.
+    is_kappa_estimated                      = as.integer(estimate_kappa),
+    kappa_fixed                             = if (estimate_kappa) 0 else as.numeric(kappa)
   )
 
   # --- Stan data ---
   stan_data <- prepare_stan_data(summary_data, individual_data, model_flags, priors,
                                   covariate_names = covariate_names,
                                   multiplicative_covariate = multiplicative_covariate,
-                                  center_covariates = center_covariates)
+                                  center_covariates = center_covariates,
+                                  baseline_imbalance = baseline_imbalance,
+                                  cluster_deff_default = cluster_deff_default)
+
+  # --- kappa identification check ---
+  # kappa is the scale of the baseline imbalance permitted to randomised
+  # studies. Only a randomised study with PRE-treatment data constrains it: a
+  # post-only randomised study has an unidentified gamma_i, so it says nothing
+  # about how large gamma tends to be. Sampling kappa without such an anchor
+  # gives a prior-driven parameter that silently sets how much every randomised
+  # study is down-weighted, so refuse -- mirroring the hierarchical-rho check
+  # above, which declines to impute correlations from nothing.
+  if (estimate_kappa && !isTRUE(attr(stan_data, "has_kappa_anchor"))) {
+    if (!allow_unidentified_kappa) {
+      stop(
+        "kappa = \"estimate\" but no randomised study carries pre-treatment data ",
+        "to identify it. kappa is anchored only by randomised DiD studies; ",
+        "post-only randomised studies have an unidentified baseline imbalance and ",
+        "constrain its scale not at all.\n",
+        "Supply a fixed value instead (e.g. kappa = 0.5 for individual ",
+        "randomisation, or kappa = 1 to allow more). Refitting at a few values ",
+        "is usually cheap and shows whether any conclusion turns on the choice.\n",
+        "Or set allow_unidentified_kappa = TRUE to sample kappa anyway, ",
+        "integrating over its prior rather than conditioning on one value.",
+        call. = FALSE
+      )
+    }
+    if (!isTRUE(getOption("metadid.quiet", FALSE))) {
+      message(
+        "kappa is being sampled with nothing to identify it: no randomised ",
+        "study carries pre-treatment data. Its posterior will reproduce the ",
+        "prior from set_priors(kappa = ). This is a deliberate choice, not an ",
+        "estimate -- the effect is to give each randomised study's baseline ",
+        "imbalance a heavier-tailed prior than any fixed kappa can, rather ",
+        "than to learn kappa from the data."
+      )
+    }
+  }
+  # Warn only where the assumption actually bites: a post-only study cannot
+  # identify its own gamma, so whatever the model assumes about imbalance
+  # subtracts straight from its estimated effect. A DiD-only analysis identifies
+  # gamma per study from its own pre-treatment means, so the label changes
+  # little and the message would be noise. Suppress with
+  # options(metadid.quiet = TRUE) in batch pipelines.
+  has_rand_col <- (!is.null(summary_data) && "randomisation" %in% names(summary_data)) ||
+                  (!is.null(individual_data) && "randomisation" %in% names(individual_data))
+  n_post_only <- sum(summary_data$design == "rct", na.rm = TRUE) +
+                 sum(individual_data$design == "rct", na.rm = TRUE)
+  if (!has_rand_col && n_post_only > 0 &&
+      baseline_imbalance == "by_randomisation" &&
+      !isTRUE(getOption("metadid.quiet", FALSE))) {
+    message(
+      "No 'randomisation' column supplied, so all ", n_post_only,
+      " post-only (RCT) studies are treated as non-randomised and have their ",
+      "baseline imbalance imputed from the other studies. That imputation ",
+      "subtracts directly from their estimated treatment effect.\n",
+      "Add a 'randomisation' column (\"individual\", \"cluster\" or \"none\") ",
+      "so randomised studies use the zero-centred, sample-size-scaled model ",
+      "instead. Silence with options(metadid.quiet = TRUE)."
+    )
+  }
+  model_flags$is_kappa_estimated <- stan_data$is_kappa_estimated
+  # Studies actually placed in the randomised gamma branch. Distinct from the
+  # count of studies *labelled* randomised: baseline_imbalance = "estimated"
+  # deliberately ignores the label, and printing the label there would overstate
+  # what the fitted model assumed.
+  model_flags$n_gamma_randomised <- attr(stan_data, "n_randomised")
   cov_centers <- attr(stan_data, "cov_centers")
   mult_covariates <- attr(stan_data, "mult_covariates")
   multiplicative_covariate_info <- if (is.null(mult_covariates)) {

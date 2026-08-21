@@ -21,6 +21,7 @@ meta_did_naive(
   iter_sampling = 1000L,
   seed = NULL,
   allow_no_did = FALSE,
+  allow_unidentified_kappa = FALSE,
   ...
 )
 }
@@ -138,6 +139,23 @@ stop with an error when no DiD studies are present, because the
 treatment effect is not identified from the data without the
 double-difference structure. Set to \code{TRUE} to override this check
 if you understand the limitation (the posterior will be prior-driven).}
+
+\item{allow_unidentified_kappa}{Logical. If \code{FALSE} (default),
+\code{kappa = "estimate"} errors when no randomised study carries pre-treatment
+data, because \eqn{\kappa} is then not identified by anything. Set to
+\code{TRUE} to sample it anyway (the posterior for \eqn{\kappa} will reproduce
+its prior).
+
+Doing so is a modelling choice rather than an estimate. Sampling
+\eqn{\kappa} instead of fixing it makes the marginal prior on
+\eqn{\gamma_i} a scale mixture of normals rather than a normal --
+simultaneously more peaked at zero and much heavier-tailed than any fixed
+\eqn{\kappa}. That is a better description of "most randomised trials
+achieved balance, occasionally one badly did not" than a single scale can
+give, and it propagates the uncertainty in \eqn{\kappa} into the pooled
+effect rather than conditioning on one value. What it does \emph{not} do is
+learn \eqn{\kappa} from the data, which is why it must be asked for
+explicitly.}
 
 \item{...}{Additional arguments passed to the underlying CmdStanModel
 method: \verb{$sample()} when \code{method = "sample"} (e.g., \code{parallel_chains},

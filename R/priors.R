@@ -117,7 +117,8 @@ print.did_prior <- function(x, ...) {
   multiplier               = c("lognormal"),
   lkj_eta                  = c("lkj"),
   baseline_difference_mean = c("normal"),
-  baseline_difference_sd   = c("cauchy", "normal")
+  baseline_difference_sd   = c("cauchy", "normal"),
+  kappa                    = c("normal")
 )
 
 # ---------------------------------------------------------------------------
@@ -154,12 +155,27 @@ print.did_prior <- function(x, ...) {
 #'   `correlated_effects = TRUE`). Default: `lkj(2)`, which gently
 #'   regularises toward zero correlation.
 #' @param baseline_difference_mean Prior on the population mean of the
-#'   per-study baseline imbalance (treatment-arm vs control-arm pre-treatment
-#'   mean, on the normalised fractional scale). Only used when
-#'   `baseline_imbalance = "estimated"`. Default: `normal(0, 0.5)`.
+#'   per-study baseline imbalance among **non-randomised** studies
+#'   (treatment-arm vs control-arm pre-treatment mean, on the normalised
+#'   fractional scale). Only used when `mu_gamma = "estimated"` in
+#'   [meta_did()]; under the default `mu_gamma = "zero"` the population mean is
+#'   pinned at zero and this prior is ignored. Default: `normal(0, 0.05)`.
+#'
+#'   The old default was `normal(0, 0.5)`, which was both internally
+#'   inconsistent with the `cauchy(0.1)` prior on the between-study SD (it
+#'   asserted the *average* imbalance could be far larger than the *spread*
+#'   around it) and materially informative about the pooled treatment effect,
+#'   because baseline imbalance is unidentified for post-only studies and
+#'   subtracts directly from their estimated effect.
 #' @param baseline_difference_sd Prior on the between-study SD of the
-#'   baseline imbalance. Only used when `baseline_imbalance = "estimated"`.
-#'   Default: `cauchy(0.1)`.
+#'   baseline imbalance among non-randomised studies. Default: `cauchy(0.1)`.
+#' @param kappa Prior on the excess-imbalance factor for **randomised**
+#'   studies, interpreted as half-normal because `kappa` is constrained
+#'   positive. Only used when `kappa = "estimate"` in [meta_did()].
+#'   `kappa^2` is the variance inflation of a randomised study's baseline
+#'   contrast beyond simple random sampling, so `kappa = 0` is perfect
+#'   randomisation. Default: `normal(0, 0.5)`, which places most mass below
+#'   `kappa = 1` (a doubling of the baseline-contrast variance).
 #' @param multiplier Prior on the multiplicative-covariate effect multiplier
 #'   (only used when `multiplicative_covariate` is specified in [meta_did()]).
 #'   With one or two multiplicative covariates the same prior is applied
@@ -192,8 +208,9 @@ set_priors <- function(
     sigma                    = cauchy(5),
     beta_cov                 = normal(0, 10),
     lkj_eta                  = lkj(2),
-    baseline_difference_mean = normal(0, 0.5),
+    baseline_difference_mean = normal(0, 0.05),
     baseline_difference_sd   = cauchy(0.1),
+    kappa                    = normal(0, 0.5),
     multiplier               = lognormal(0, 0.7)
 ) {
   priors <- list(
@@ -211,6 +228,7 @@ set_priors <- function(
     lkj_eta                  = lkj_eta,
     baseline_difference_mean = baseline_difference_mean,
     baseline_difference_sd   = baseline_difference_sd,
+    kappa                    = kappa,
     multiplier               = multiplier
   )
   validate_priors(priors)
@@ -303,6 +321,8 @@ as_stan_data.did_priors <- function(priors) {
     baseline_difference_mean_prior_sd   = priors$baseline_difference_mean$sd,
     baseline_difference_sd_prior_scale  = priors$baseline_difference_sd$scale %||%
                                           priors$baseline_difference_sd$sd,
+    # kappa ~ half-normal(0, scale); only used when is_kappa_estimated == 1
+    kappa_prior_scale                   = priors$kappa$sd,
     # effect_multiplier ~ lognormal(meanlog, sdlog), i.e. prior on log scale
     effect_multiplier_prior_meanlog         = priors$multiplier$meanlog,
     effect_multiplier_prior_sdlog           = priors$multiplier$sdlog

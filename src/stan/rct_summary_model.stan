@@ -10,10 +10,7 @@ if(n_studies_rct_summary > 0) {
   vector[n_studies_rct_summary] baseline_treatment_rct_summary_eff;
   if (is_baseline_normalised) {
     baseline_control_rct_summary_eff = rep_vector(1.0, n_studies_rct_summary);
-    if (is_baseline_difference_estimated)
-      baseline_treatment_rct_summary_eff = rep_vector(1.0, n_studies_rct_summary) + baseline_difference_rct_summary;
-    else
-      baseline_treatment_rct_summary_eff = rep_vector(1.0, n_studies_rct_summary);
+    baseline_treatment_rct_summary_eff = rep_vector(1.0, n_studies_rct_summary) + baseline_difference_rct_summary;
   } else {
     baseline_control_rct_summary_eff = baseline_control_rct_summary;
     baseline_treatment_rct_summary_eff = baseline_treatment_rct_summary;
@@ -97,9 +94,7 @@ if(n_studies_rct_summary > 0) {
   if (!is_baseline_normalised) {
     baseline_control_rct_summary_raw ~ std_normal();
   }
-  if (is_baseline_difference_estimated) {
-    baseline_difference_rct_summary_raw ~ std_normal();
-  }
+  baseline_difference_rct_summary_raw ~ std_normal();
   // Time trend prior (non-centered; when correlated, included in joint prior above)
   if (!is_time_trend_rct_summary_zero && !is_correlated_effects)
     time_trend_rct_summary_raw ~ std_normal();
