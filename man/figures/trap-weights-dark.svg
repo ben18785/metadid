@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 300" role="img" aria-label="Variance and weight by design"><style>text{font-family:'Lato','Helvetica Neue',Arial,sans-serif}</style>
+  <g font-size="13.5" font-weight="700" fill="#98a2b8">
+  <text x="30" y="36">Design</text>
+  <text x="420" y="36">Variance of the estimate</text>
+  <text x="720" y="36">Share of the total weight (ρ = 0.7)</text>
+  </g>
+  <g font-size="20">
+  <text x="30" y="100" font-weight="700" fill="#e6eaf5">Pre-post (uncontrolled)</text>
+  <text x="420" y="100" fill="#e6eaf5">2σ²(1 − ρ) / n</text>
+  <rect x="720" y="80" width="280" height="26" rx="3" fill="#E06B6B"/>
+  <text x="1012" y="100" font-weight="700" fill="#e6eaf5">56%</text>
+  <text x="30" y="180" font-weight="700" fill="#e6eaf5">RCT (post-only)</text>
+  <text x="420" y="180" fill="#e6eaf5">2σ² / n</text>
+  <rect x="720" y="160" width="85" height="26" rx="3" fill="#98a2b8" opacity=".75"/>
+  <text x="817" y="180" font-weight="700" fill="#e6eaf5">17%</text>
+  <text x="30" y="260" font-weight="700" fill="#e6eaf5">Controlled DiD</text>
+  <text x="420" y="260" fill="#e6eaf5">4σ²(1 − ρ) / n</text>
+  <rect x="720" y="240" width="140" height="26" rx="3" fill="#6487E6"/>
+  <text x="872" y="260" font-weight="700" fill="#e6eaf5">28%</text>
+  </g>
+</svg>

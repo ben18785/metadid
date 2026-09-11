@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 310" role="img" aria-label="The same Hedges g implies different real-world effects"><style>text{font-family:'Lato','Helvetica Neue',Arial,sans-serif}</style>
+  <text x="90" y="66" font-size="13.5" font-weight="700" fill="#6b7280">Pooled</text>
+  <rect x="60" y="82" width="250" height="112" rx="56" fill="#1f2430"/>
+  <text x="185" y="130" text-anchor="middle" font-size="22" font-style="italic" fill="#ffffff">Hedges' g</text>
+  <text x="185" y="168" text-anchor="middle" font-size="30" font-weight="900" fill="#ffffff">≈ −0.83</text>
+  <path d="M330,118 L536,66" stroke="#B91C1C" stroke-width="2.5" stroke-dasharray="6 5" fill="none"/>
+  <path d="M536,66 l-13,-1 l8,10 z" fill="#B91C1C"/>
+  <path d="M330,160 L536,224" stroke="#B91C1C" stroke-width="2.5" stroke-dasharray="6 5" fill="none"/>
+  <path d="M536,224 l-13,1 l8,-10 z" fill="#B91C1C"/>
+  <text x="440" y="158" font-size="42" font-weight="900" fill="#B91C1C">≠</text>
+  <g>
+  <rect x="560" y="26" width="390" height="112" rx="10" fill="none" stroke="#B91C1C" stroke-width="2"/>
+  <text x="582" y="56" font-size="14" font-weight="700" fill="#B91C1C">back-transform with σ = 1.0 g</text>
+  <text x="582" y="90" font-size="27" font-weight="900" fill="#1f2430">−0.83 g</text>
+  <text x="582" y="120" font-size="17" font-weight="700" fill="#B91C1C">≈ −21% of baseline</text>
+  <rect x="560" y="168" width="390" height="112" rx="10" fill="none" stroke="#B91C1C" stroke-width="2"/>
+  <text x="582" y="198" font-size="14" font-weight="700" fill="#B91C1C">back-transform with σ = 0.5 g</text>
+  <text x="582" y="232" font-size="27" font-weight="900" fill="#1f2430">−0.42 g</text>
+  <text x="582" y="262" font-size="17" font-weight="700" fill="#B91C1C">≈ −10% of baseline</text>
+  </g>
+</svg>

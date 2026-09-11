@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 268" role="img" aria-label="metadid banner"><style>text{font-family:'Lato','Helvetica Neue',Arial,sans-serif}</style>
+  <text x="0" y="118" font-size="88" font-weight="900" fill="#7C9BF0">metadid</text>
+  <text x="3" y="163" font-size="20" fill="#98a2b8">Bayesian meta-analysis that pools DiD, RCT and</text>
+  <text x="3" y="190" font-size="20" fill="#98a2b8">pre-post studies in one latent model.</text>
+  <g>
+  <g transform="translate(878,62) scale(1.09375)">
+  <rect x="1" y="1" width="28" height="28" rx="5" fill="#6487E6"/>
+  <rect x="35" y="1" width="28" height="28" rx="5" fill="#6487E6"/>
+  <rect x="2" y="36" width="26" height="26" rx="5" fill="none" stroke="#3d4763" stroke-width="2" stroke-dasharray="4 4"/>
+  <rect x="36" y="36" width="26" height="26" rx="5" fill="none" stroke="#3d4763" stroke-width="2" stroke-dasharray="4 4"/></g>
+  <text x="913" y="166" text-anchor="middle" font-size="13.5" fill="#98a2b8">pre-post</text>
+  <text x="970" y="106" text-anchor="middle" font-size="26" fill="#98a2b8">+</text>
+  <g transform="translate(992,62) scale(1.09375)">
+  <rect x="2" y="2" width="26" height="26" rx="5" fill="none" stroke="#3d4763" stroke-width="2" stroke-dasharray="4 4"/>
+  <rect x="35" y="1" width="28" height="28" rx="5" fill="#6487E6"/>
+  <rect x="2" y="36" width="26" height="26" rx="5" fill="none" stroke="#3d4763" stroke-width="2" stroke-dasharray="4 4"/>
+  <rect x="35" y="35" width="28" height="28" rx="5" fill="#6487E6"/></g>
+  <text x="1027" y="166" text-anchor="middle" font-size="13.5" fill="#98a2b8">RCT</text>
+  <text x="1084" y="106" text-anchor="middle" font-size="26" fill="#98a2b8">+</text>
+  <g transform="translate(1106,62) scale(1.09375)">
+  <rect x="1" y="1" width="28" height="28" rx="5" fill="#6487E6"/>
+  <rect x="35" y="1" width="28" height="28" rx="5" fill="#6487E6"/>
+  <rect x="1" y="35" width="28" height="28" rx="5" fill="#6487E6"/>
+  <rect x="35" y="35" width="28" height="28" rx="5" fill="#6487E6"/></g>
+  <text x="1141" y="166" text-anchor="middle" font-size="13.5" fill="#98a2b8">DiD</text>
+  </g>
+</svg>

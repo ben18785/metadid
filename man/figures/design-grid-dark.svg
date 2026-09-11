@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 238" role="img" aria-label="Three study designs as partial observations"><style>text{font-family:'Lato','Helvetica Neue',Arial,sans-serif}</style>
+  <g transform="translate(30,0)">
+  <text x="0" y="34" font-size="19" font-weight="700" fill="#e6eaf5">Pre-post (uncontrolled)</text>
+  <text x="66" y="68" text-anchor="middle" font-size="13" font-style="italic" fill="#98a2b8">pre</text>
+  <text x="140" y="68" text-anchor="middle" font-size="13" font-style="italic" fill="#98a2b8">post</text>
+  <text transform="rotate(-90 20 110)" x="20" y="110" text-anchor="middle" font-size="13" font-style="italic" fill="#98a2b8">treatment</text>
+  <text transform="rotate(-90 20 184)" x="20" y="184" text-anchor="middle" font-size="13" font-style="italic" fill="#98a2b8">control</text>
+  <rect x="34" y="78" width="64" height="64" rx="8" fill="#6487E6"/>
+  <rect x="108" y="78" width="64" height="64" rx="8" fill="#6487E6"/>
+  <rect x="35" y="153" width="62" height="62" rx="8" fill="none" stroke="#3d4763" stroke-width="2" stroke-dasharray="5 5"/>
+  <rect x="109" y="153" width="62" height="62" rx="8" fill="none" stroke="#3d4763" stroke-width="2" stroke-dasharray="5 5"/>
+  </g>
+  <g transform="translate(425,0)">
+  <text x="0" y="34" font-size="19" font-weight="700" fill="#e6eaf5">RCT (post-only)</text>
+  <text x="66" y="68" text-anchor="middle" font-size="13" font-style="italic" fill="#98a2b8">pre</text>
+  <text x="140" y="68" text-anchor="middle" font-size="13" font-style="italic" fill="#98a2b8">post</text>
+  <text transform="rotate(-90 20 110)" x="20" y="110" text-anchor="middle" font-size="13" font-style="italic" fill="#98a2b8">treatment</text>
+  <text transform="rotate(-90 20 184)" x="20" y="184" text-anchor="middle" font-size="13" font-style="italic" fill="#98a2b8">control</text>
+  <rect x="35" y="79" width="62" height="62" rx="8" fill="none" stroke="#3d4763" stroke-width="2" stroke-dasharray="5 5"/>
+  <rect x="108" y="78" width="64" height="64" rx="8" fill="#6487E6"/>
+  <rect x="35" y="153" width="62" height="62" rx="8" fill="none" stroke="#3d4763" stroke-width="2" stroke-dasharray="5 5"/>
+  <rect x="108" y="152" width="64" height="64" rx="8" fill="#6487E6"/>
+  </g>
+  <g transform="translate(820,0)">
+  <text x="0" y="34" font-size="19" font-weight="700" fill="#e6eaf5">Difference-in-differences</text>
+  <text x="66" y="68" text-anchor="middle" font-size="13" font-style="italic" fill="#98a2b8">pre</text>
+  <text x="140" y="68" text-anchor="middle" font-size="13" font-style="italic" fill="#98a2b8">post</text>
+  <text transform="rotate(-90 20 110)" x="20" y="110" text-anchor="middle" font-size="13" font-style="italic" fill="#98a2b8">treatment</text>
+  <text transform="rotate(-90 20 184)" x="20" y="184" text-anchor="middle" font-size="13" font-style="italic" fill="#98a2b8">control</text>
+  <rect x="34" y="78" width="64" height="64" rx="8" fill="#6487E6"/>
+  <rect x="108" y="78" width="64" height="64" rx="8" fill="#6487E6"/>
+  <rect x="34" y="152" width="64" height="64" rx="8" fill="#6487E6"/>
+  <rect x="108" y="152" width="64" height="64" rx="8" fill="#6487E6"/>
+  </g>
+</svg>
