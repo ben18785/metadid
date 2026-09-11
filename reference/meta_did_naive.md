@@ -36,6 +36,7 @@ meta_did_naive(
   iter_sampling = 1000L,
   seed = NULL,
   allow_no_did = FALSE,
+  allow_unidentified_kappa = FALSE,
   ...
 )
 ```
@@ -190,6 +191,24 @@ meta_did_naive(
   treatment effect is not identified from the data without the
   double-difference structure. Set to `TRUE` to override this check if
   you understand the limitation (the posterior will be prior-driven).
+
+- allow_unidentified_kappa:
+
+  Logical. If `FALSE` (default), `kappa = "estimate"` errors when no
+  randomised study carries pre-treatment data, because \\\kappa\\ is
+  then not identified by anything. Set to `TRUE` to sample it anyway
+  (the posterior for \\\kappa\\ will reproduce its prior).
+
+  Doing so is a modelling choice rather than an estimate. Sampling
+  \\\kappa\\ instead of fixing it makes the marginal prior on
+  \\\gamma_i\\ a scale mixture of normals rather than a normal –
+  simultaneously more peaked at zero and much heavier-tailed than any
+  fixed \\\kappa\\. That is a better description of "most randomised
+  trials achieved balance, occasionally one badly did not" than a single
+  scale can give, and it propagates the uncertainty in \\\kappa\\ into
+  the pooled effect rather than conditioning on one value. What it does
+  *not* do is learn \\\kappa\\ from the data, which is why it must be
+  asked for explicitly.
 
 - ...:
 

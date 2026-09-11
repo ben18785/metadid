@@ -55,8 +55,9 @@ population-level parameter. Any parameter not supplied takes a default.</p>
 <span>  sigma <span class="op">=</span> <span class="fu"><a href="cauchy.html">cauchy</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span>,</span>
 <span>  beta_cov <span class="op">=</span> <span class="fu"><a href="normal.html">normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>,</span>
 <span>  lkj_eta <span class="op">=</span> <span class="fu"><a href="lkj.html">lkj</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
-<span>  baseline_difference_mean <span class="op">=</span> <span class="fu"><a href="normal.html">normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span>,</span>
+<span>  baseline_difference_mean <span class="op">=</span> <span class="fu"><a href="normal.html">normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.05</span><span class="op">)</span>,</span>
 <span>  baseline_difference_sd <span class="op">=</span> <span class="fu"><a href="cauchy.html">cauchy</a></span><span class="op">(</span><span class="fl">0.1</span><span class="op">)</span>,</span>
+<span>  kappa <span class="op">=</span> <span class="fu"><a href="normal.html">normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span>,</span>
 <span>  multiplier <span class="op">=</span> <span class="fu"><a href="lognormal.html">lognormal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.7</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -127,15 +128,32 @@ regularises toward zero correlation.</p></dd>
 
 <dt id="arg-baseline-difference-mean">baseline_difference_mean<a class="anchor" aria-label="anchor" href="#arg-baseline-difference-mean"></a></dt>
 <dd><p>Prior on the population mean of the
-per-study baseline imbalance (treatment-arm vs control-arm pre-treatment
-mean, on the normalised fractional scale). Only used when
-<code>baseline_imbalance = "estimated"</code>. Default: <code>normal(0, 0.5)</code>.</p></dd>
+per-study baseline imbalance among <strong>non-randomised</strong> studies
+(treatment-arm vs control-arm pre-treatment mean, on the normalised
+fractional scale). Only used when <code>mu_gamma = "estimated"</code> in
+<code><a href="meta_did.html">meta_did()</a></code>; under the default <code>mu_gamma = "zero"</code> the population mean is
+pinned at zero and this prior is ignored. Default: <code>normal(0, 0.05)</code>.</p>
+<p>The old default was <code>normal(0, 0.5)</code>, which was both internally
+inconsistent with the <code>cauchy(0.1)</code> prior on the between-study SD (it
+asserted the <em>average</em> imbalance could be far larger than the <em>spread</em>
+around it) and materially informative about the pooled treatment effect,
+because baseline imbalance is unidentified for post-only studies and
+subtracts directly from their estimated effect.</p></dd>
 
 
 <dt id="arg-baseline-difference-sd">baseline_difference_sd<a class="anchor" aria-label="anchor" href="#arg-baseline-difference-sd"></a></dt>
 <dd><p>Prior on the between-study SD of the
-baseline imbalance. Only used when <code>baseline_imbalance = "estimated"</code>.
-Default: <code>cauchy(0.1)</code>.</p></dd>
+baseline imbalance among non-randomised studies. Default: <code>cauchy(0.1)</code>.</p></dd>
+
+
+<dt id="arg-kappa">kappa<a class="anchor" aria-label="anchor" href="#arg-kappa"></a></dt>
+<dd><p>Prior on the excess-imbalance factor for <strong>randomised</strong>
+studies, interpreted as half-normal because <code>kappa</code> is constrained
+positive. Only used when <code>kappa = "estimate"</code> in <code><a href="meta_did.html">meta_did()</a></code>.
+<code>kappa^2</code> is the variance inflation of a randomised study's baseline
+contrast beyond simple random sampling, so <code>kappa = 0</code> is perfect
+randomisation. Default: <code>normal(0, 0.5)</code>, which places most mass below
+<code>kappa = 1</code> (a doubling of the baseline-contrast variance).</p></dd>
 
 
 <dt id="arg-multiplier">multiplier<a class="anchor" aria-label="anchor" href="#arg-multiplier"></a></dt>
@@ -172,8 +190,9 @@ no-multiplicative-effect case), with a central 95% range of roughly
 <span class="r-out co"><span class="r-pr">#&gt;</span>   sigma ~ cauchy(scale = 5)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   beta_cov ~ normal(mean = 0, sd = 10)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   lkj_eta ~ lkj(eta = 2)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_difference_mean ~ normal(mean = 0, sd = 0.5)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_difference_mean ~ normal(mean = 0, sd = 0.05)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_difference_sd ~ cauchy(scale = 0.1)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   kappa ~ normal(mean = 0, sd = 0.5)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   multiplier ~ lognormal(meanlog = 0, sdlog = 0.7)</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Override one prior</span></span></span>
@@ -191,8 +210,9 @@ no-multiplicative-effect case), with a central 95% range of roughly
 <span class="r-out co"><span class="r-pr">#&gt;</span>   sigma ~ cauchy(scale = 5)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   beta_cov ~ normal(mean = 0, sd = 10)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   lkj_eta ~ lkj(eta = 2)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_difference_mean ~ normal(mean = 0, sd = 0.5)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_difference_mean ~ normal(mean = 0, sd = 0.05)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   baseline_difference_sd ~ cauchy(scale = 0.1)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   kappa ~ normal(mean = 0, sd = 0.5)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   multiplier ~ lognormal(meanlog = 0, sdlog = 0.7)</span>
 </code></pre></div>
     </div>

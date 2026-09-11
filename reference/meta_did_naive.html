@@ -86,6 +86,7 @@ pre-post change is attributed entirely to the treatment effect.</p></li>
 <span>  iter_sampling <span class="op">=</span> <span class="fl">1000L</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  allow_no_did <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  allow_unidentified_kappa <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -238,6 +239,24 @@ stop with an error when no DiD studies are present, because the
 treatment effect is not identified from the data without the
 double-difference structure. Set to <code>TRUE</code> to override this check
 if you understand the limitation (the posterior will be prior-driven).</p></dd>
+
+
+<dt id="arg-allow-unidentified-kappa">allow_unidentified_kappa<a class="anchor" aria-label="anchor" href="#arg-allow-unidentified-kappa"></a></dt>
+<dd><p>Logical. If <code>FALSE</code> (default),
+<code>kappa = "estimate"</code> errors when no randomised study carries pre-treatment
+data, because \(\kappa\) is then not identified by anything. Set to
+<code>TRUE</code> to sample it anyway (the posterior for \(\kappa\) will reproduce
+its prior).</p>
+<p>Doing so is a modelling choice rather than an estimate. Sampling
+\(\kappa\) instead of fixing it makes the marginal prior on
+\(\gamma_i\) a scale mixture of normals rather than a normal –
+simultaneously more peaked at zero and much heavier-tailed than any fixed
+\(\kappa\). That is a better description of "most randomised trials
+achieved balance, occasionally one badly did not" than a single scale can
+give, and it propagates the uncertainty in \(\kappa\) into the pooled
+effect rather than conditioning on one value. What it does <em>not</em> do is
+learn \(\kappa\) from the data, which is why it must be asked for
+explicitly.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

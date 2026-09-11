@@ -486,13 +486,10 @@ is an unbiased estimate of the treatment effect.</p>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>α</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\alpha_i</annotation></semantics></math>
 and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\alpha_i + \gamma_i</annotation></semantics></math>
-are free parameters drawn from the same hierarchical distributions as in
-DiD studies, allowing the baseline difference
+are free parameters. How
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-to be informed by DiD evidence. By default, the model allows
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>≠</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\gamma_i \neq 0</annotation></semantics></math>;
-this can be constrained to zero if randomisation is assumed to eliminate
-baseline imbalances.</p>
+is modelled depends on the study’s assignment mechanism – see <a href="#baseline-imbalance-and-randomisation">Baseline imbalance and
+randomisation</a> below.</p>
 </div>
 <div class="section level3">
 <h3 id="interpreting-normalised-treatment-effects">Interpreting normalised treatment effects<a class="anchor" aria-label="anchor" href="#interpreting-normalised-treatment-effects"></a>
@@ -586,18 +583,21 @@ reparameterisation described above.</li>
 <li>
 <strong><code>baseline_imbalance</code></strong>: Controls the
 baseline difference
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-for RCT studies.
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>.
 <ul>
 <li>
-<code>"estimated"</code> (default):
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-is estimated, with information borrowed from DiD studies when
-normalised.</li>
+<code>"by_randomisation"</code> (default): each study follows its
+<code>randomisation</code> column – see the section below.</li>
+<li>
+<code>"estimated"</code>: every DiD and RCT study is pooled into one
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
+population, ignoring the <code>randomisation</code> column.</li>
 <li>
 <code>"fixed_zero"</code>:
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\gamma_i = 0</annotation></semantics></math>,
-assuming randomisation eliminates baseline imbalances.</li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\gamma_i = 0</annotation></semantics></math>
+for RCT studies. Note this is a <em>hard</em> constraint and costs a DiD
+study its robustness to imbalance; prefer
+<code>"by_randomisation"</code> with a small <code>kappa</code>.</li>
 </ul>
 </li>
 <li>
@@ -621,10 +621,194 @@ model, at the cost of estimating additional nuisance parameters.</li>
 </li>
 </ul>
 <p>These settings can be combined independently. For example, one might
-trust the randomisation assumption
-(<code>baseline_imbalance = "fixed_zero"</code>) while still borrowing
-time trend information from DiD studies
-(<code>time_trend = "pooled"</code>).</p>
+trust the randomisation assumption while still borrowing time trend
+information from DiD studies (<code>time_trend = "pooled"</code>).</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="baseline-imbalance-and-randomisation">Baseline imbalance and randomisation<a class="anchor" aria-label="anchor" href="#baseline-imbalance-and-randomisation"></a>
+</h2>
+<p>The baseline difference
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
+is the one nuisance parameter a post-only study cannot identify at all.
+Its effect estimate is</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>ϕ</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\tilde\theta_i = \phi_i (1 + \tilde\beta_i) - \gamma_i,
+</annotation></semantics></math></p>
+<p>so whatever the model assumes about
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math><strong>subtracts directly from that study’s treatment effect</strong>.
+The posterior for
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\theta_i</annotation></semantics></math>
+is the data-driven part convolved with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>’s
+prior: shifted by its mean, widened by its SD. Getting that prior right
+is therefore not a detail.</p>
+<div class="section level3">
+<h3 id="two-populations-not-one">Two populations, not one<a class="anchor" aria-label="anchor" href="#two-populations-not-one"></a>
+</h3>
+<p>Studies are split by their <code>randomisation</code> column:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>∼</mo><mrow><mo stretchy="true" form="prefix">{</mo><mtable><mtr><mtd columnalign="left" style="text-align: left"><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>μ</mi><mi>γ</mi></msub><mo>,</mo><mspace width="0.222em"></mspace><msubsup><mi>τ</mi><mi>γ</mi><mn>2</mn></msubsup><mo stretchy="false" form="postfix">)</mo></mtd><mtd columnalign="left" style="text-align: left"><mtext mathvariant="normal">non-randomised</mtext></mtd></mtr><mtr><mtd columnalign="left" style="text-align: left"><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mspace width="0.222em"></mspace><msup><mi>κ</mi><mn>2</mn></msup><msubsup><mi>s</mi><mi>i</mi><mn>2</mn></msubsup><mo stretchy="false" form="postfix">)</mo></mtd><mtd columnalign="left" style="text-align: left"><mtext mathvariant="normal">randomised</mtext></mtd></mtr></mtable></mrow></mrow><annotation encoding="application/x-tex">
+\gamma_i \sim
+\begin{cases}
+\mathcal{N}(\mu_\gamma,\ \tau_\gamma^2) &amp; \text{non-randomised} \\
+\mathcal{N}(0,\ \kappa^2 s_i^2) &amp; \text{randomised}
+\end{cases}
+</annotation></semantics></math></p>
+<p>where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>s</mi><mi>i</mi></msub><annotation encoding="application/x-tex">s_i</annotation></semantics></math>
+is the sampling SD of study
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>’s
+baseline contrast. The two populations deliberately <strong>do not share
+a mean</strong>: a zero population imbalance is a structural implication
+of randomisation, not a quantity to estimate.</p>
+<p><code>randomisation</code> is never inferred from
+<code>design</code>. A post-only study may be a randomised trial or an
+unrandomised matched cohort; a DiD study may be a cluster-randomised
+roll-out. An absent or <code>NA</code> value reads as
+<code>"none"</code>, so randomisation is always an explicit claim rather
+than a default.</p>
+</div>
+<div class="section level3">
+<h3 id="why-mu_gamma-0-by-default">Why
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mi>γ</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\mu_\gamma = 0</annotation></semantics></math>
+by default<a class="anchor" aria-label="anchor" href="#why-mu_gamma-0-by-default"></a>
+</h3>
+<p>DiD is typically used <em>because</em> assignment was not random –
+the pre-period is measured precisely to handle selection. So
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
+in a DiD study is a property of the programme’s <strong>targeting
+rule</strong>: some interventions go to high-need (high-baseline)
+populations, others to easy-to-reach (low-baseline) ones. Estimating a
+single
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>γ</mi></msub><annotation encoding="application/x-tex">\mu_\gamma</annotation></semantics></math>
+asserts that a whole literature shares a direction of selection, then
+applies it to every post-only study, whose own data cannot contradict
+it.</p>
+<p>The resulting bias does not shrink with more evidence – it
+<strong>sharpens</strong>, because
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>γ</mi></msub><annotation encoding="application/x-tex">\mu_\gamma</annotation></semantics></math>
+is estimated more precisely. Pinning
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mi>γ</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\mu_\gamma = 0</annotation></semantics></math>
+lets the <em>magnitude</em> of imbalance transport between
+non-randomised studies while refusing to transport its
+<em>direction</em>. Set <code>mu_gamma = "estimated"</code> only when
+the studies plausibly share a targeting mechanism, such as several
+evaluations of the same programme.</p>
+</div>
+<div class="section level3">
+<h3 id="what-kappa-means-and-why-it-is-not-zero">What
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
+means, and why it is not zero<a class="anchor" aria-label="anchor" href="#what-kappa-means-and-why-it-is-not-zero"></a>
+</h3>
+<p>For a randomised study the <em>realised</em> allocation imbalance is
+already carried by the likelihood: the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>σ</mi><mn>2</mn></msup><mi>/</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">\sigma^2/n</annotation></semantics></math>
+terms on each arm mean, and for a DiD study the pre-post correlation
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\rho_i</annotation></semantics></math>
+that propagates a chance baseline difference into the post period.
+Nothing extra is needed for finite-sample imbalance, and adding a
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>σ</mi><mn>2</mn></msup><mi>/</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">\sigma^2/n</annotation></semantics></math>-scaled
+term would double-count it.</p>
+<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
+governs only the <em>excess</em> beyond correct sampling – imperfect
+allocation, attrition, post-randomisation selection:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>κ</mi><mn>2</mn></msup><mo>=</mo><mrow><mi mathvariant="normal">D</mi><mi mathvariant="normal">E</mi><mi mathvariant="normal">F</mi><mi mathvariant="normal">F</mi></mrow><mo>−</mo><mn>1</mn><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\kappa^2 = \mathrm{DEFF} - 1,
+</annotation></semantics></math></p>
+<p>so
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\kappa = 0</annotation></semantics></math>
+is perfect randomisation and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\kappa = 1</annotation></semantics></math>
+doubles the variance of the baseline contrast. Because
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mi>i</mi></msub><mo>∝</mo><mn>1</mn><mi>/</mi><msqrt><msub><mi>n</mi><mi>i</mi></msub></msqrt></mrow><annotation encoding="application/x-tex">s_i \propto 1/\sqrt{n_i}</annotation></semantics></math>,
+this automatically down-weights small randomised studies more than large
+ones. For a post-only randomised study, where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
+is unidentified, the mechanism is equivalent to inflating that study’s
+standard error by
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msqrt><mrow><mn>1</mn><mo>+</mo><msup><mi>κ</mi><mn>2</mn></msup></mrow></msqrt><annotation encoding="application/x-tex">\sqrt{1 + \kappa^2}</annotation></semantics></math>.</p>
+<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\kappa = 0</annotation></semantics></math>
+is available but is a <strong>hard</strong> constraint, and a hard zero
+costs a DiD study its main virtue. With
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
+free, the double difference removes any constant baseline offset. With
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
+pinned at zero, the model must explain a real offset as sampling noise
+and ends up averaging the pre- and post-period information rather than
+differencing it, so the offset leaks into
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>.
+Shrinking toward zero with a small
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
+avoids this.</p>
+</div>
+<div class="section level3">
+<h3 id="estimating-kappa">Estimating
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math><a class="anchor" aria-label="anchor" href="#estimating-kappa"></a>
+</h3>
+<p><code>kappa = "estimate"</code> samples it, but by default only when
+at least one randomised study carries <strong>pre-treatment
+data</strong> (a randomised DiD). Post-only randomised studies have an
+unidentified
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
+and constrain
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
+not at all, so <code><a href="../reference/meta_did.html">meta_did()</a></code> refuses rather than sampling a
+prior-driven parameter that silently sets how much every randomised
+study is down-weighted.</p>
+<p><code>allow_unidentified_kappa = TRUE</code> lifts that refusal,
+following the same idiom as <code>allow_no_did</code>. Note that
+estimating a parameter and marginalising over it are the same operation
+– there is no separate “marginalise” mode, and the posterior for an
+unanchored
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
+simply reproduces its prior. What changes is the <em>shape</em> of the
+prior on
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>:
+sampling
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
+makes it a scale mixture of normals, both more peaked at zero and much
+heavier-tailed than any fixed
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>.
+That says “most randomised trials achieved balance, occasionally one
+badly did not”, which a single scale cannot express. It is a modelling
+choice, not an estimate, which is why it must be asked for.</p>
+<p>With no anchor, fix
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>.
+The default of <code>0.5</code> is a reasonable central choice rather
+than a value to trust on its own, so it is worth refitting at a few
+values to see whether any conclusion turns on it – but nothing in the
+package requires this, and for a summary-data meta-analysis a handful of
+refits costs seconds. For a study with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>100</mn></mrow><annotation encoding="application/x-tex">n = 100</annotation></semantics></math>
+per arm and a within-study SD of 25% of baseline,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\kappa = 1</annotation></semantics></math>
+buys an imbalance allowance of roughly 4 percentage points on the
+fractional scale – about a tenth of a typical treatment effect.</p>
+</div>
+<div class="section level3">
+<h3 id="cluster-randomisation">Cluster randomisation<a class="anchor" aria-label="anchor" href="#cluster-randomisation"></a>
+</h3>
+<p>For <code>randomisation = "cluster"</code>, the reported
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
+counts individuals, so
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>σ</mi><mn>2</mn></msup><mi>/</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">\sigma^2/n</annotation></semantics></math>
+understates an arm mean’s sampling variance by
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">D</mi><mi mathvariant="normal">E</mi><mi mathvariant="normal">F</mi><mi mathvariant="normal">F</mi></mrow><mo>=</mo><mn>1</mn><mo>+</mo><mo stretchy="false" form="prefix">(</mo><mi>m</mi><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><msub><mi>ρ</mi><mrow><mi>I</mi><mi>C</mi><mi>C</mi></mrow></msub></mrow><annotation encoding="application/x-tex">\mathrm{DEFF} = 1 + (m - 1)\rho_{ICC}</annotation></semantics></math>.
+Supplying <code>cluster_size</code> and <code>icc</code> columns
+inflates
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>s</mi><mi>i</mi></msub><annotation encoding="application/x-tex">s_i</annotation></semantics></math>
+by
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msqrt><mrow><mi mathvariant="normal">D</mi><mi mathvariant="normal">E</mi><mi mathvariant="normal">F</mi><mi mathvariant="normal">F</mi></mrow></msqrt><annotation encoding="application/x-tex">\sqrt{\mathrm{DEFF}}</annotation></semantics></math>,
+keeping
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>’s
+meaning constant across designs; otherwise
+<code>cluster_deff_default</code> is used.</p>
+<p>This corrects the <strong>baseline contrast only</strong>. The
+post-treatment likelihood still uses
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>σ</mi><mn>2</mn></msup><mi>/</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">\sigma^2/n</annotation></semantics></math>,
+so a cluster-randomised study remains over-precise about its own effect.
+Correcting that would need cluster identifiers and a random effect,
+which this model does not carry.</p>
 <p>The default settings of <code><a href="../reference/meta_did_general.html">meta_did_general()</a></code> are identical
 to <code><a href="../reference/meta_did.html">meta_did()</a></code>. Setting <code>time_trend</code> and
 <code>baseline_imbalance</code> to <code>"fixed_zero"</code> reproduces

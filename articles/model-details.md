@@ -275,11 +275,10 @@ control–treatment difference is an unbiased estimate of the treatment
 effect.
 
 When data are not normalised, the RCT baselines $`\alpha_i`$ and
-$`\alpha_i + \gamma_i`$ are free parameters drawn from the same
-hierarchical distributions as in DiD studies, allowing the baseline
-difference $`\gamma_i`$ to be informed by DiD evidence. By default, the
-model allows $`\gamma_i \neq 0`$; this can be constrained to zero if
-randomisation is assumed to eliminate baseline imbalances.
+$`\alpha_i + \gamma_i`$ are free parameters. How $`\gamma_i`$ is
+modelled depends on the study’s assignment mechanism – see [Baseline
+imbalance and randomisation](#baseline-imbalance-and-randomisation)
+below.
 
 ### Interpreting normalised treatment effects
 
@@ -349,11 +348,14 @@ handled for non-DiD designs, via three arguments:
     For RCTs, it bypasses the time trend reparameterisation described
     above.
 - **`baseline_imbalance`**: Controls the baseline difference
-  $`\gamma_i`$ for RCT studies.
-  - `"estimated"` (default): $`\gamma_i`$ is estimated, with information
-    borrowed from DiD studies when normalised.
-  - `"fixed_zero"`: $`\gamma_i = 0`$, assuming randomisation eliminates
-    baseline imbalances.
+  $`\gamma_i`$.
+  - `"by_randomisation"` (default): each study follows its
+    `randomisation` column – see the section below.
+  - `"estimated"`: every DiD and RCT study is pooled into one $`\gamma`$
+    population, ignoring the `randomisation` column.
+  - `"fixed_zero"`: $`\gamma_i = 0`$ for RCT studies. Note this is a
+    *hard* constraint and costs a DiD study its robustness to imbalance;
+    prefer `"by_randomisation"` with a small `kappa`.
 - **`pp_likelihood`**: Controls the likelihood form for pre-post
   studies.
   - `"differenced"` (default): uses the post-minus-pre difference,
@@ -365,9 +367,142 @@ handled for non-DiD designs, via three arguments:
     estimating additional nuisance parameters.
 
 These settings can be combined independently. For example, one might
-trust the randomisation assumption (`baseline_imbalance = "fixed_zero"`)
-while still borrowing time trend information from DiD studies
-(`time_trend = "pooled"`).
+trust the randomisation assumption while still borrowing time trend
+information from DiD studies (`time_trend = "pooled"`).
+
+## Baseline imbalance and randomisation
+
+The baseline difference $`\gamma_i`$ is the one nuisance parameter a
+post-only study cannot identify at all. Its effect estimate is
+
+``` math
+\tilde\theta_i = \phi_i (1 + \tilde\beta_i) - \gamma_i,
+```
+
+so whatever the model assumes about $`\gamma_i`$**subtracts directly
+from that study’s treatment effect**. The posterior for
+$`\tilde\theta_i`$ is the data-driven part convolved with $`\gamma_i`$’s
+prior: shifted by its mean, widened by its SD. Getting that prior right
+is therefore not a detail.
+
+### Two populations, not one
+
+Studies are split by their `randomisation` column:
+
+``` math
+\gamma_i \sim
+\begin{cases}
+\mathcal{N}(\mu_\gamma,\ \tau_\gamma^2) & \text{non-randomised} \\
+\mathcal{N}(0,\ \kappa^2 s_i^2) & \text{randomised}
+\end{cases}
+```
+
+where $`s_i`$ is the sampling SD of study $`i`$’s baseline contrast. The
+two populations deliberately **do not share a mean**: a zero population
+imbalance is a structural implication of randomisation, not a quantity
+to estimate.
+
+`randomisation` is never inferred from `design`. A post-only study may
+be a randomised trial or an unrandomised matched cohort; a DiD study may
+be a cluster-randomised roll-out. An absent or `NA` value reads as
+`"none"`, so randomisation is always an explicit claim rather than a
+default.
+
+### Why $`\mu_\gamma = 0`$ by default
+
+DiD is typically used *because* assignment was not random – the
+pre-period is measured precisely to handle selection. So $`\gamma`$ in a
+DiD study is a property of the programme’s **targeting rule**: some
+interventions go to high-need (high-baseline) populations, others to
+easy-to-reach (low-baseline) ones. Estimating a single $`\mu_\gamma`$
+asserts that a whole literature shares a direction of selection, then
+applies it to every post-only study, whose own data cannot contradict
+it.
+
+The resulting bias does not shrink with more evidence – it **sharpens**,
+because $`\mu_\gamma`$ is estimated more precisely. Pinning
+$`\mu_\gamma = 0`$ lets the *magnitude* of imbalance transport between
+non-randomised studies while refusing to transport its *direction*. Set
+`mu_gamma = "estimated"` only when the studies plausibly share a
+targeting mechanism, such as several evaluations of the same programme.
+
+### What $`\kappa`$ means, and why it is not zero
+
+For a randomised study the *realised* allocation imbalance is already
+carried by the likelihood: the $`\sigma^2/n`$ terms on each arm mean,
+and for a DiD study the pre-post correlation $`\rho_i`$ that propagates
+a chance baseline difference into the post period. Nothing extra is
+needed for finite-sample imbalance, and adding a $`\sigma^2/n`$-scaled
+term would double-count it.
+
+$`\kappa`$ governs only the *excess* beyond correct sampling – imperfect
+allocation, attrition, post-randomisation selection:
+
+``` math
+\kappa^2 = \mathrm{DEFF} - 1,
+```
+
+so $`\kappa = 0`$ is perfect randomisation and $`\kappa = 1`$ doubles
+the variance of the baseline contrast. Because
+$`s_i \propto 1/\sqrt{n_i}`$, this automatically down-weights small
+randomised studies more than large ones. For a post-only randomised
+study, where $`\gamma_i`$ is unidentified, the mechanism is equivalent
+to inflating that study’s standard error by $`\sqrt{1 + \kappa^2}`$.
+
+$`\kappa = 0`$ is available but is a **hard** constraint, and a hard
+zero costs a DiD study its main virtue. With $`\gamma_i`$ free, the
+double difference removes any constant baseline offset. With
+$`\gamma_i`$ pinned at zero, the model must explain a real offset as
+sampling noise and ends up averaging the pre- and post-period
+information rather than differencing it, so the offset leaks into
+$`\theta_i`$. Shrinking toward zero with a small $`\kappa`$ avoids this.
+
+### Estimating $`\kappa`$
+
+`kappa = "estimate"` samples it, but by default only when at least one
+randomised study carries **pre-treatment data** (a randomised DiD).
+Post-only randomised studies have an unidentified $`\gamma_i`$ and
+constrain $`\kappa`$ not at all, so
+[`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)
+refuses rather than sampling a prior-driven parameter that silently sets
+how much every randomised study is down-weighted.
+
+`allow_unidentified_kappa = TRUE` lifts that refusal, following the same
+idiom as `allow_no_did`. Note that estimating a parameter and
+marginalising over it are the same operation – there is no separate
+“marginalise” mode, and the posterior for an unanchored $`\kappa`$
+simply reproduces its prior. What changes is the *shape* of the prior on
+$`\gamma_i`$: sampling $`\kappa`$ makes it a scale mixture of normals,
+both more peaked at zero and much heavier-tailed than any fixed
+$`\kappa`$. That says “most randomised trials achieved balance,
+occasionally one badly did not”, which a single scale cannot express. It
+is a modelling choice, not an estimate, which is why it must be asked
+for.
+
+With no anchor, fix $`\kappa`$. The default of `0.5` is a reasonable
+central choice rather than a value to trust on its own, so it is worth
+refitting at a few values to see whether any conclusion turns on it –
+but nothing in the package requires this, and for a summary-data
+meta-analysis a handful of refits costs seconds. For a study with
+$`n = 100`$ per arm and a within-study SD of 25% of baseline,
+$`\kappa = 1`$ buys an imbalance allowance of roughly 4 percentage
+points on the fractional scale – about a tenth of a typical treatment
+effect.
+
+### Cluster randomisation
+
+For `randomisation = "cluster"`, the reported $`n`$ counts individuals,
+so $`\sigma^2/n`$ understates an arm mean’s sampling variance by
+$`\mathrm{DEFF} = 1 + (m - 1)\rho_{ICC}`$. Supplying `cluster_size` and
+`icc` columns inflates $`s_i`$ by $`\sqrt{\mathrm{DEFF}}`$, keeping
+$`\kappa`$’s meaning constant across designs; otherwise
+`cluster_deff_default` is used.
+
+This corrects the **baseline contrast only**. The post-treatment
+likelihood still uses $`\sigma^2/n`$, so a cluster-randomised study
+remains over-precise about its own effect. Correcting that would need
+cluster identifiers and a random effect, which this model does not
+carry.
 
 The default settings of
 [`meta_did_general()`](https://ben18785.github.io/metadid/reference/meta_did_general.md)

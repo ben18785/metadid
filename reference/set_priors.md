@@ -20,8 +20,9 @@ set_priors(
   sigma = cauchy(5),
   beta_cov = normal(0, 10),
   lkj_eta = lkj(2),
-  baseline_difference_mean = normal(0, 0.5),
+  baseline_difference_mean = normal(0, 0.05),
   baseline_difference_sd = cauchy(0.1),
+  kappa = normal(0, 0.5),
   multiplier = lognormal(0, 0.7)
 )
 ```
@@ -91,15 +92,36 @@ set_priors(
 
 - baseline_difference_mean:
 
-  Prior on the population mean of the per-study baseline imbalance
-  (treatment-arm vs control-arm pre-treatment mean, on the normalised
-  fractional scale). Only used when `baseline_imbalance = "estimated"`.
-  Default: `normal(0, 0.5)`.
+  Prior on the population mean of the per-study baseline imbalance among
+  **non-randomised** studies (treatment-arm vs control-arm pre-treatment
+  mean, on the normalised fractional scale). Only used when
+  `mu_gamma = "estimated"` in
+  [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md);
+  under the default `mu_gamma = "zero"` the population mean is pinned at
+  zero and this prior is ignored. Default: `normal(0, 0.05)`.
+
+  The old default was `normal(0, 0.5)`, which was both internally
+  inconsistent with the `cauchy(0.1)` prior on the between-study SD (it
+  asserted the *average* imbalance could be far larger than the *spread*
+  around it) and materially informative about the pooled treatment
+  effect, because baseline imbalance is unidentified for post-only
+  studies and subtracts directly from their estimated effect.
 
 - baseline_difference_sd:
 
-  Prior on the between-study SD of the baseline imbalance. Only used
-  when `baseline_imbalance = "estimated"`. Default: `cauchy(0.1)`.
+  Prior on the between-study SD of the baseline imbalance among
+  non-randomised studies. Default: `cauchy(0.1)`.
+
+- kappa:
+
+  Prior on the excess-imbalance factor for **randomised** studies,
+  interpreted as half-normal because `kappa` is constrained positive.
+  Only used when `kappa = "estimate"` in
+  [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md).
+  `kappa^2` is the variance inflation of a randomised study's baseline
+  contrast beyond simple random sampling, so `kappa = 0` is perfect
+  randomisation. Default: `normal(0, 0.5)`, which places most mass below
+  `kappa = 1` (a doubling of the baseline-contrast variance).
 
 - multiplier:
 
@@ -137,8 +159,9 @@ set_priors()
 #>   sigma ~ cauchy(scale = 5)
 #>   beta_cov ~ normal(mean = 0, sd = 10)
 #>   lkj_eta ~ lkj(eta = 2)
-#>   baseline_difference_mean ~ normal(mean = 0, sd = 0.5)
+#>   baseline_difference_mean ~ normal(mean = 0, sd = 0.05)
 #>   baseline_difference_sd ~ cauchy(scale = 0.1)
+#>   kappa ~ normal(mean = 0, sd = 0.5)
 #>   multiplier ~ lognormal(meanlog = 0, sdlog = 0.7)
 
 # Override one prior
@@ -156,7 +179,8 @@ set_priors(treatment_effect_sd = cauchy(2))
 #>   sigma ~ cauchy(scale = 5)
 #>   beta_cov ~ normal(mean = 0, sd = 10)
 #>   lkj_eta ~ lkj(eta = 2)
-#>   baseline_difference_mean ~ normal(mean = 0, sd = 0.5)
+#>   baseline_difference_mean ~ normal(mean = 0, sd = 0.05)
 #>   baseline_difference_sd ~ cauchy(scale = 0.1)
+#>   kappa ~ normal(mean = 0, sd = 0.5)
 #>   multiplier ~ lognormal(meanlog = 0, sdlog = 0.7)
 ```
