@@ -9,66 +9,38 @@ cannot identify.
 
 metadid assumes that every study — regardless of design — arises from a
 common latent difference-in-differences (DiD) data-generating process.
-For study $`i`$, outcomes in the **control group** follow
+For study \\i\\, outcomes in the **control group** follow
 
-``` math
-\begin{pmatrix}
-Y_{i,c,\mathrm{pre}} \\
-Y_{i,c,\mathrm{post}}
-\end{pmatrix}
-\sim
-\mathcal{N}
-\left[
-\begin{pmatrix}
-\alpha_i \\
-\alpha_i + \beta_i
-\end{pmatrix}
-,
-\begin{pmatrix}
-\sigma^2_{i,c,\mathrm{pre}} &
-\rho_{i,c}\,\sigma_{i,c,\mathrm{pre}}\,\sigma_{i,c,\mathrm{post}} \\
-\rho_{i,c}\,\sigma_{i,c,\mathrm{pre}}\,\sigma_{i,c,\mathrm{post}} &
-\sigma^2_{i,c,\mathrm{post}}
-\end{pmatrix}
-\right],
-```
+\\ \begin{pmatrix} Y\_{i,c,\mathrm{pre}} \\ Y\_{i,c,\mathrm{post}}
+\end{pmatrix} \sim \mathcal{N} \left\[ \begin{pmatrix} \alpha_i \\
+\alpha_i + \beta_i \end{pmatrix} , \begin{pmatrix}
+\sigma^2\_{i,c,\mathrm{pre}} &
+\rho\_{i,c}\\\sigma\_{i,c,\mathrm{pre}}\\\sigma\_{i,c,\mathrm{post}} \\
+\rho\_{i,c}\\\sigma\_{i,c,\mathrm{pre}}\\\sigma\_{i,c,\mathrm{post}} &
+\sigma^2\_{i,c,\mathrm{post}} \end{pmatrix} \right\], \\
 
 and outcomes in the **treatment group** follow
 
-``` math
-\begin{pmatrix}
-Y_{i,t,\mathrm{pre}} \\
-Y_{i,t,\mathrm{post}}
-\end{pmatrix}
-\sim
-\mathcal{N}
-\left[
-\begin{pmatrix}
-\alpha_i + \gamma_i \\
-\alpha_i + \gamma_i + \beta_i + \theta_i
-\end{pmatrix}
-,
-\begin{pmatrix}
-\sigma^2_{i,t,\mathrm{pre}} &
-\rho_{i,t}\,\sigma_{i,t,\mathrm{pre}}\,\sigma_{i,t,\mathrm{post}} \\
-\rho_{i,t}\,\sigma_{i,t,\mathrm{pre}}\,\sigma_{i,t,\mathrm{post}} &
-\sigma^2_{i,t,\mathrm{post}}
-\end{pmatrix}
-\right].
-```
+\\ \begin{pmatrix} Y\_{i,t,\mathrm{pre}} \\ Y\_{i,t,\mathrm{post}}
+\end{pmatrix} \sim \mathcal{N} \left\[ \begin{pmatrix} \alpha_i +
+\gamma_i \\ \alpha_i + \gamma_i + \beta_i + \theta_i \end{pmatrix} ,
+\begin{pmatrix} \sigma^2\_{i,t,\mathrm{pre}} &
+\rho\_{i,t}\\\sigma\_{i,t,\mathrm{pre}}\\\sigma\_{i,t,\mathrm{post}} \\
+\rho\_{i,t}\\\sigma\_{i,t,\mathrm{pre}}\\\sigma\_{i,t,\mathrm{post}} &
+\sigma^2\_{i,t,\mathrm{post}} \end{pmatrix} \right\]. \\
 
 The parameters are:
 
-- $`\alpha_i`$: baseline mean in the control group
-- $`\beta_i`$: time trend shared across groups
-- $`\gamma_i`$: baseline difference between treatment and control groups
-- $`\theta_i`$: study-specific treatment effect (the DiD estimand)
-- $`\rho_{i,c}`$, $`\rho_{i,t}`$: pre/post correlations within each
+- \\\alpha_i\\: baseline mean in the control group
+- \\\beta_i\\: time trend shared across groups
+- \\\gamma_i\\: baseline difference between treatment and control groups
+- \\\theta_i\\: study-specific treatment effect (the DiD estimand)
+- \\\rho\_{i,c}\\, \\\rho\_{i,t}\\: pre/post correlations within each
   group
-- $`\sigma_{i,g,t}`$: marginal standard deviations
+- \\\sigma\_{i,g,t}\\: marginal standard deviations
 
 The key identifying assumption is that, absent treatment, the treatment
-group would have followed the same time trend $`\beta_i`$ as the control
+group would have followed the same time trend \\\beta_i\\ as the control
 group (i.e., the parallel trends assumption).
 
 ## What each design observes
@@ -84,7 +56,7 @@ bivariate structure:
 | **Pre-post** | Treatment only | Pre + Post | 2 |
 
 Because each design sees fewer cells, it has less ability to separate
-the parameters $`\alpha`$, $`\beta`$, $`\gamma`$, and $`\theta`$.
+the parameters \\\alpha\\, \\\beta\\, \\\gamma\\, and \\\theta\\.
 
 ## Identification
 
@@ -95,28 +67,26 @@ structure above, the four expected cell means are:
 
 |  | Pre | Post |
 |----|----|----|
-| **Control** | $`\alpha_i`$ | $`\alpha_i + \beta_i`$ |
-| **Treatment** | $`\alpha_i + \gamma_i`$ | $`\alpha_i + \gamma_i + \beta_i + \theta_i`$ |
+| **Control** | \\\alpha_i\\ | \\\alpha_i + \beta_i\\ |
+| **Treatment** | \\\alpha_i + \gamma_i\\ | \\\alpha_i + \gamma_i + \beta_i + \theta_i\\ |
 
 Taking the double difference of these expected values gives
 
-``` math
-(\mu_{i,t,\mathrm{post}} - \mu_{i,t,\mathrm{pre}}) -
-(\mu_{i,c,\mathrm{post}} - \mu_{i,c,\mathrm{pre}}) =
-(\beta_i + \theta_i) - \beta_i = \theta_i.
-```
+\\ (\mu\_{i,t,\mathrm{post}} - \mu\_{i,t,\mathrm{pre}}) -
+(\mu\_{i,c,\mathrm{post}} - \mu\_{i,c,\mathrm{pre}}) = (\beta_i +
+\theta_i) - \beta_i = \theta_i. \\
 
-The time trend $`\beta_i`$ cancels, and the baseline difference
-$`\gamma_i`$ cancels, leaving $`\theta_i`$ cleanly identified. DiD
+The time trend \\\beta_i\\ cancels, and the baseline difference
+\\\gamma_i\\ cancels, leaving \\\theta_i\\ cleanly identified. DiD
 studies are the anchor for the entire model.
 
 ### DiD (change only) studies: identified but without levels
 
 Some studies report only the mean change over time (post minus pre) in
 each arm, without reporting the level means separately. The expected
-change scores are $`\beta_i`$ (control) and $`\beta_i + \theta_i`$
+change scores are \\\beta_i\\ (control) and \\\beta_i + \theta_i\\
 (treatment), so the difference in change scores still identifies
-$`\theta_i`$. However, because the pre-treatment levels are not
+\\\theta_i\\. However, because the pre-treatment levels are not
 observed, these studies cannot anchor their own normalisation baseline
 (see below).
 
@@ -125,14 +95,12 @@ observed, these studies cannot anchor their own normalisation baseline
 RCT studies observe only post-treatment outcomes for both arms. The
 expected difference between arms is
 
-``` math
-\mu_{i,t,\mathrm{post}} - \mu_{i,c,\mathrm{post}} =
-(\alpha_i + \gamma_i + \beta_i + \theta_i) -
-(\alpha_i + \beta_i) = \gamma_i + \theta_i.
-```
+\\ \mu\_{i,t,\mathrm{post}} - \mu\_{i,c,\mathrm{post}} = (\alpha_i +
+\gamma_i + \beta_i + \theta_i) - (\alpha_i + \beta_i) = \gamma_i +
+\theta_i. \\
 
-Without pre-treatment data, $`\theta_i`$ is confounded with the baseline
-difference $`\gamma_i`$. Randomisation makes $`\gamma_i`$ small in
+Without pre-treatment data, \\\theta_i\\ is confounded with the baseline
+difference \\\gamma_i\\. Randomisation makes \\\gamma_i\\ small in
 expectation, but the model cannot separate the two from the data of a
 single RCT alone.
 
@@ -141,23 +109,21 @@ single RCT alone.
 Pre-post studies observe only the treatment arm at both time points. The
 expected change over time is
 
-``` math
-\mu_{i,t,\mathrm{post}} - \mu_{i,t,\mathrm{pre}} =
-(\alpha_i + \gamma_i + \beta_i + \theta_i) -
-(\alpha_i + \gamma_i) = \beta_i + \theta_i.
-```
+\\ \mu\_{i,t,\mathrm{post}} - \mu\_{i,t,\mathrm{pre}} = (\alpha_i +
+\gamma_i + \beta_i + \theta_i) - (\alpha_i + \gamma_i) = \beta_i +
+\theta_i. \\
 
-Without a control arm, $`\theta_i`$ is confounded with the time trend
-$`\beta_i`$.
+Without a control arm, \\\theta_i\\ is confounded with the time trend
+\\\beta_i\\.
 
 ### Summary
 
-| Design | Identifies $`\theta_i`$? | Confound |
+| Design | Identifies \\\theta_i\\? | Confound |
 |----|----|----|
 | **DiD** | Yes | — |
 | **DiD (change only)** | Yes | — |
-| **RCT** | No | Baseline group difference $`\gamma_i`$ |
-| **Pre-post** | No | Time trend $`\beta_i`$ |
+| **RCT** | No | Baseline group difference \\\gamma_i\\ |
+| **Pre-post** | No | Time trend \\\beta_i\\ |
 
 **Without DiD studies, the treatment effect is not identified from the
 data.**
@@ -178,18 +144,18 @@ For RCT and pre-post designs, the model uses differenced-form
 likelihoods that eliminate nuisance parameters algebraically:
 
 - **RCT**: the likelihood is based on the treatment–control difference
-  in post-treatment means, so the time trend $`\beta_i`$ cancels. The
-  remaining parameters are the treatment effect $`\theta_i`$ and the
-  baseline difference $`\gamma_i`$ (borrowed from DiD studies).
+  in post-treatment means, so the time trend \\\beta_i\\ cancels. The
+  remaining parameters are the treatment effect \\\theta_i\\ and the
+  baseline difference \\\gamma_i\\ (borrowed from DiD studies).
 - **Pre-post** (default): the likelihood is based on the within-subject
-  post–pre difference, so the baseline $`\alpha_i + \gamma_i`$ cancels.
-  The remaining parameters are the treatment effect $`\theta_i`$ and the
-  time trend $`\beta_i`$ (borrowed from DiD studies).
+  post–pre difference, so the baseline \\\alpha_i + \gamma_i\\ cancels.
+  The remaining parameters are the treatment effect \\\theta_i\\ and the
+  time trend \\\beta_i\\ (borrowed from DiD studies).
 
 For pre-post studies, a non-differenced (bivariate normal) form is
 available via `meta_did_general(pp_likelihood = "bivariate")`. This
-retains the pre/post correlation $`\rho_i`$ as an estimable parameter,
-contributing to the hierarchical $`\rho`$ model, at the cost of
+retains the pre/post correlation \\\rho_i\\ as an estimable parameter,
+contributing to the hierarchical \\\rho\\ model, at the cost of
 estimating additional nuisance parameters.
 
 ## Baseline normalisation
@@ -204,10 +170,10 @@ treatment effect interpretable as a proportional change.
 
 | Design | Normalisation denominator | Effect on parameters |
 |----|----|----|
-| **DiD** | Pre-treatment control mean | $`\alpha_i = 1`$ |
+| **DiD** | Pre-treatment control mean | \\\alpha_i = 1\\ |
 | **DiD (change only)** | Grand mean of DiD pre-control means | Shared rescaling (see below) |
-| **Pre-post** | Pre-treatment treatment mean | $`\alpha_i + \gamma_i = 1`$ |
-| **RCT** | Post-treatment control mean | $`\alpha_i + \beta_i = 1`$ |
+| **Pre-post** | Pre-treatment treatment mean | \\\alpha_i + \gamma_i = 1\\ |
+| **RCT** | Post-treatment control mean | \\\alpha_i + \beta_i = 1\\ |
 
 For DiD and pre-post studies, normalisation divides by a pre-treatment
 quantity, so the relevant baseline parameter is known to be exactly 1
@@ -223,99 +189,86 @@ as the other designs, but requires that at least some full DiD studies
 are present.
 
 For RCT studies, there is no pre-treatment data, so normalisation
-divides by the post-treatment control mean ($`\alpha_i + \beta_i`$).
+divides by the post-treatment control mean (\\\alpha_i + \beta_i\\).
 After normalisation, the control post-mean is fixed at 1. The normalised
 treatment post-mean is
 
-``` math
-\frac{\alpha_i + \gamma_i + \beta_i + \theta_i}{\alpha_i + \beta_i}
-= 1 + \frac{\gamma_i + \theta_i}{\alpha_i + \beta_i}.
-```
+\\ \frac{\alpha_i + \gamma_i + \beta_i + \theta_i}{\alpha_i + \beta_i} =
+1 + \frac{\gamma_i + \theta_i}{\alpha_i + \beta_i}. \\
 
-When the model assumes equal baselines ($`\gamma_i = 0`$), the
-normalised treatment–control difference reduces to
-$`\phi_i = \theta_i / (\alpha_i +
-\beta_i)`$, the **apparent effect**. This is what the normalised data
-directly measures.
+When the model assumes equal baselines (\\\gamma_i = 0\\), the
+normalised treatment–control difference reduces to \\\phi_i = \theta_i /
+(\alpha_i + \beta_i)\\, the **apparent effect**. This is what the
+normalised data directly measures.
 
 To recover the treatment effect on the same scale as DiD studies
-(normalised by $`\alpha_i`$), we need to undo the RCT-specific
-normalisation. Writing $`\tilde\theta_i = \theta_i / \alpha_i`$ and
-$`\tilde\beta_i = \beta_i / \alpha_i`$ for the DiD-normalised
+(normalised by \\\alpha_i\\), we need to undo the RCT-specific
+normalisation. Writing \\\tilde\theta_i = \theta_i / \alpha_i\\ and
+\\\tilde\beta_i = \beta_i / \alpha_i\\ for the DiD-normalised
 quantities:
 
-``` math
-\phi_i
-= \frac{\theta_i}{\alpha_i + \beta_i}
-= \frac{\theta_i / \alpha_i}{1 + \beta_i / \alpha_i}
-= \frac{\tilde\theta_i}{1 + \tilde\beta_i},
-```
+\\ \phi_i = \frac{\theta_i}{\alpha_i + \beta_i} = \frac{\theta_i /
+\alpha_i}{1 + \beta_i / \alpha_i} = \frac{\tilde\theta_i}{1 +
+\tilde\beta_i}, \\
 
 so the normalised treatment effect is
 
-``` math
-\tilde\theta_i = \phi_i \cdot (1 + \tilde\beta_i).
-```
+\\ \tilde\theta_i = \phi_i \cdot (1 + \tilde\beta_i). \\
 
-The model is reparameterised so that $`\phi_i`$ (apparent effect) and
-$`\tilde\beta_i`$ (normalised time trend) are the sampled parameters,
-and $`\tilde\theta_i`$ is derived via the formula above. A Jacobian
-correction $`|1 + \tilde\beta_i|`$ is applied to the log-posterior to
+The model is reparameterised so that \\\phi_i\\ (apparent effect) and
+\\\tilde\beta_i\\ (normalised time trend) are the sampled parameters,
+and \\\tilde\theta_i\\ is derived via the formula above. A Jacobian
+correction \\\|1 + \tilde\beta_i\|\\ is applied to the log-posterior to
 account for this change of variables. The hierarchical prior on
-$`\tilde\beta_i`$ — informed primarily by DiD studies, which directly
+\\\tilde\beta_i\\ — informed primarily by DiD studies, which directly
 identify time trends — provides the regularisation needed to separate
-$`\tilde\theta_i`$ from $`\tilde\beta_i`$.
+\\\tilde\theta_i\\ from \\\tilde\beta_i\\.
 
 In the naive model
 ([`meta_did_naive()`](https://ben18785.github.io/metadid/reference/meta_did_naive.md)),
-the time trend is forced to zero for RCT studies, so
-$`\phi_i = \tilde\theta_i`$ and the reparameterisation is bypassed. This
-is equivalent to the standard assumption that the post-treatment
+the time trend is forced to zero for RCT studies, so \\\phi_i =
+\tilde\theta_i\\ and the reparameterisation is bypassed. This is
+equivalent to the standard assumption that the post-treatment
 control–treatment difference is an unbiased estimate of the treatment
 effect.
 
-When data are not normalised, the RCT baselines $`\alpha_i`$ and
-$`\alpha_i + \gamma_i`$ are free parameters. How $`\gamma_i`$ is
+When data are not normalised, the RCT baselines \\\alpha_i\\ and
+\\\alpha_i + \gamma_i\\ are free parameters. How \\\gamma_i\\ is
 modelled depends on the study’s assignment mechanism – see [Baseline
 imbalance and randomisation](#baseline-imbalance-and-randomisation)
 below.
 
 ### Interpreting normalised treatment effects
 
-After normalisation, the population treatment effect $`\mu_\theta`$ is
-expressed in units relative to the baseline. For example,
-$`\mu_\theta = -0.33`$ means a 33% reduction relative to the baseline
-level.
+After normalisation, the population treatment effect \\\mu\_\theta\\ is
+expressed in units relative to the baseline. For example, \\\mu\_\theta
+= -0.33\\ means a 33% reduction relative to the baseline level.
 
 ## Hierarchical structure
 
 Study-specific treatment effects are drawn from a population
 distribution:
 
-``` math
-\theta_i \sim \mathcal{N}(\mu_\theta, \tau_\theta^2),
-```
+\\ \theta_i \sim \mathcal{N}(\mu\_\theta, \tau\_\theta^2), \\
 
-where $`\mu_\theta`$ is the overall treatment effect (the primary
-quantity of interest) and $`\tau_\theta`$ captures between-study
+where \\\mu\_\theta\\ is the overall treatment effect (the primary
+quantity of interest) and \\\tau\_\theta\\ captures between-study
 heterogeneity.
 
-Other study-level parameters (time trends $`\beta_i`$, baseline
-differences $`\gamma_i`$) similarly share population-level priors.
-Pre-post correlations $`\rho`$ can be modelled hierarchically via a
-Fisher-$`z`$ transform when `hierarchical_rho = TRUE`.
+Other study-level parameters (time trends \\\beta_i\\, baseline
+differences \\\gamma_i\\) similarly share population-level priors.
+Pre-post correlations \\\rho\\ can be modelled hierarchically via a
+Fisher-\\z\\ transform when `hierarchical_rho = TRUE`.
 
 ### Design effects
 
 When `design_effects = TRUE`, the model allows the population treatment
 effect mean to differ systematically by design:
 
-``` math
-\mu_{\theta,\text{RCT}} = \mu_\theta + \delta_{\text{RCT}}, \quad
-\mu_{\theta,\text{PP}} = \mu_\theta + \delta_{\text{PP}}
-```
+\\ \mu\_{\theta,\text{RCT}} = \mu\_\theta + \delta\_{\text{RCT}}, \quad
+\mu\_{\theta,\text{PP}} = \mu\_\theta + \delta\_{\text{PP}} \\
 
-where $`\delta_{\text{RCT}}`$ and $`\delta_{\text{PP}}`$ are estimated
+where \\\delta\_{\text{RCT}}\\ and \\\delta\_{\text{PP}}\\ are estimated
 offsets. This relaxes the assumption that all designs estimate exactly
 the same estimand, which may be appropriate when selection effects or
 time trends differ systematically across designs.
@@ -323,14 +276,12 @@ time trends differ systematically across designs.
 ### Robust heterogeneity
 
 When `robust_heterogeneity = TRUE`, the treatment effect distribution
-uses a Student-$`t`$ instead of a normal:
+uses a Student-\\t\\ instead of a normal:
 
-``` math
-\theta_i \sim t_\nu(\mu_\theta, \tau_\theta^2)
-```
+\\ \theta_i \sim t\_\nu(\mu\_\theta, \tau\_\theta^2) \\
 
-where $`\nu`$ (the degrees of freedom) is estimated. This accommodates
-outlier studies that would otherwise inflate $`\tau_\theta`$.
+where \\\nu\\ (the degrees of freedom) is estimated. This accommodates
+outlier studies that would otherwise inflate \\\tau\_\theta\\.
 
 ### Controlling assumptions with `meta_did_general()`
 
@@ -339,31 +290,31 @@ The
 function provides explicit control over how nuisance parameters are
 handled for non-DiD designs, via three arguments:
 
-- **`time_trend`**: Controls the time trend $`\beta_i`$ for RCT and
+- **`time_trend`**: Controls the time trend \\\beta_i\\ for RCT and
   pre-post studies.
   - `"pooled"` (default): hierarchical prior shared across designs,
     informed by DiD studies.
-  - `"fixed_zero"`: $`\beta_i = 0`$ for RCT and pre-post studies. For
+  - `"fixed_zero"`: \\\beta_i = 0\\ for RCT and pre-post studies. For
     pre-post studies, this attributes all pre-post change to treatment.
     For RCTs, it bypasses the time trend reparameterisation described
     above.
 - **`baseline_imbalance`**: Controls the baseline difference
-  $`\gamma_i`$.
+  \\\gamma_i\\.
   - `"by_randomisation"` (default): each study follows its
     `randomisation` column – see the section below.
-  - `"estimated"`: every DiD and RCT study is pooled into one $`\gamma`$
+  - `"estimated"`: every DiD and RCT study is pooled into one \\\gamma\\
     population, ignoring the `randomisation` column.
-  - `"fixed_zero"`: $`\gamma_i = 0`$ for RCT studies. Note this is a
+  - `"fixed_zero"`: \\\gamma_i = 0\\ for RCT studies. Note this is a
     *hard* constraint and costs a DiD study its robustness to imbalance;
     prefer `"by_randomisation"` with a small `kappa`.
 - **`pp_likelihood`**: Controls the likelihood form for pre-post
   studies.
   - `"differenced"` (default): uses the post-minus-pre difference,
     eliminating the baseline algebraically. The pre/post correlation
-    $`\rho_i`$ is not separately estimable.
+    \\\rho_i\\ is not separately estimable.
   - `"bivariate"`: uses the full bivariate normal likelihood for the
-    (pre, post) pair. This retains $`\rho_i`$ as an estimable parameter,
-    contributing to the hierarchical $`\rho`$ model, at the cost of
+    (pre, post) pair. This retains \\\rho_i\\ as an estimable parameter,
+    contributing to the hierarchical \\\rho\\ model, at the cost of
     estimating additional nuisance parameters.
 
 These settings can be combined independently. For example, one might
@@ -372,16 +323,14 @@ information from DiD studies (`time_trend = "pooled"`).
 
 ## Baseline imbalance and randomisation
 
-The baseline difference $`\gamma_i`$ is the one nuisance parameter a
+The baseline difference \\\gamma_i\\ is the one nuisance parameter a
 post-only study cannot identify at all. Its effect estimate is
 
-``` math
-\tilde\theta_i = \phi_i (1 + \tilde\beta_i) - \gamma_i,
-```
+\\ \tilde\theta_i = \phi_i (1 + \tilde\beta_i) - \gamma_i, \\
 
-so whatever the model assumes about $`\gamma_i`$**subtracts directly
+so whatever the model assumes about \\\gamma_i\\ **subtracts directly
 from that study’s treatment effect**. The posterior for
-$`\tilde\theta_i`$ is the data-driven part convolved with $`\gamma_i`$’s
+\\\tilde\theta_i\\ is the data-driven part convolved with \\\gamma_i\\’s
 prior: shifted by its mean, widened by its SD. Getting that prior right
 is therefore not a detail.
 
@@ -389,15 +338,11 @@ is therefore not a detail.
 
 Studies are split by their `randomisation` column:
 
-``` math
-\gamma_i \sim
-\begin{cases}
-\mathcal{N}(\mu_\gamma,\ \tau_\gamma^2) & \text{non-randomised} \\
-\mathcal{N}(0,\ \kappa^2 s_i^2) & \text{randomised}
-\end{cases}
-```
+\\ \gamma_i \sim \begin{cases} \mathcal{N}(\mu\_\gamma,\\
+\tau\_\gamma^2) & \text{non-randomised} \\ \mathcal{N}(0,\\ \kappa^2
+s_i^2) & \text{randomised} \end{cases} \\
 
-where $`s_i`$ is the sampling SD of study $`i`$’s baseline contrast. The
+where \\s_i\\ is the sampling SD of study \\i\\’s baseline contrast. The
 two populations deliberately **do not share a mean**: a zero population
 imbalance is a structural implication of randomisation, not a quantity
 to estimate.
@@ -408,61 +353,59 @@ be a cluster-randomised roll-out. An absent or `NA` value reads as
 `"none"`, so randomisation is always an explicit claim rather than a
 default.
 
-### Why $`\mu_\gamma = 0`$ by default
+### Why \\\mu\_\gamma = 0\\ by default
 
 DiD is typically used *because* assignment was not random – the
-pre-period is measured precisely to handle selection. So $`\gamma`$ in a
+pre-period is measured precisely to handle selection. So \\\gamma\\ in a
 DiD study is a property of the programme’s **targeting rule**: some
 interventions go to high-need (high-baseline) populations, others to
-easy-to-reach (low-baseline) ones. Estimating a single $`\mu_\gamma`$
+easy-to-reach (low-baseline) ones. Estimating a single \\\mu\_\gamma\\
 asserts that a whole literature shares a direction of selection, then
 applies it to every post-only study, whose own data cannot contradict
 it.
 
 The resulting bias does not shrink with more evidence – it **sharpens**,
-because $`\mu_\gamma`$ is estimated more precisely. Pinning
-$`\mu_\gamma = 0`$ lets the *magnitude* of imbalance transport between
+because \\\mu\_\gamma\\ is estimated more precisely. Pinning
+\\\mu\_\gamma = 0\\ lets the *magnitude* of imbalance transport between
 non-randomised studies while refusing to transport its *direction*. Set
 `mu_gamma = "estimated"` only when the studies plausibly share a
 targeting mechanism, such as several evaluations of the same programme.
 
-### What $`\kappa`$ means, and why it is not zero
+### What \\\kappa\\ means, and why it is not zero
 
 For a randomised study the *realised* allocation imbalance is already
-carried by the likelihood: the $`\sigma^2/n`$ terms on each arm mean,
-and for a DiD study the pre-post correlation $`\rho_i`$ that propagates
+carried by the likelihood: the \\\sigma^2/n\\ terms on each arm mean,
+and for a DiD study the pre-post correlation \\\rho_i\\ that propagates
 a chance baseline difference into the post period. Nothing extra is
-needed for finite-sample imbalance, and adding a $`\sigma^2/n`$-scaled
+needed for finite-sample imbalance, and adding a \\\sigma^2/n\\-scaled
 term would double-count it.
 
-$`\kappa`$ governs only the *excess* beyond correct sampling – imperfect
+\\\kappa\\ governs only the *excess* beyond correct sampling – imperfect
 allocation, attrition, post-randomisation selection:
 
-``` math
-\kappa^2 = \mathrm{DEFF} - 1,
-```
+\\ \kappa^2 = \mathrm{DEFF} - 1, \\
 
-so $`\kappa = 0`$ is perfect randomisation and $`\kappa = 1`$ doubles
-the variance of the baseline contrast. Because
-$`s_i \propto 1/\sqrt{n_i}`$, this automatically down-weights small
-randomised studies more than large ones. For a post-only randomised
-study, where $`\gamma_i`$ is unidentified, the mechanism is equivalent
-to inflating that study’s standard error by $`\sqrt{1 + \kappa^2}`$.
+so \\\kappa = 0\\ is perfect randomisation and \\\kappa = 1\\ doubles
+the variance of the baseline contrast. Because \\s_i \propto
+1/\sqrt{n_i}\\, this automatically down-weights small randomised studies
+more than large ones. For a post-only randomised study, where
+\\\gamma_i\\ is unidentified, the mechanism is equivalent to inflating
+that study’s standard error by \\\sqrt{1 + \kappa^2}\\.
 
-$`\kappa = 0`$ is available but is a **hard** constraint, and a hard
-zero costs a DiD study its main virtue. With $`\gamma_i`$ free, the
+\\\kappa = 0\\ is available but is a **hard** constraint, and a hard
+zero costs a DiD study its main virtue. With \\\gamma_i\\ free, the
 double difference removes any constant baseline offset. With
-$`\gamma_i`$ pinned at zero, the model must explain a real offset as
+\\\gamma_i\\ pinned at zero, the model must explain a real offset as
 sampling noise and ends up averaging the pre- and post-period
 information rather than differencing it, so the offset leaks into
-$`\theta_i`$. Shrinking toward zero with a small $`\kappa`$ avoids this.
+\\\theta_i\\. Shrinking toward zero with a small \\\kappa\\ avoids this.
 
-### Estimating $`\kappa`$
+### Estimating \\\kappa\\
 
 `kappa = "estimate"` samples it, but by default only when at least one
 randomised study carries **pre-treatment data** (a randomised DiD).
-Post-only randomised studies have an unidentified $`\gamma_i`$ and
-constrain $`\kappa`$ not at all, so
+Post-only randomised studies have an unidentified \\\gamma_i\\ and
+constrain \\\kappa\\ not at all, so
 [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)
 refuses rather than sampling a prior-driven parameter that silently sets
 how much every randomised study is down-weighted.
@@ -470,36 +413,35 @@ how much every randomised study is down-weighted.
 `allow_unidentified_kappa = TRUE` lifts that refusal, following the same
 idiom as `allow_no_did`. Note that estimating a parameter and
 marginalising over it are the same operation – there is no separate
-“marginalise” mode, and the posterior for an unanchored $`\kappa`$
+“marginalise” mode, and the posterior for an unanchored \\\kappa\\
 simply reproduces its prior. What changes is the *shape* of the prior on
-$`\gamma_i`$: sampling $`\kappa`$ makes it a scale mixture of normals,
+\\\gamma_i\\: sampling \\\kappa\\ makes it a scale mixture of normals,
 both more peaked at zero and much heavier-tailed than any fixed
-$`\kappa`$. That says “most randomised trials achieved balance,
+\\\kappa\\. That says “most randomised trials achieved balance,
 occasionally one badly did not”, which a single scale cannot express. It
 is a modelling choice, not an estimate, which is why it must be asked
 for.
 
-With no anchor, fix $`\kappa`$. The default of `0.5` is a reasonable
+With no anchor, fix \\\kappa\\. The default of `0.5` is a reasonable
 central choice rather than a value to trust on its own, so it is worth
 refitting at a few values to see whether any conclusion turns on it –
 but nothing in the package requires this, and for a summary-data
-meta-analysis a handful of refits costs seconds. For a study with
-$`n = 100`$ per arm and a within-study SD of 25% of baseline,
-$`\kappa = 1`$ buys an imbalance allowance of roughly 4 percentage
-points on the fractional scale – about a tenth of a typical treatment
-effect.
+meta-analysis a handful of refits costs seconds. For a study with \\n =
+100\\ per arm and a within-study SD of 25% of baseline, \\\kappa = 1\\
+buys an imbalance allowance of roughly 4 percentage points on the
+fractional scale – about a tenth of a typical treatment effect.
 
 ### Cluster randomisation
 
-For `randomisation = "cluster"`, the reported $`n`$ counts individuals,
-so $`\sigma^2/n`$ understates an arm mean’s sampling variance by
-$`\mathrm{DEFF} = 1 + (m - 1)\rho_{ICC}`$. Supplying `cluster_size` and
-`icc` columns inflates $`s_i`$ by $`\sqrt{\mathrm{DEFF}}`$, keeping
-$`\kappa`$’s meaning constant across designs; otherwise
+For `randomisation = "cluster"`, the reported \\n\\ counts individuals,
+so \\\sigma^2/n\\ understates an arm mean’s sampling variance by
+\\\mathrm{DEFF} = 1 + (m - 1)\rho\_{ICC}\\. Supplying `cluster_size` and
+`icc` columns inflates \\s_i\\ by \\\sqrt{\mathrm{DEFF}}\\, keeping
+\\\kappa\\’s meaning constant across designs; otherwise
 `cluster_deff_default` is used.
 
 This corrects the **baseline contrast only**. The post-treatment
-likelihood still uses $`\sigma^2/n`$, so a cluster-randomised study
+likelihood still uses \\\sigma^2/n\\, so a cluster-randomised study
 remains over-precise about its own effect. Correcting that would need
 cluster identifiers and a random effect, which this model does not
 carry.
@@ -516,31 +458,27 @@ reproduces the behaviour of the deprecated
 
 When study-level covariates are available (e.g., intervention dose, year
 of publication), the treatment effect mean can be modelled as a linear
-function of those covariates. If $`\mathbf{x}_i`$ is a $`K`$-vector of
-covariate values for study $`i`$, the hierarchical prior becomes
+function of those covariates. If \\\mathbf{x}\_i\\ is a \\K\\-vector of
+covariate values for study \\i\\, the hierarchical prior becomes
 
-``` math
-\theta_i \sim \mathcal{N}\!\left(
-  \mu_\theta + \mathbf{x}_i^\top \boldsymbol{\beta},\;
-  \tau_\theta^2
-\right),
-```
+\\ \theta_i \sim \mathcal{N}\\\left( \mu\_\theta + \mathbf{x}\_i^\top
+\boldsymbol{\beta},\\ \tau\_\theta^2 \right), \\
 
-where $`\boldsymbol{\beta}`$ is a vector of meta-regression coefficients
+where \\\boldsymbol{\beta}\\ is a vector of meta-regression coefficients
 estimated jointly with all other parameters. When
-`robust_heterogeneity = TRUE`, the normal is replaced by a Student-$`t`$
+`robust_heterogeneity = TRUE`, the normal is replaced by a Student-\\t\\
 as before. The same covariate adjustment applies across all study
 designs (DiD, RCT, and pre-post), with design-specific offsets
-($`\delta_{\text{RCT}}`$, $`\delta_{\text{PP}}`$) added when
+(\\\delta\_{\text{RCT}}\\, \\\delta\_{\text{PP}}\\) added when
 `design_effects = TRUE`.
 
 ### Covariate centering
 
 By default (`center_covariates = TRUE`), covariates are mean-centered
 across all studies in the meta-analysis before fitting. This has a
-useful interpretive consequence: $`\mu_\theta`$ represents the
+useful interpretive consequence: \\\mu\_\theta\\ represents the
 population treatment effect **at the average covariate values**, rather
-than at $`\mathbf{x} = 0`$ (which may not be a meaningful reference
+than at \\\mathbf{x} = 0\\ (which may not be a meaningful reference
 point).
 
 The centering values are stored in the fitted object (`fit$cov_centers`)
@@ -561,8 +499,8 @@ fit <- meta_did(
 
 The covariate columns must be present in `summary_data` (and/or
 `individual_data`), must be numeric, and must be constant within each
-study. The prior on $`\boldsymbol{\beta}`$ defaults to
-$`\mathcal{N}(0, 10)`$ per coefficient and can be adjusted via
+study. The prior on \\\boldsymbol{\beta}\\ defaults to \\\mathcal{N}(0,
+10)\\ per coefficient and can be adjusted via
 `set_priors(beta_cov = normal(0, sd))`.
 
 For a worked example including simulation and recovery, see

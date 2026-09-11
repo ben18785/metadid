@@ -1,4 +1,4 @@
 # License
 
     YEAR: 2026
-    COPYRIGHT HOLDER: metadid authors
+    COPYRIGHT HOLDER: Ben Lambert and Joseph Poore

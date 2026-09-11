@@ -6,7 +6,13 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Bayesian Meta-Analysis Across Study Designs • metadid</title>
-<script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
+  window.MathJax = {
+    chtml: {
+      fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
+    }
+  };
+</script><script src="lightswitch.js"></script><script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -18,7 +24,7 @@
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="index.html">metadid</a>
 
@@ -46,122 +52,53 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="metadid">metadid<a class="anchor" aria-label="anchor" href="#metadid"></a>
-</h1></div>
-<p><a href="https://github.com/ben18785/metadid/actions" class="external-link"><img src="https://github.com/ben18785/metadid/actions/workflows/tests.yaml/badge.svg" alt="tests"></a> <a href="https://app.codecov.io/gh/ben18785/metadid" class="external-link"><img src="https://codecov.io/gh/ben18785/metadid/graph/badge.svg" alt="Codecov test coverage"></a></p>
-<p><strong>metadid</strong> is an R package for Bayesian meta-analysis that synthesises treatment effects across studies with different designs: difference-in-differences (DiD), post-only randomised controlled trials (RCT), and pre-post studies. It uses a hierarchical Stan model that accounts for design-specific information and heterogeneity across studies, with optional baseline normalisation to place outcomes on a common fractional scale.</p>
+  <main id="main" class="col-md-9"><p><picture><source media="(prefers-color-scheme: dark)" srcset="reference/figures/metadid-banner-dark.svg"><img src="reference/figures/metadid-banner.svg" alt="metadid: Bayesian meta-analysis that pools DiD, RCT and pre-post studies in one latent model"></source></picture></p>
+<p><a href="https://github.com/ben18785/metadid/actions" class="external-link"><img src="https://github.com/ben18785/metadid/actions/workflows/tests.yaml/badge.svg" alt="tests"></a> <a href="https://app.codecov.io/gh/ben18785/metadid" class="external-link"><img src="https://codecov.io/gh/ben18785/metadid/graph/badge.svg" alt="Codecov test coverage"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a></p>
+<p><strong>metadid</strong> is an R package for Bayesian meta-analysis. It allows different study designs to be pooled based on a simple concept: if you have a few difference-in-differences (DiD) designs (also called controlled before-and-after designs) you can use these to re-estimate all studies as if they were DiDs, achieving accurate study pooling and increasing statistical power.</p>
+<p>metadid uses a hierarchical Stan model that accounts for design-specific information and heterogeneity across studies, with optional baseline normalisation to place outcomes on a common fractional scale.</p>
 <div class="section level2">
-<h2 id="model-assumptions">Model assumptions<a class="anchor" aria-label="anchor" href="#model-assumptions"></a>
+<h2 id="did-something-cause-something-else">Did something cause something else?<a class="anchor" aria-label="anchor" href="#did-something-cause-something-else"></a>
 </h2>
-<p><code>metadid</code> assumes that all studies arise from a common latent difference-in-differences (DiD) structure. Different study designs correspond to observing different parts of this latent structure.</p>
-<p>DiD studies are the only design in this framework that directly identify the treatment effect. Meta-analyses that do not include DiD studies are not identified from the data and depend entirely on modelling assumptions. We do not recommend using this approach in the absence of DiD evidence.</p>
+<p>There are three main study designs that try to answer this, and most literature contains a mixture of them.</p>
+<p><picture><source media="(prefers-color-scheme: dark)" srcset="reference/figures/design-grid-dark.svg"><img src="reference/figures/design-grid.svg" alt="The three study designs as partial observations of one experiment"></source></picture></p>
+<p>Each design observes a subset of the same 2 × 2 experiment: groups (treatment, control) crossed with time (pre, post). Only DiD observes all four cells and identifies the treatment effect on its own. Pooling the designs as if they estimated the same quantity is where standard meta-analysis goes wrong. (metadid also accepts change-score DiDs, where only each arm’s pre-to-post change is reported.)</p>
+</div>
+<div class="section level2">
+<h2 id="three-problems-with-standard-meta-analysis">Three problems with standard meta-analysis<a class="anchor" aria-label="anchor" href="#three-problems-with-standard-meta-analysis"></a>
+</h2>
 <div class="section level3">
-<h3 id="latent-did-model">Latent DiD model<a class="anchor" aria-label="anchor" href="#latent-did-model"></a>
+<h3 id="id_1-the-most-informative-design-can-get-a-low-weight">1. The most informative design can get a low weight<a class="anchor" aria-label="anchor" href="#id_1-the-most-informative-design-can-get-a-low-weight"></a>
 </h3>
-<p>For study (i), outcomes in the <strong>control group</strong> satisfy</p>
-[
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\begin{pmatrix}
-Y_{i,c,\mathrm{pre}} \\
-Y_{i,c,\mathrm{post}}
-\end{pmatrix}</annotation></semantics></math><p>  , ]</p>
-<p>and outcomes in the <strong>treatment group</strong> satisfy</p>
-[
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\begin{pmatrix}
-Y_{i,t,\mathrm{pre}} \\
-Y_{i,t,\mathrm{post}}
-\end{pmatrix}</annotation></semantics></math><p>  . ]</p>
-<p>Here:</p>
-<ul>
-<li>(_i): baseline mean in the control group<br>
-</li>
-<li>(_i): time trend shared across groups<br>
-</li>
-<li>(_i): baseline difference between treatment and control<br>
-</li>
-<li>(_i): study-specific treatment effect<br>
-</li>
-<li>(<em>{i,c}), (</em>{i,t}): pre/post correlations<br>
-</li>
-<li>(<em>{i,g,}), (</em>{i,g,}): marginal standard deviations</li>
-</ul>
-<p>The key identifying assumption is that, in the absence of treatment, the treatment group would have followed the same time trend (_i) as the control group.</p>
-<hr>
+<p>Most meta-analysis methods use inverse variance weighting. However, this approach can give the most informative designs (a DiD) a low weight. This is because a DiD estimate is the difference of two paired changes, and includes two sources of variance. Put differently, the designs that don’t control for potential time trends can receive twice the weight of the designs that seek to remove it.</p>
+<p><picture><source media="(prefers-color-scheme: dark)" srcset="reference/figures/trap-weights-dark.svg"><img src="reference/figures/trap-weights.svg" alt="Variance and inverse-variance weight by design"></source></picture></p>
+<blockquote>
+<p><strong>What metadid does:</strong> it uses the DiD studies to fill in what the other designs did not measure. Each study enters the likelihood through the cells it observed, so no design is weighted by a variance formula that is blind to its bias.</p>
+</blockquote>
 </div>
 <div class="section level3">
-<h3 id="study-designs-as-partial-observations">Study designs as partial observations<a class="anchor" aria-label="anchor" href="#study-designs-as-partial-observations"></a>
+<h3 id="id_2-standardised-mean-differences-have-no-natural-scale">2. Standardised mean differences have no natural scale<a class="anchor" aria-label="anchor" href="#id_2-standardised-mean-differences-have-no-natural-scale"></a>
 </h3>
-<p>Different study designs correspond to observing subsets of this latent structure:</p>
-<ul>
-<li>
-<strong>DiD</strong>: both groups and both time points observed<br>
-</li>
-<li>
-<strong>RCT</strong>: both groups, post-treatment only<br>
-</li>
-<li>
-<strong>Pre-post</strong>: treatment group only, both time points<br>
-</li>
-<li>
-<strong>Change-score</strong>: partial observations of differences</li>
-</ul>
-<p>Inference for incomplete designs relies on the shared latent structure across studies.</p>
-<hr>
+<p>Hedges’ <em>g</em> (and similar metrics) help make studies with different outcome measures comparable, but in the process lose real-world meaning. The pooled <em>g</em> must be back-transformed to get back to an outcome of interest, but several reasonable SDs usually exist to back-transform with (a baseline SD, a control-arm SD, a population reference) and they can disagree by a factor of two.</p>
+<p><picture><source media="(prefers-color-scheme: dark)" srcset="reference/figures/trap-smd-dark.svg"><img src="reference/figures/trap-smd.svg" alt="The same pooled Hedges g implies different real-world effects"></source></picture></p>
+<blockquote>
+<p><strong>What metadid does:</strong> it pools directly on percentage change from baseline or on absolute units, so no back-transformation is needed. If SMDs are what a literature reports, metadid can pool those as well.</p>
+</blockquote>
 </div>
 <div class="section level3">
-<h3 id="hierarchical-treatment-effects">Hierarchical treatment effects<a class="anchor" aria-label="anchor" href="#hierarchical-treatment-effects"></a>
+<h3 id="id_3-time-trends-are-confounded-with-treatment">3. Time trends are confounded with treatment<a class="anchor" aria-label="anchor" href="#id_3-time-trends-are-confounded-with-treatment"></a>
 </h3>
-<p>Study-specific treatment effects are modelled hierarchically, for example as</p>
-<p>[ <em>i (</em>, _^2), ]</p>
-<p>where (<em>) is the overall treatment effect and (</em>) captures between-study heterogeneity.</p>
-<p>For robustness to outlying study effects, the model can alternatively use a Student-t distribution,</p>
-<p>[ <em>i t</em>(<em>, </em>), ]</p>
-<p>where () controls the tail-heaviness.</p>
-<hr>
-</div>
-<div class="section level3">
-<h3 id="individual-level-and-summary-level-data">Individual-level and summary-level data<a class="anchor" aria-label="anchor" href="#individual-level-and-summary-level-data"></a>
-</h3>
-<p>The model supports both:</p>
-<ul>
-<li>
-<strong>individual-level data</strong>, and<br>
-</li>
-<li>
-<strong>summary statistics</strong> (means, variances, sample sizes)</li>
-</ul>
-<p>by deriving likelihoods from the same latent bivariate normal structure.</p>
-<hr>
-</div>
-<div class="section level3">
-<h3 id="practical-implication">Practical implication<a class="anchor" aria-label="anchor" href="#practical-implication"></a>
-</h3>
-<p>Designs with missing components (e.g. pre-post) become informative by borrowing structure from other studies, but this increases reliance on the modelling assumptions above.</p>
-<p>Post-only RCTs identify the sum of the treatment effect and any baseline imbalance, while pre-post studies identify the sum of the treatment effect and time trends. In the absence of DiD studies, separating these components relies on modelling assumptions. While RCTs may be less sensitive under randomisation assumptions, both designs provide only partial identification of the treatment effect in this framework.</p>
+<p>Outcomes drift over time for reasons unrelated to treatment. A pre-post study cannot separate that drift from the effect, and discarding the time component biases the pooled estimate.</p>
+<p><picture><source media="(prefers-color-scheme: dark)" srcset="reference/figures/trap-trend-dark.svg"><img src="reference/figures/trap-trend.svg" alt="A naive pre-post estimate absorbs the time trend; DiD removes it"></source></picture></p>
+<blockquote>
+<p><strong>What metadid does:</strong> it estimates the time trend from studies with control arms and imputes it for studies without one, so the trend is removed from single-arm effect estimates instead of being counted as treatment.</p>
+</blockquote>
 </div>
 </div>
 <div class="section level2">
-<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+<h2 id="the-benefit-of-a-small-number-of-dids">The benefit of a small number of DiDs<a class="anchor" aria-label="anchor" href="#the-benefit-of-a-small-number-of-dids"></a>
 </h2>
-<p>metadid depends on <a href="https://mc-stan.org/cmdstanr/" class="external-link">cmdstanr</a> and <a href="https://CRAN.R-project.org/package=instantiate" class="external-link">instantiate</a>, which compile Stan models at package install time. Install them first if you haven’t already:</p>
+<p><code><a href="reference/simulate_meta_did.html">simulate_meta_did()</a></code> generates individual-level pre/post data for both arms across a set of studies from a known hierarchical model. We simulate 50 studies from a shared latent DiD structure:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"cmdstanr"</span>, repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"https://mc-stan.org/r-packages/"</span>, <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"repos"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">cmdstanr</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/cmdstanr/reference/install_cmdstan.html" class="external-link">install_cmdstan</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"instantiate"</span><span class="op">)</span></span></code></pre></div>
-<p>Then install metadid from GitHub:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
-<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"ben18785/metadid"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
-</h2>
-<div class="section level3">
-<h3 id="id_1-simulate-studies">1. Simulate studies<a class="anchor" aria-label="anchor" href="#id_1-simulate-studies"></a>
-</h3>
-<p><code><a href="reference/simulate_meta_did.html">simulate_meta_did()</a></code> generates individual-level pre/post data for both arms across a set of studies from a known hierarchical model. We simulate 30 studies from a shared latent DiD structure:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ben18785.github.io/metadid/">metadid</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
@@ -179,13 +116,12 @@ Y_{i,t,\mathrm{post}}
 <span>  rho           <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  seed          <span class="op">=</span> <span class="fl">495</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The raw population treatment effect is <code>-0.15</code>. Because <code>metadid</code> normalises each study by its <strong>own</strong> baseline, the estimand is the mean of per-study normalised effects, (E[_i / b_i]), rather than the ratio of population means, (E[] / E[b]). These two quantities differ by the between-study baseline coefficient of variation squared, which is negligible here (baseline SD <code>0.02</code> on a mean of <code>0.45</code>), so both are approximately <code>-0.333</code>. For this simulated dataset the realised (E[_i / b_i]) is <code>-0.333</code>, which is what the model targets.</p>
-</div>
+<p>The raw population treatment effect is <code>-0.15</code>. Because <code>metadid</code> normalises each study by its <strong>own</strong> baseline, the estimand is the mean of per-study normalised effects, <span class="math inline">\(E[\theta_i / b_i]\)</span>, rather than the ratio of population means, <span class="math inline">\(E[\theta] / E[b]\)</span>. These two quantities differ by the between-study baseline coefficient of variation squared, which is negligible here (baseline SD <code>0.02</code> on a mean of <code>0.45</code>), so both are approximately <code>-0.333</code>. For this simulated dataset the realised <span class="math inline">\(E[\theta_i / b_i]\)</span> is <code>-0.333</code>, which is what the model targets.</p>
 <div class="section level3">
-<h3 id="id_2-two-scenarios-from-the-same-data">2. Two scenarios from the same data<a class="anchor" aria-label="anchor" href="#id_2-two-scenarios-from-the-same-data"></a>
+<h3 id="two-scenarios-from-the-same-data">Two scenarios from the same data<a class="anchor" aria-label="anchor" href="#two-scenarios-from-the-same-data"></a>
 </h3>
 <p>In the best case, every study provides full four-cell summary statistics (pre/post × control/treatment). This gives the model maximum information per study:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">all_did</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/as_summary_did.html">as_summary_did</a></span><span class="op">(</span><span class="va">sim</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit_all_did</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/meta_did.html">meta_did</a></span><span class="op">(</span></span>
@@ -194,11 +130,13 @@ Y_{i,t,\mathrm{post}}
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit_all_did</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Bayesian meta-analysis (metadid)</span></span>
-<span><span class="co">#&gt; Studies: DiD = 50 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0</span></span>
-<span><span class="co">#&gt; Population treatment effect: -0.332  90% CI [-0.348, -0.314]</span></span></code></pre>
-<p>Now suppose, from the same underlying data, only a third of studies provide full DiD information. Another third are RCTs (post-treatment outcomes only), and the remaining third are pre-post studies (treatment arm only):</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co">#&gt; Bayesian meta-analysis (metadid)</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&gt; Studies: DiD = 50 | RCT = 0 | Pre-Post = 0 | DiD (change only) = 0</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; Population treatment effect: -0.333  90% CI [-0.349, -0.316]</span></span></code></pre></div>
+<p>Now suppose, from the same underlying data, only a third of studies provide full DiD information. Another third are post-only RCTs, and the remaining third are uncontrolled pre-post studies:</p>
+<details><summary>
+Split the simulated studies into the three designs
+</summary><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">study_ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">study_id</span><span class="op">)</span></span>
 <span><span class="va">true_params</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim</span>, <span class="st">"true_params"</span><span class="op">)</span></span>
 <span></span>
@@ -208,9 +146,9 @@ Y_{i,t,\mathrm{post}}
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim_did</span>, <span class="st">"true_params"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">true_params</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">17</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim_rct</span>, <span class="st">"true_params"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">true_params</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">18</span><span class="op">:</span><span class="fl">34</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim_pp</span>, <span class="st">"true_params"</span><span class="op">)</span>  <span class="op">&lt;-</span> <span class="va">true_params</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">35</span><span class="op">:</span><span class="fl">50</span><span class="op">]</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">mixed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim_pp</span>, <span class="st">"true_params"</span><span class="op">)</span>  <span class="op">&lt;-</span> <span class="va">true_params</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">study_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_ids</span><span class="op">[</span><span class="fl">35</span><span class="op">:</span><span class="fl">50</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+</details><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mixed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="reference/as_summary_did.html">as_summary_did</a></span><span class="op">(</span><span class="va">sim_did</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="reference/as_summary_rct.html">as_summary_rct</a></span><span class="op">(</span><span class="va">sim_rct</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="reference/as_summary_pp.html">as_summary_pp</a></span><span class="op">(</span><span class="va">sim_pp</span><span class="op">)</span></span>
@@ -222,15 +160,18 @@ Y_{i,t,\mathrm{post}}
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit_mixed</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Bayesian meta-analysis (metadid)</span></span>
-<span><span class="co">#&gt; Studies: DiD = 17 | RCT = 17 | Pre-Post = 16 | DiD (change only) = 0</span></span>
-<span><span class="co">#&gt; Population treatment effect: -0.330  90% CI [-0.349, -0.311]</span></span></code></pre>
+<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co">#&gt; Bayesian meta-analysis (metadid)</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co">#&gt; Studies: DiD = 17 | RCT = 17 | Pre-Post = 16 | DiD (change only) = 0</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt; Population treatment effect: -0.330  90% CI [-0.350, -0.310]</span></span></code></pre></div>
+<p>The mixed evidence base recovers the same answer with an interval about 20% wider: the 17 DiD studies identify the trend and baseline structure that the other 33 studies need.</p>
 </div>
 <div class="section level3">
-<h3 id="id_3-comparing-posteriors">3. Comparing posteriors<a class="anchor" aria-label="anchor" href="#id_3-comparing-posteriors"></a>
+<h3 id="comparing-posteriors">Comparing posteriors<a class="anchor" aria-label="anchor" href="#comparing-posteriors"></a>
 </h3>
-<p>Both fits recover the true normalised effect (E[_i / b_i] ) (dashed line). The mixed-design posterior is slightly wider, reflecting the information lost by having two-thirds of the studies provide incomplete data — but the difference is modest.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<p>Both fits recover the true normalised effect <span class="math inline">\(E[\theta_i / b_i] \approx -0.333\)</span> (dashed line). The mixed-design posterior is slightly wider, reflecting the information lost by having two-thirds of the studies provide incomplete data, but the difference is modest.</p>
+<details><summary>
+Plotting code
+</summary><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">draws_did</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span></span>
 <span>  <span class="va">fit_all_did</span><span class="op">$</span><span class="va">fit</span><span class="op">$</span><span class="fu">draws</span><span class="op">(</span><span class="st">"treatment_effect_mean"</span>, format <span class="op">=</span> <span class="st">"draws_matrix"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -252,23 +193,179 @@ Y_{i,t,\mathrm{post}}
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Population treatment effect (normalised)"</span>, y <span class="op">=</span> <span class="st">"Density"</span>, fill <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-comparison.png"></p>
+</details><p><picture><source media="(prefers-color-scheme: dark)" srcset="reference/figures/comparison-dark.svg"><img src="reference/figures/comparison.svg" alt="Posterior comparison: all-DiD versus mixed designs"></source></picture></p>
 <p>The key takeaway: by assuming a common latent DiD structure, the model borrows strength across designs. RCT and pre-post studies contribute meaningful information about the treatment effect, even though they each observe less of the underlying process than a full DiD study.</p>
 </div>
 <div class="section level3">
-<h3 id="id_4-posterior-predictive-checks">4. Posterior predictive checks<a class="anchor" aria-label="anchor" href="#id_4-posterior-predictive-checks"></a>
+<h3 id="posterior-predictive-checks">Posterior predictive checks<a class="anchor" aria-label="anchor" href="#posterior-predictive-checks"></a>
 </h3>
 <p><code>pp_check_cdf(type = "summary")</code> compares the empirical CDF of observed study-level treatment effects (step function) to the posterior predictive CDF (ribbon and dashed median). If the model is well-calibrated, the observed ECDF should track the predictive band.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/pp_check_cdf.html">pp_check_cdf</a></span><span class="op">(</span><span class="va">fit_mixed</span>, type <span class="op">=</span> <span class="st">"summary"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-pp-check-cdf-1.png"></p>
+<p><picture><source media="(prefers-color-scheme: dark)" srcset="reference/figures/pp-check-cdf-dark.svg"><img src="reference/figures/pp-check-cdf.svg" alt="Posterior predictive check of the effect CDF"></source></picture></p>
 <p>For a more granular per-study view, <code><a href="reference/pp_check_effects.html">pp_check_effects()</a></code> shows each study’s observed naive effect against its posterior predictive density:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/pp_check_effects.html">pp_check_effects</a></span><span class="op">(</span><span class="va">fit_mixed</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-pp-check-effects-1.png"></p>
+<p><picture><source media="(prefers-color-scheme: dark)" srcset="reference/figures/pp-check-effects-dark.svg"><img src="reference/figures/pp-check-effects.svg" alt="Per-study posterior predictive checks"></source></picture></p>
 </div>
 </div>
+<div class="section level2">
+<h2 id="extending-the-model">Extending the model<a class="anchor" aria-label="anchor" href="#extending-the-model"></a>
+</h2>
+<p>Priors on every parameter keep inference stable when studies are few, and a Student-t heterogeneity model guards against outlying studies:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_robust</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/meta_did.html">meta_did</a></span><span class="op">(</span></span>
+<span>  summary_data         <span class="op">=</span> <span class="va">mixed</span>,</span>
+<span>  robust_heterogeneity <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  priors               <span class="op">=</span> <span class="fu"><a href="reference/set_priors.html">set_priors</a></span><span class="op">(</span>treatment_effect_mean <span class="op">=</span> <span class="fu"><a href="reference/normal.html">normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  seed                 <span class="op">=</span> <span class="fl">495</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Study-level covariates turn the model into a meta-regression:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_dose</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/meta_did.html">meta_did</a></span><span class="op">(</span></span>
+<span>  summary_data <span class="op">=</span> <span class="va">mixed</span>,</span>
+<span>  covariates   <span class="op">=</span> <span class="op">~</span> <span class="va">dose</span>,</span>
+<span>  seed         <span class="op">=</span> <span class="fl">495</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
+<div class="section level2">
+<h2 id="an-example">An example<a class="anchor" aria-label="anchor" href="#an-example"></a>
+</h2>
+<p><strong>Competition and testosterone.</strong> Does winning a competition raise testosterone and feed a winning streak? <a href="https://doi.org/10.1016/j.yhbeh.2016.10.002" class="external-link">Geniole et al. (2017)</a> meta-analysed the winner effect on the standardised mean difference scale; we first replicate their analysis using their method and data and get effectively the same Hedges’ <em>g</em> = 0.22 (95% CI 0.12 to 0.32). We then re-analyse the result using metadid.</p>
+<div class="section level3">
+<h3 id="there-is-a-time-trend-in-the-data">There is a time-trend in the data<a class="anchor" aria-label="anchor" href="#there-is-a-time-trend-in-the-data"></a>
+</h3>
+<p>Testosterone gradually decreases during the day anyway. The graph shows 47 control arm change observations (each dot is one study).</p>
+<p><picture><source media="(prefers-color-scheme: dark)" srcset="reference/figures/example-trend-dark.svg"><img src="reference/figures/example-trend.svg" alt="Control-arm percentage changes across 47 studies, median -4.2%"></source></picture></p>
+</div>
+<div class="section level3">
+<h3 id="the-pooled-effect-changes-under-metadid">The pooled effect changes under metadid<a class="anchor" aria-label="anchor" href="#the-pooled-effect-changes-under-metadid"></a>
+</h3>
+<p>The graph below compares the result under the original frequentist method, back-transformed in two alternative and plausible ways, and the result from metadid. The bars represent 95% confidence/credible intervals. The result changes, in this case, mainly because metadid separates the time trend from the treatment effect. While Geniole et al. only report on the SMD scale, we also note that pooling directly on percentage changes allows for a more intuitive effect size without the need for any back-transforms, which can lead to further differences in results.</p>
+<p><picture><source media="(prefers-color-scheme: dark)" srcset="reference/figures/example-pooled-dark.svg"><img src="reference/figures/example-pooled.svg" alt="Pooled winner effect: frequentist +9.1% or +9.9% depending on back-transform, metadid +3.4%"></source></picture></p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="model-assumptions">Model assumptions<a class="anchor" aria-label="anchor" href="#model-assumptions"></a>
+</h2>
+<p>metadid assumes that all studies arise from a common latent difference-in-differences structure. Different study designs correspond to observing different parts of this latent structure.</p>
+<p>DiD studies are the only design in this framework that directly identify the treatment effect. Meta-analyses that do not include DiD studies are not identified from the data and depend entirely on modelling assumptions. <strong>We do not recommend using this approach in the absence of DiD evidence.</strong></p>
+<div class="section level3">
+<h3 id="latent-did-model">Latent DiD model<a class="anchor" aria-label="anchor" href="#latent-did-model"></a>
+</h3>
+<p>For study <span class="math inline">\(i\)</span>, outcomes in the <strong>control group</strong> satisfy</p>
+<p><span class="math display">\[
+\begin{pmatrix}
+Y_{i,c,\mathrm{pre}} \\
+Y_{i,c,\mathrm{post}}
+\end{pmatrix}
+\sim
+\mathcal{N}
+\left[
+\begin{pmatrix}
+\alpha_i \\
+\alpha_i + \beta_i
+\end{pmatrix}
+,
+\begin{pmatrix}
+\sigma^2_{i,c,\mathrm{pre}} &amp;
+\rho_{i,c}\sigma_{i,c,\mathrm{pre}}\sigma_{i,c,\mathrm{post}} \\
+\rho_{i,c}\sigma_{i,c,\mathrm{pre}}\sigma_{i,c,\mathrm{post}} &amp;
+\sigma^2_{i,c,\mathrm{post}}
+\end{pmatrix}
+\right],
+\]</span></p>
+<p>and outcomes in the <strong>treatment group</strong> satisfy</p>
+<p><span class="math display">\[
+\begin{pmatrix}
+Y_{i,t,\mathrm{pre}} \\
+Y_{i,t,\mathrm{post}}
+\end{pmatrix}
+\sim
+\mathcal{N}
+\left[
+\begin{pmatrix}
+\alpha_i + \gamma_i \\
+\alpha_i + \gamma_i + \beta_i + \theta_i
+\end{pmatrix}
+,
+\begin{pmatrix}
+\sigma^2_{i,t,\mathrm{pre}} &amp;
+\rho_{i,t}\sigma_{i,t,\mathrm{pre}}\sigma_{i,t,\mathrm{post}} \\
+\rho_{i,t}\sigma_{i,t,\mathrm{pre}}\sigma_{i,t,\mathrm{post}} &amp;
+\sigma^2_{i,t,\mathrm{post}}
+\end{pmatrix}
+\right].
+\]</span></p>
+<p>Here:</p>
+<ul>
+<li>
+<span class="math inline">\(\alpha_i\)</span>: baseline mean in the control group</li>
+<li>
+<span class="math inline">\(\beta_i\)</span>: time trend shared across groups</li>
+<li>
+<span class="math inline">\(\gamma_i\)</span>: baseline difference between treatment and control</li>
+<li>
+<span class="math inline">\(\theta_i\)</span>: study-specific treatment effect</li>
+<li>
+<span class="math inline">\(\rho_{i,c}\)</span>, <span class="math inline">\(\rho_{i,t}\)</span>: pre/post correlations</li>
+<li>
+<span class="math inline">\(\sigma_{i,g,\mathrm{pre}}\)</span>, <span class="math inline">\(\sigma_{i,g,\mathrm{post}}\)</span>: marginal standard deviations</li>
+</ul>
+<p>The key identifying assumption is that, in the absence of treatment, the treatment group would have followed the same time trend <span class="math inline">\(\beta_i\)</span> as the control group.</p>
+</div>
+<div class="section level3">
+<h3 id="hierarchical-treatment-effects">Hierarchical treatment effects<a class="anchor" aria-label="anchor" href="#hierarchical-treatment-effects"></a>
+</h3>
+<p>Study-specific treatment effects are modelled hierarchically,</p>
+<p><span class="math display">\[
+\theta_i \sim \mathcal{N}(\mu_\theta, \tau_\theta^2),
+\]</span></p>
+<p>where <span class="math inline">\(\mu_\theta\)</span> is the overall treatment effect and <span class="math inline">\(\tau_\theta\)</span> captures between-study heterogeneity. For robustness to outlying study effects, the model can alternatively use a Student-t distribution, <span class="math inline">\(\theta_i \sim t_\nu(\mu_\theta, \tau_\theta)\)</span>, where <span class="math inline">\(\nu\)</span> controls the tail-heaviness.</p>
+</div>
+<div class="section level3">
+<h3 id="individual-level-and-summary-level-data">Individual-level and summary-level data<a class="anchor" aria-label="anchor" href="#individual-level-and-summary-level-data"></a>
+</h3>
+<p>The model supports both <strong>individual-level data</strong> and <strong>summary statistics</strong> (means, variances, sample sizes) by deriving likelihoods from the same latent bivariate-normal structure.</p>
+</div>
+<div class="section level3">
+<h3 id="practical-implication">Practical implication<a class="anchor" aria-label="anchor" href="#practical-implication"></a>
+</h3>
+<p>Designs with missing components (e.g. pre-post) become informative by borrowing structure from other studies, but this increases reliance on the modelling assumptions above. Post-only RCTs identify the sum of the treatment effect and any baseline imbalance, while pre-post studies identify the sum of the treatment effect and time trends. In the absence of DiD studies, separating these components relies on modelling assumptions. While RCTs may be less sensitive under randomisation assumptions, both designs provide only partial identification of the treatment effect in this framework.</p>
+<blockquote>
+<p><strong>We are looking for datasets.</strong> If you have a meta-analytic dataset that mixes study designs, or one where the SMD scale, the weights or the time trends never sat right, we would like to test the method on it. <a href="https://github.com/ben18785/metadid/issues" class="external-link">Open an issue</a>.</p>
+</blockquote>
+</div>
+</div>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<p>metadid depends on <a href="https://mc-stan.org/cmdstanr/" class="external-link">cmdstanr</a> and <a href="https://CRAN.R-project.org/package=instantiate" class="external-link">instantiate</a>, which compile Stan models at package install time. Install them first if you haven’t already:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"cmdstanr"</span>, repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"https://mc-stan.org/r-packages/"</span>, <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"repos"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">cmdstanr</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/cmdstanr/reference/install_cmdstan.html" class="external-link">install_cmdstan</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"instantiate"</span><span class="op">)</span></span></code></pre></div>
+<p>Then install metadid from GitHub:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"ben18785/metadid"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
+</h2>
+<ul>
+<li>
+<a href="https://ben18785.github.io/metadid/articles/mixed-designs.html">Synthesising treatment effects across DiD, RCT and pre-post designs</a>: the full worked example</li>
+<li>
+<a href="https://ben18785.github.io/metadid/articles/covariates.html">Meta-regression with study-level covariates</a>: additive and multiplicative moderators</li>
+<li>
+<a href="https://ben18785.github.io/metadid/articles/model-details.html">Model details and identification</a>: the latent likelihoods, priors and identification</li>
+<li>
+<a href="https://ben18785.github.io/metadid/reference/index.html">Function reference</a> on the package site</li>
+</ul>
+</div>
+
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
@@ -280,9 +377,8 @@ Y_{i,t,\mathrm{post}}
 <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li>
-<a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a>
-</li>
+<li><a href="LICENSE.html">Full license</a></li>
+<li><small><a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a></small></li>
 </ul>
 </div>
 

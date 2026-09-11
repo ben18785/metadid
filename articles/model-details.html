@@ -6,7 +6,13 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Model details and identification • metadid</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
+  window.MathJax = {
+    chtml: {
+      fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
+    }
+  };
+</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -16,7 +22,7 @@
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">metadid</a>
 
@@ -67,10 +73,9 @@ study design can and cannot identify.</p>
 </h2>
 <p>metadid assumes that every study — regardless of design — arises from
 a common latent difference-in-differences (DiD) data-generating process.
-For study
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>,
-outcomes in the <strong>control group</strong> follow</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>∼</mo><mi>𝒩</mi><mrow><mo stretchy="true" form="prefix">[</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>α</mi><mi>i</mi></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msubsup><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow><mn>2</mn></msubsup></mtd><mtd columnalign="center" style="text-align: center"><msub><mi>ρ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi></mrow></msub><mspace width="0.167em"></mspace><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub><mspace width="0.167em"></mspace><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>ρ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi></mrow></msub><mspace width="0.167em"></mspace><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub><mspace width="0.167em"></mspace><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd><mtd columnalign="center" style="text-align: center"><msubsup><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow><mn>2</mn></msubsup></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">]</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">
+For study <span class="math inline">\(i\)</span>, outcomes in the
+<strong>control group</strong> follow</p>
+<p><span class="math display">\[
 \begin{pmatrix}
 Y_{i,c,\mathrm{pre}} \\
 Y_{i,c,\mathrm{post}}
@@ -90,9 +95,9 @@ Y_{i,c,\mathrm{post}}
 \sigma^2_{i,c,\mathrm{post}}
 \end{pmatrix}
 \right],
-</annotation></semantics></math></p>
+\]</span></p>
 <p>and outcomes in the <strong>treatment group</strong> follow</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>Y</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>∼</mo><mi>𝒩</mi><mrow><mo stretchy="true" form="prefix">[</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msubsup><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow><mn>2</mn></msubsup></mtd><mtd columnalign="center" style="text-align: center"><msub><mi>ρ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi></mrow></msub><mspace width="0.167em"></mspace><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub><mspace width="0.167em"></mspace><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>ρ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi></mrow></msub><mspace width="0.167em"></mspace><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub><mspace width="0.167em"></mspace><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub></mtd><mtd columnalign="center" style="text-align: center"><msubsup><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow><mn>2</mn></msubsup></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">]</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \begin{pmatrix}
 Y_{i,t,\mathrm{pre}} \\
 Y_{i,t,\mathrm{post}}
@@ -112,33 +117,31 @@ Y_{i,t,\mathrm{post}}
 \sigma^2_{i,t,\mathrm{post}}
 \end{pmatrix}
 \right].
-</annotation></semantics></math></p>
+\]</span></p>
 <p>The parameters are:</p>
 <ul>
 <li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>α</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\alpha_i</annotation></semantics></math>:
-baseline mean in the control group</li>
+<span class="math inline">\(\alpha_i\)</span>: baseline mean in the
+control group</li>
 <li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>:
-time trend shared across groups</li>
+<span class="math inline">\(\beta_i\)</span>: time trend shared
+across groups</li>
 <li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>:
-baseline difference between treatment and control groups</li>
+<span class="math inline">\(\gamma_i\)</span>: baseline difference
+between treatment and control groups</li>
 <li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>:
-study-specific treatment effect (the DiD estimand)</li>
+<span class="math inline">\(\theta_i\)</span>: study-specific
+treatment effect (the DiD estimand)</li>
 <li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi></mrow></msub><annotation encoding="application/x-tex">\rho_{i,c}</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi></mrow></msub><annotation encoding="application/x-tex">\rho_{i,t}</annotation></semantics></math>:
-pre/post correlations within each group</li>
+<span class="math inline">\(\rho_{i,c}\)</span>, <span class="math inline">\(\rho_{i,t}\)</span>: pre/post correlations within
+each group</li>
 <li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>σ</mi><mrow><mi>i</mi><mo>,</mo><mi>g</mi><mo>,</mo><mi>t</mi></mrow></msub><annotation encoding="application/x-tex">\sigma_{i,g,t}</annotation></semantics></math>:
-marginal standard deviations</li>
+<span class="math inline">\(\sigma_{i,g,t}\)</span>: marginal
+standard deviations</li>
 </ul>
 <p>The key identifying assumption is that, absent treatment, the
-treatment group would have followed the same time trend
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
-as the control group (i.e., the parallel trends assumption).</p>
+treatment group would have followed the same time trend <span class="math inline">\(\beta_i\)</span> as the control group (i.e., the
+parallel trends assumption).</p>
 </div>
 <div class="section level2">
 <h2 id="what-each-design-observes">What each design observes<a class="anchor" aria-label="anchor" href="#what-each-design-observes"></a>
@@ -186,12 +189,7 @@ bivariate structure:</p>
 </tbody>
 </table>
 <p>Because each design sees fewer cells, it has less ability to separate
-the parameters
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>,
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>.</p>
+the parameters <span class="math inline">\(\alpha\)</span>, <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\gamma\)</span>, and <span class="math inline">\(\theta\)</span>.</p>
 </div>
 <div class="section level2">
 <h2 id="identification">Identification<a class="anchor" aria-label="anchor" href="#identification"></a>
@@ -215,43 +213,37 @@ structure above, the four expected cell means are:</p>
 <tbody>
 <tr class="odd">
 <td><strong>Control</strong></td>
-<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>α</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\alpha_i</annotation></semantics></math></td>
-<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\alpha_i + \beta_i</annotation></semantics></math></td>
+<td><span class="math inline">\(\alpha_i\)</span></td>
+<td><span class="math inline">\(\alpha_i + \beta_i\)</span></td>
 </tr>
 <tr class="even">
 <td><strong>Treatment</strong></td>
-<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\alpha_i + \gamma_i</annotation></semantics></math></td>
-<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\alpha_i + \gamma_i + \beta_i + \theta_i</annotation></semantics></math></td>
+<td><span class="math inline">\(\alpha_i + \gamma_i\)</span></td>
+<td><span class="math inline">\(\alpha_i + \gamma_i + \beta_i +
+\theta_i\)</span></td>
 </tr>
 </tbody>
 </table>
 <p>Taking the double difference of these expected values gives</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>μ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub><mo>−</mo><msub><mi>μ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>μ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub><mo>−</mo><msub><mi>μ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>β</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msub><mi>β</mi><mi>i</mi></msub><mo>=</mo><msub><mi>θ</mi><mi>i</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 (\mu_{i,t,\mathrm{post}} - \mu_{i,t,\mathrm{pre}}) -
 (\mu_{i,c,\mathrm{post}} - \mu_{i,c,\mathrm{pre}}) =
 (\beta_i + \theta_i) - \beta_i = \theta_i.
-</annotation></semantics></math></p>
-<p>The time trend
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
-cancels, and the baseline difference
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-cancels, leaving
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>
-cleanly identified. DiD studies are the anchor for the entire model.</p>
+\]</span></p>
+<p>The time trend <span class="math inline">\(\beta_i\)</span> cancels,
+and the baseline difference <span class="math inline">\(\gamma_i\)</span> cancels, leaving <span class="math inline">\(\theta_i\)</span> cleanly identified. DiD studies
+are the anchor for the entire model.</p>
 </div>
 <div class="section level3">
 <h3 id="did-change-only-studies-identified-but-without-levels">DiD (change only) studies: identified but without levels<a class="anchor" aria-label="anchor" href="#did-change-only-studies-identified-but-without-levels"></a>
 </h3>
 <p>Some studies report only the mean change over time (post minus pre)
 in each arm, without reporting the level means separately. The expected
-change scores are
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
-(control) and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>β</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\beta_i + \theta_i</annotation></semantics></math>
-(treatment), so the difference in change scores still identifies
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>.
-However, because the pre-treatment levels are not observed, these
-studies cannot anchor their own normalisation baseline (see below).</p>
+change scores are <span class="math inline">\(\beta_i\)</span> (control)
+and <span class="math inline">\(\beta_i + \theta_i\)</span> (treatment),
+so the difference in change scores still identifies <span class="math inline">\(\theta_i\)</span>. However, because the
+pre-treatment levels are not observed, these studies cannot anchor their
+own normalisation baseline (see below).</p>
 </div>
 <div class="section level3">
 <h3 id="rct-studies-treatment-effect-confounded-with-baseline-differences">RCT studies: treatment effect confounded with baseline
@@ -259,34 +251,29 @@ differences<a class="anchor" aria-label="anchor" href="#rct-studies-treatment-ef
 </h3>
 <p>RCT studies observe only post-treatment outcomes for both arms. The
 expected difference between arms is</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub><mo>−</mo><msub><mi>μ</mi><mrow><mi>i</mi><mo>,</mo><mi>c</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \mu_{i,t,\mathrm{post}} - \mu_{i,c,\mathrm{post}} =
 (\alpha_i + \gamma_i + \beta_i + \theta_i) -
 (\alpha_i + \beta_i) = \gamma_i + \theta_i.
-</annotation></semantics></math></p>
-<p>Without pre-treatment data,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>
-is confounded with the baseline difference
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>.
-Randomisation makes
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-small in expectation, but the model cannot separate the two from the
-data of a single RCT alone.</p>
+\]</span></p>
+<p>Without pre-treatment data, <span class="math inline">\(\theta_i\)</span> is confounded with the baseline
+difference <span class="math inline">\(\gamma_i\)</span>. Randomisation
+makes <span class="math inline">\(\gamma_i\)</span> small in
+expectation, but the model cannot separate the two from the data of a
+single RCT alone.</p>
 </div>
 <div class="section level3">
 <h3 id="pre-post-studies-treatment-effect-confounded-with-time-trends">Pre-post studies: treatment effect confounded with time trends<a class="anchor" aria-label="anchor" href="#pre-post-studies-treatment-effect-confounded-with-time-trends"></a>
 </h3>
 <p>Pre-post studies observe only the treatment arm at both time points.
 The expected change over time is</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub><mo>−</mo><msub><mi>μ</mi><mrow><mi>i</mi><mo>,</mo><mi>t</mi><mo>,</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></mrow></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>β</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \mu_{i,t,\mathrm{post}} - \mu_{i,t,\mathrm{pre}} =
 (\alpha_i + \gamma_i + \beta_i + \theta_i) -
 (\alpha_i + \gamma_i) = \beta_i + \theta_i.
-</annotation></semantics></math></p>
-<p>Without a control arm,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>
-is confounded with the time trend
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>.</p>
+\]</span></p>
+<p>Without a control arm, <span class="math inline">\(\theta_i\)</span>
+is confounded with the time trend <span class="math inline">\(\beta_i\)</span>.</p>
 </div>
 <div class="section level3">
 <h3 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
@@ -294,8 +281,7 @@ is confounded with the time trend
 <table class="table">
 <thead><tr class="header">
 <th>Design</th>
-<th>Identifies
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>?</th>
+<th>Identifies <span class="math inline">\(\theta_i\)</span>?</th>
 <th>Confound</th>
 </tr></thead>
 <tbody>
@@ -312,15 +298,13 @@ is confounded with the time trend
 <tr class="odd">
 <td><strong>RCT</strong></td>
 <td>No</td>
-<td>Baseline group difference
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
+<td>Baseline group difference <span class="math inline">\(\gamma_i\)</span>
 </td>
 </tr>
 <tr class="even">
 <td><strong>Pre-post</strong></td>
 <td>No</td>
-<td>Time trend
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
+<td>Time trend <span class="math inline">\(\beta_i\)</span>
 </td>
 </tr>
 </tbody>
@@ -345,30 +329,21 @@ likelihoods that eliminate nuisance parameters algebraically:</p>
 <li>
 <strong>RCT</strong>: the likelihood is based on the
 treatment–control difference in post-treatment means, so the time trend
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
-cancels. The remaining parameters are the treatment effect
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>
-and the baseline difference
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-(borrowed from DiD studies).</li>
+<span class="math inline">\(\beta_i\)</span> cancels. The remaining
+parameters are the treatment effect <span class="math inline">\(\theta_i\)</span> and the baseline difference
+<span class="math inline">\(\gamma_i\)</span> (borrowed from DiD
+studies).</li>
 <li>
 <strong>Pre-post</strong> (default): the likelihood is based on the
-within-subject post–pre difference, so the baseline
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\alpha_i + \gamma_i</annotation></semantics></math>
-cancels. The remaining parameters are the treatment effect
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>
-and the time trend
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
-(borrowed from DiD studies).</li>
+within-subject post–pre difference, so the baseline <span class="math inline">\(\alpha_i + \gamma_i\)</span> cancels. The
+remaining parameters are the treatment effect <span class="math inline">\(\theta_i\)</span> and the time trend <span class="math inline">\(\beta_i\)</span> (borrowed from DiD studies).</li>
 </ul>
 <p>For pre-post studies, a non-differenced (bivariate normal) form is
 available via
 <code>meta_did_general(pp_likelihood = "bivariate")</code>. This retains
-the pre/post correlation
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\rho_i</annotation></semantics></math>
-as an estimable parameter, contributing to the hierarchical
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
-model, at the cost of estimating additional nuisance parameters.</p>
+the pre/post correlation <span class="math inline">\(\rho_i\)</span> as
+an estimable parameter, contributing to the hierarchical <span class="math inline">\(\rho\)</span> model, at the cost of estimating
+additional nuisance parameters.</p>
 </div>
 </div>
 <div class="section level2">
@@ -397,7 +372,7 @@ a proportional change.</p>
 <tr class="odd">
 <td><strong>DiD</strong></td>
 <td>Pre-treatment control mean</td>
-<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\alpha_i = 1</annotation></semantics></math></td>
+<td><span class="math inline">\(\alpha_i = 1\)</span></td>
 </tr>
 <tr class="even">
 <td><strong>DiD (change only)</strong></td>
@@ -407,12 +382,12 @@ a proportional change.</p>
 <tr class="odd">
 <td><strong>Pre-post</strong></td>
 <td>Pre-treatment treatment mean</td>
-<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\alpha_i + \gamma_i = 1</annotation></semantics></math></td>
+<td><span class="math inline">\(\alpha_i + \gamma_i = 1\)</span></td>
 </tr>
 <tr class="even">
 <td><strong>RCT</strong></td>
 <td>Post-treatment control mean</td>
-<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\alpha_i + \beta_i = 1</annotation></semantics></math></td>
+<td><span class="math inline">\(\alpha_i + \beta_i = 1\)</span></td>
 </tr>
 </tbody>
 </table>
@@ -428,77 +403,56 @@ meta-analysis. This places the change scores on the same relative scale
 as the other designs, but requires that at least some full DiD studies
 are present.</p>
 <p>For RCT studies, there is no pre-treatment data, so normalisation
-divides by the post-treatment control mean
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\alpha_i + \beta_i</annotation></semantics></math>).
-After normalisation, the control post-mean is fixed at 1. The normalised
-treatment post-mean is</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mfrac><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub></mrow><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow></mfrac><mo>=</mo><mn>1</mn><mo>+</mo><mfrac><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>+</mo><msub><mi>θ</mi><mi>i</mi></msub></mrow><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">
+divides by the post-treatment control mean (<span class="math inline">\(\alpha_i + \beta_i\)</span>). After normalisation,
+the control post-mean is fixed at 1. The normalised treatment post-mean
+is</p>
+<p><span class="math display">\[
 \frac{\alpha_i + \gamma_i + \beta_i + \theta_i}{\alpha_i + \beta_i}
 = 1 + \frac{\gamma_i + \theta_i}{\alpha_i + \beta_i}.
-</annotation></semantics></math></p>
-<p>When the model assumes equal baselines
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\gamma_i = 0</annotation></semantics></math>),
-the normalised treatment–control difference reduces to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi>i</mi></msub><mo>=</mo><msub><mi>θ</mi><mi>i</mi></msub><mi>/</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\phi_i = \theta_i / (\alpha_i +
-\beta_i)</annotation></semantics></math>, the <strong>apparent
-effect</strong>. This is what the normalised data directly measures.</p>
+\]</span></p>
+<p>When the model assumes equal baselines (<span class="math inline">\(\gamma_i = 0\)</span>), the normalised
+treatment–control difference reduces to <span class="math inline">\(\phi_i = \theta_i / (\alpha_i +
+\beta_i)\)</span>, the <strong>apparent effect</strong>. This is what
+the normalised data directly measures.</p>
 <p>To recover the treatment effect on the same scale as DiD studies
-(normalised by
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>α</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\alpha_i</annotation></semantics></math>),
-we need to undo the RCT-specific normalisation. Writing
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>θ</mi><mi>i</mi></msub><mi>/</mi><msub><mi>α</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\tilde\theta_i = \theta_i / \alpha_i</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>β</mi><mi>i</mi></msub><mi>/</mi><msub><mi>α</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\tilde\beta_i = \beta_i / \alpha_i</annotation></semantics></math>
+(normalised by <span class="math inline">\(\alpha_i\)</span>), we need
+to undo the RCT-specific normalisation. Writing <span class="math inline">\(\tilde\theta_i = \theta_i / \alpha_i\)</span> and
+<span class="math inline">\(\tilde\beta_i = \beta_i / \alpha_i\)</span>
 for the DiD-normalised quantities:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi>i</mi></msub><mo>=</mo><mfrac><msub><mi>θ</mi><mi>i</mi></msub><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub></mrow></mfrac><mo>=</mo><mfrac><mrow><msub><mi>θ</mi><mi>i</mi></msub><mi>/</mi><msub><mi>α</mi><mi>i</mi></msub></mrow><mrow><mn>1</mn><mo>+</mo><msub><mi>β</mi><mi>i</mi></msub><mi>/</mi><msub><mi>α</mi><mi>i</mi></msub></mrow></mfrac><mo>=</mo><mfrac><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mrow><mn>1</mn><mo>+</mo><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub></mrow></mfrac><mo>,</mo></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \phi_i
 = \frac{\theta_i}{\alpha_i + \beta_i}
 = \frac{\theta_i / \alpha_i}{1 + \beta_i / \alpha_i}
 = \frac{\tilde\theta_i}{1 + \tilde\beta_i},
-</annotation></semantics></math></p>
+\]</span></p>
 <p>so the normalised treatment effect is</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>ϕ</mi><mi>i</mi></msub><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \tilde\theta_i = \phi_i \cdot (1 + \tilde\beta_i).
-</annotation></semantics></math></p>
-<p>The model is reparameterised so that
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ϕ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\phi_i</annotation></semantics></math>
-(apparent effect) and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\beta_i</annotation></semantics></math>
-(normalised time trend) are the sampled parameters, and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\theta_i</annotation></semantics></math>
-is derived via the formula above. A Jacobian correction
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">|</mo><mn>1</mn><mo>+</mo><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo stretchy="false" form="prefix">|</mo></mrow><annotation encoding="application/x-tex">|1 + \tilde\beta_i|</annotation></semantics></math>
-is applied to the log-posterior to account for this change of variables.
-The hierarchical prior on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\beta_i</annotation></semantics></math>
-— informed primarily by DiD studies, which directly identify time trends
-— provides the regularisation needed to separate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\theta_i</annotation></semantics></math>
-from
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\beta_i</annotation></semantics></math>.</p>
+\]</span></p>
+<p>The model is reparameterised so that <span class="math inline">\(\phi_i\)</span> (apparent effect) and <span class="math inline">\(\tilde\beta_i\)</span> (normalised time trend) are
+the sampled parameters, and <span class="math inline">\(\tilde\theta_i\)</span> is derived via the formula
+above. A Jacobian correction <span class="math inline">\(|1 +
+\tilde\beta_i|\)</span> is applied to the log-posterior to account for
+this change of variables. The hierarchical prior on <span class="math inline">\(\tilde\beta_i\)</span> — informed primarily by DiD
+studies, which directly identify time trends — provides the
+regularisation needed to separate <span class="math inline">\(\tilde\theta_i\)</span> from <span class="math inline">\(\tilde\beta_i\)</span>.</p>
 <p>In the naive model (<code><a href="../reference/meta_did_naive.html">meta_did_naive()</a></code>), the time trend is
-forced to zero for RCT studies, so
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi>i</mi></msub><mo>=</mo><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\phi_i = \tilde\theta_i</annotation></semantics></math>
-and the reparameterisation is bypassed. This is equivalent to the
-standard assumption that the post-treatment control–treatment difference
-is an unbiased estimate of the treatment effect.</p>
-<p>When data are not normalised, the RCT baselines
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>α</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\alpha_i</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mi>i</mi></msub><mo>+</mo><msub><mi>γ</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\alpha_i + \gamma_i</annotation></semantics></math>
-are free parameters. How
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-is modelled depends on the study’s assignment mechanism – see <a href="#baseline-imbalance-and-randomisation">Baseline imbalance and
+forced to zero for RCT studies, so <span class="math inline">\(\phi_i =
+\tilde\theta_i\)</span> and the reparameterisation is bypassed. This is
+equivalent to the standard assumption that the post-treatment
+control–treatment difference is an unbiased estimate of the treatment
+effect.</p>
+<p>When data are not normalised, the RCT baselines <span class="math inline">\(\alpha_i\)</span> and <span class="math inline">\(\alpha_i + \gamma_i\)</span> are free parameters.
+How <span class="math inline">\(\gamma_i\)</span> is modelled depends on
+the study’s assignment mechanism – see <a href="#baseline-imbalance-and-randomisation">Baseline imbalance and
 randomisation</a> below.</p>
 </div>
 <div class="section level3">
 <h3 id="interpreting-normalised-treatment-effects">Interpreting normalised treatment effects<a class="anchor" aria-label="anchor" href="#interpreting-normalised-treatment-effects"></a>
 </h3>
-<p>After normalisation, the population treatment effect
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\mu_\theta</annotation></semantics></math>
-is expressed in units relative to the baseline. For example,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mi>θ</mi></msub><mo>=</mo><mi>−</mi><mn>0.33</mn></mrow><annotation encoding="application/x-tex">\mu_\theta = -0.33</annotation></semantics></math>
-means a 33% reduction relative to the baseline level.</p>
+<p>After normalisation, the population treatment effect <span class="math inline">\(\mu_\theta\)</span> is expressed in units relative
+to the baseline. For example, <span class="math inline">\(\mu_\theta =
+-0.33\)</span> means a 33% reduction relative to the baseline level.</p>
 </div>
 </div>
 <div class="section level2">
@@ -506,56 +460,43 @@ means a 33% reduction relative to the baseline level.</p>
 </h2>
 <p>Study-specific treatment effects are drawn from a population
 distribution:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>θ</mi><mi>i</mi></msub><mo>∼</mo><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>μ</mi><mi>θ</mi></msub><mo>,</mo><msubsup><mi>τ</mi><mi>θ</mi><mn>2</mn></msubsup><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \theta_i \sim \mathcal{N}(\mu_\theta, \tau_\theta^2),
-</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\mu_\theta</annotation></semantics></math>
-is the overall treatment effect (the primary quantity of interest) and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>τ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\tau_\theta</annotation></semantics></math>
-captures between-study heterogeneity.</p>
-<p>Other study-level parameters (time trends
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>,
-baseline differences
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>)
-similarly share population-level priors. Pre-post correlations
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
-can be modelled hierarchically via a
-Fisher-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>z</mi><annotation encoding="application/x-tex">z</annotation></semantics></math>
-transform when <code>hierarchical_rho = TRUE</code>.</p>
+\]</span></p>
+<p>where <span class="math inline">\(\mu_\theta\)</span> is the overall
+treatment effect (the primary quantity of interest) and <span class="math inline">\(\tau_\theta\)</span> captures between-study
+heterogeneity.</p>
+<p>Other study-level parameters (time trends <span class="math inline">\(\beta_i\)</span>, baseline differences <span class="math inline">\(\gamma_i\)</span>) similarly share
+population-level priors. Pre-post correlations <span class="math inline">\(\rho\)</span> can be modelled hierarchically via a
+Fisher-<span class="math inline">\(z\)</span> transform when
+<code>hierarchical_rho = TRUE</code>.</p>
 <div class="section level3">
 <h3 id="design-effects">Design effects<a class="anchor" aria-label="anchor" href="#design-effects"></a>
 </h3>
 <p>When <code>design_effects = TRUE</code>, the model allows the
 population treatment effect mean to differ systematically by design:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mrow><mi>θ</mi><mo>,</mo><mtext mathvariant="normal">RCT</mtext></mrow></msub><mo>=</mo><msub><mi>μ</mi><mi>θ</mi></msub><mo>+</mo><msub><mi>δ</mi><mtext mathvariant="normal">RCT</mtext></msub><mo>,</mo><mspace width="1.0em"></mspace><msub><mi>μ</mi><mrow><mi>θ</mi><mo>,</mo><mtext mathvariant="normal">PP</mtext></mrow></msub><mo>=</mo><msub><mi>μ</mi><mi>θ</mi></msub><mo>+</mo><msub><mi>δ</mi><mtext mathvariant="normal">PP</mtext></msub></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \mu_{\theta,\text{RCT}} = \mu_\theta + \delta_{\text{RCT}}, \quad
 \mu_{\theta,\text{PP}} = \mu_\theta + \delta_{\text{PP}}
-</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>δ</mi><mtext mathvariant="normal">RCT</mtext></msub><annotation encoding="application/x-tex">\delta_{\text{RCT}}</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>δ</mi><mtext mathvariant="normal">PP</mtext></msub><annotation encoding="application/x-tex">\delta_{\text{PP}}</annotation></semantics></math>
-are estimated offsets. This relaxes the assumption that all designs
-estimate exactly the same estimand, which may be appropriate when
-selection effects or time trends differ systematically across
-designs.</p>
+\]</span></p>
+<p>where <span class="math inline">\(\delta_{\text{RCT}}\)</span> and
+<span class="math inline">\(\delta_{\text{PP}}\)</span> are estimated
+offsets. This relaxes the assumption that all designs estimate exactly
+the same estimand, which may be appropriate when selection effects or
+time trends differ systematically across designs.</p>
 </div>
 <div class="section level3">
 <h3 id="robust-heterogeneity">Robust heterogeneity<a class="anchor" aria-label="anchor" href="#robust-heterogeneity"></a>
 </h3>
 <p>When <code>robust_heterogeneity = TRUE</code>, the treatment effect
-distribution uses a
-Student-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>
+distribution uses a Student-<span class="math inline">\(t\)</span>
 instead of a normal:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>θ</mi><mi>i</mi></msub><mo>∼</mo><msub><mi>t</mi><mi>ν</mi></msub><mo stretchy="false" form="prefix">(</mo><msub><mi>μ</mi><mi>θ</mi></msub><mo>,</mo><msubsup><mi>τ</mi><mi>θ</mi><mn>2</mn></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \theta_i \sim t_\nu(\mu_\theta, \tau_\theta^2)
-</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ν</mi><annotation encoding="application/x-tex">\nu</annotation></semantics></math>
-(the degrees of freedom) is estimated. This accommodates outlier studies
-that would otherwise inflate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>τ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\tau_\theta</annotation></semantics></math>.</p>
+\]</span></p>
+<p>where <span class="math inline">\(\nu\)</span> (the degrees of
+freedom) is estimated. This accommodates outlier studies that would
+otherwise inflate <span class="math inline">\(\tau_\theta\)</span>.</p>
 </div>
 <div class="section level3">
 <h3 id="controlling-assumptions-with-meta_did_general">Controlling assumptions with <code>meta_did_general()</code><a class="anchor" aria-label="anchor" href="#controlling-assumptions-with-meta_did_general"></a>
@@ -566,37 +507,34 @@ via three arguments:</p>
 <ul>
 <li>
 <strong><code>time_trend</code></strong>: Controls the time trend
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\beta_i</annotation></semantics></math>
-for RCT and pre-post studies.
+<span class="math inline">\(\beta_i\)</span> for RCT and pre-post
+studies.
 <ul>
 <li>
 <code>"pooled"</code> (default): hierarchical prior shared across
 designs, informed by DiD studies.</li>
 <li>
-<code>"fixed_zero"</code>:
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>β</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta_i = 0</annotation></semantics></math>
-for RCT and pre-post studies. For pre-post studies, this attributes all
-pre-post change to treatment. For RCTs, it bypasses the time trend
-reparameterisation described above.</li>
+<code>"fixed_zero"</code>: <span class="math inline">\(\beta_i =
+0\)</span> for RCT and pre-post studies. For pre-post studies, this
+attributes all pre-post change to treatment. For RCTs, it bypasses the
+time trend reparameterisation described above.</li>
 </ul>
 </li>
 <li>
 <strong><code>baseline_imbalance</code></strong>: Controls the
-baseline difference
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>.
+baseline difference <span class="math inline">\(\gamma_i\)</span>.
 <ul>
 <li>
 <code>"by_randomisation"</code> (default): each study follows its
 <code>randomisation</code> column – see the section below.</li>
 <li>
 <code>"estimated"</code>: every DiD and RCT study is pooled into one
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
-population, ignoring the <code>randomisation</code> column.</li>
+<span class="math inline">\(\gamma\)</span> population, ignoring the
+<code>randomisation</code> column.</li>
 <li>
-<code>"fixed_zero"</code>:
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\gamma_i = 0</annotation></semantics></math>
-for RCT studies. Note this is a <em>hard</em> constraint and costs a DiD
-study its robustness to imbalance; prefer
+<code>"fixed_zero"</code>: <span class="math inline">\(\gamma_i =
+0\)</span> for RCT studies. Note this is a <em>hard</em> constraint and
+costs a DiD study its robustness to imbalance; prefer
 <code>"by_randomisation"</code> with a small <code>kappa</code>.</li>
 </ul>
 </li>
@@ -607,16 +545,13 @@ form for pre-post studies.
 <li>
 <code>"differenced"</code> (default): uses the post-minus-pre
 difference, eliminating the baseline algebraically. The pre/post
-correlation
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\rho_i</annotation></semantics></math>
-is not separately estimable.</li>
+correlation <span class="math inline">\(\rho_i\)</span> is not
+separately estimable.</li>
 <li>
 <code>"bivariate"</code>: uses the full bivariate normal likelihood
-for the (pre, post) pair. This retains
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\rho_i</annotation></semantics></math>
-as an estimable parameter, contributing to the hierarchical
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
-model, at the cost of estimating additional nuisance parameters.</li>
+for the (pre, post) pair. This retains <span class="math inline">\(\rho_i\)</span> as an estimable parameter,
+contributing to the hierarchical <span class="math inline">\(\rho\)</span> model, at the cost of estimating
+additional nuisance parameters.</li>
 </ul>
 </li>
 </ul>
@@ -628,39 +563,33 @@ information from DiD studies (<code>time_trend = "pooled"</code>).</p>
 <div class="section level2">
 <h2 id="baseline-imbalance-and-randomisation">Baseline imbalance and randomisation<a class="anchor" aria-label="anchor" href="#baseline-imbalance-and-randomisation"></a>
 </h2>
-<p>The baseline difference
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
+<p>The baseline difference <span class="math inline">\(\gamma_i\)</span>
 is the one nuisance parameter a post-only study cannot identify at all.
 Its effect estimate is</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo>=</mo><msub><mi>ϕ</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><msub><mover><mi>β</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msub><mi>γ</mi><mi>i</mi></msub><mo>,</mo></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \tilde\theta_i = \phi_i (1 + \tilde\beta_i) - \gamma_i,
-</annotation></semantics></math></p>
-<p>so whatever the model assumes about
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math><strong>subtracts directly from that study’s treatment effect</strong>.
-The posterior for
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>θ</mi><mo accent="true">̃</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\tilde\theta_i</annotation></semantics></math>
-is the data-driven part convolved with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>’s
-prior: shifted by its mean, widened by its SD. Getting that prior right
-is therefore not a detail.</p>
+\]</span></p>
+<p>so whatever the model assumes about <span class="math inline">\(\gamma_i\)</span> <strong>subtracts directly from
+that study’s treatment effect</strong>. The posterior for <span class="math inline">\(\tilde\theta_i\)</span> is the data-driven part
+convolved with <span class="math inline">\(\gamma_i\)</span>’s prior:
+shifted by its mean, widened by its SD. Getting that prior right is
+therefore not a detail.</p>
 <div class="section level3">
 <h3 id="two-populations-not-one">Two populations, not one<a class="anchor" aria-label="anchor" href="#two-populations-not-one"></a>
 </h3>
 <p>Studies are split by their <code>randomisation</code> column:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>γ</mi><mi>i</mi></msub><mo>∼</mo><mrow><mo stretchy="true" form="prefix">{</mo><mtable><mtr><mtd columnalign="left" style="text-align: left"><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>μ</mi><mi>γ</mi></msub><mo>,</mo><mspace width="0.222em"></mspace><msubsup><mi>τ</mi><mi>γ</mi><mn>2</mn></msubsup><mo stretchy="false" form="postfix">)</mo></mtd><mtd columnalign="left" style="text-align: left"><mtext mathvariant="normal">non-randomised</mtext></mtd></mtr><mtr><mtd columnalign="left" style="text-align: left"><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mspace width="0.222em"></mspace><msup><mi>κ</mi><mn>2</mn></msup><msubsup><mi>s</mi><mi>i</mi><mn>2</mn></msubsup><mo stretchy="false" form="postfix">)</mo></mtd><mtd columnalign="left" style="text-align: left"><mtext mathvariant="normal">randomised</mtext></mtd></mtr></mtable></mrow></mrow><annotation encoding="application/x-tex">
+<p><span class="math display">\[
 \gamma_i \sim
 \begin{cases}
 \mathcal{N}(\mu_\gamma,\ \tau_\gamma^2) &amp; \text{non-randomised} \\
 \mathcal{N}(0,\ \kappa^2 s_i^2) &amp; \text{randomised}
 \end{cases}
-</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>s</mi><mi>i</mi></msub><annotation encoding="application/x-tex">s_i</annotation></semantics></math>
-is the sampling SD of study
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>’s
-baseline contrast. The two populations deliberately <strong>do not share
-a mean</strong>: a zero population imbalance is a structural implication
-of randomisation, not a quantity to estimate.</p>
+\]</span></p>
+<p>where <span class="math inline">\(s_i\)</span> is the sampling SD of
+study <span class="math inline">\(i\)</span>’s baseline contrast. The
+two populations deliberately <strong>do not share a mean</strong>: a
+zero population imbalance is a structural implication of randomisation,
+not a quantity to estimate.</p>
 <p><code>randomisation</code> is never inferred from
 <code>design</code>. A post-only study may be a randomised trial or an
 unrandomised matched cohort; a DiD study may be a cluster-randomised
@@ -669,146 +598,102 @@ roll-out. An absent or <code>NA</code> value reads as
 than a default.</p>
 </div>
 <div class="section level3">
-<h3 id="why-mu_gamma-0-by-default">Why
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mi>γ</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\mu_\gamma = 0</annotation></semantics></math>
-by default<a class="anchor" aria-label="anchor" href="#why-mu_gamma-0-by-default"></a>
+<h3 id="why-mu_gamma-0-by-default">Why <span class="math inline">\(\mu_\gamma = 0\)</span> by
+default<a class="anchor" aria-label="anchor" href="#why-mu_gamma-0-by-default"></a>
 </h3>
 <p>DiD is typically used <em>because</em> assignment was not random –
-the pre-period is measured precisely to handle selection. So
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
-in a DiD study is a property of the programme’s <strong>targeting
-rule</strong>: some interventions go to high-need (high-baseline)
-populations, others to easy-to-reach (low-baseline) ones. Estimating a
-single
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>γ</mi></msub><annotation encoding="application/x-tex">\mu_\gamma</annotation></semantics></math>
-asserts that a whole literature shares a direction of selection, then
-applies it to every post-only study, whose own data cannot contradict
-it.</p>
+the pre-period is measured precisely to handle selection. So <span class="math inline">\(\gamma\)</span> in a DiD study is a property of
+the programme’s <strong>targeting rule</strong>: some interventions go
+to high-need (high-baseline) populations, others to easy-to-reach
+(low-baseline) ones. Estimating a single <span class="math inline">\(\mu_\gamma\)</span> asserts that a whole
+literature shares a direction of selection, then applies it to every
+post-only study, whose own data cannot contradict it.</p>
 <p>The resulting bias does not shrink with more evidence – it
-<strong>sharpens</strong>, because
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>γ</mi></msub><annotation encoding="application/x-tex">\mu_\gamma</annotation></semantics></math>
-is estimated more precisely. Pinning
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mi>γ</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\mu_\gamma = 0</annotation></semantics></math>
-lets the <em>magnitude</em> of imbalance transport between
-non-randomised studies while refusing to transport its
-<em>direction</em>. Set <code>mu_gamma = "estimated"</code> only when
-the studies plausibly share a targeting mechanism, such as several
-evaluations of the same programme.</p>
+<strong>sharpens</strong>, because <span class="math inline">\(\mu_\gamma\)</span> is estimated more precisely.
+Pinning <span class="math inline">\(\mu_\gamma = 0\)</span> lets the
+<em>magnitude</em> of imbalance transport between non-randomised studies
+while refusing to transport its <em>direction</em>. Set
+<code>mu_gamma = "estimated"</code> only when the studies plausibly
+share a targeting mechanism, such as several evaluations of the same
+programme.</p>
 </div>
 <div class="section level3">
-<h3 id="what-kappa-means-and-why-it-is-not-zero">What
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
-means, and why it is not zero<a class="anchor" aria-label="anchor" href="#what-kappa-means-and-why-it-is-not-zero"></a>
+<h3 id="what-kappa-means-and-why-it-is-not-zero">What <span class="math inline">\(\kappa\)</span> means, and why it
+is not zero<a class="anchor" aria-label="anchor" href="#what-kappa-means-and-why-it-is-not-zero"></a>
 </h3>
 <p>For a randomised study the <em>realised</em> allocation imbalance is
-already carried by the likelihood: the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>σ</mi><mn>2</mn></msup><mi>/</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">\sigma^2/n</annotation></semantics></math>
-terms on each arm mean, and for a DiD study the pre-post correlation
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\rho_i</annotation></semantics></math>
-that propagates a chance baseline difference into the post period.
-Nothing extra is needed for finite-sample imbalance, and adding a
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>σ</mi><mn>2</mn></msup><mi>/</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">\sigma^2/n</annotation></semantics></math>-scaled
-term would double-count it.</p>
-<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
-governs only the <em>excess</em> beyond correct sampling – imperfect
-allocation, attrition, post-randomisation selection:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>κ</mi><mn>2</mn></msup><mo>=</mo><mrow><mi mathvariant="normal">D</mi><mi mathvariant="normal">E</mi><mi mathvariant="normal">F</mi><mi mathvariant="normal">F</mi></mrow><mo>−</mo><mn>1</mn><mo>,</mo></mrow><annotation encoding="application/x-tex">
+already carried by the likelihood: the <span class="math inline">\(\sigma^2/n\)</span> terms on each arm mean, and
+for a DiD study the pre-post correlation <span class="math inline">\(\rho_i\)</span> that propagates a chance baseline
+difference into the post period. Nothing extra is needed for
+finite-sample imbalance, and adding a <span class="math inline">\(\sigma^2/n\)</span>-scaled term would double-count
+it.</p>
+<p><span class="math inline">\(\kappa\)</span> governs only the
+<em>excess</em> beyond correct sampling – imperfect allocation,
+attrition, post-randomisation selection:</p>
+<p><span class="math display">\[
 \kappa^2 = \mathrm{DEFF} - 1,
-</annotation></semantics></math></p>
-<p>so
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\kappa = 0</annotation></semantics></math>
-is perfect randomisation and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\kappa = 1</annotation></semantics></math>
-doubles the variance of the baseline contrast. Because
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mi>i</mi></msub><mo>∝</mo><mn>1</mn><mi>/</mi><msqrt><msub><mi>n</mi><mi>i</mi></msub></msqrt></mrow><annotation encoding="application/x-tex">s_i \propto 1/\sqrt{n_i}</annotation></semantics></math>,
-this automatically down-weights small randomised studies more than large
-ones. For a post-only randomised study, where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-is unidentified, the mechanism is equivalent to inflating that study’s
-standard error by
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msqrt><mrow><mn>1</mn><mo>+</mo><msup><mi>κ</mi><mn>2</mn></msup></mrow></msqrt><annotation encoding="application/x-tex">\sqrt{1 + \kappa^2}</annotation></semantics></math>.</p>
-<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\kappa = 0</annotation></semantics></math>
-is available but is a <strong>hard</strong> constraint, and a hard zero
-costs a DiD study its main virtue. With
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-free, the double difference removes any constant baseline offset. With
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-pinned at zero, the model must explain a real offset as sampling noise
-and ends up averaging the pre- and post-period information rather than
-differencing it, so the offset leaks into
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>.
-Shrinking toward zero with a small
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
+\]</span></p>
+<p>so <span class="math inline">\(\kappa = 0\)</span> is perfect
+randomisation and <span class="math inline">\(\kappa = 1\)</span>
+doubles the variance of the baseline contrast. Because <span class="math inline">\(s_i \propto 1/\sqrt{n_i}\)</span>, this
+automatically down-weights small randomised studies more than large
+ones. For a post-only randomised study, where <span class="math inline">\(\gamma_i\)</span> is unidentified, the mechanism
+is equivalent to inflating that study’s standard error by <span class="math inline">\(\sqrt{1 + \kappa^2}\)</span>.</p>
+<p><span class="math inline">\(\kappa = 0\)</span> is available but is a
+<strong>hard</strong> constraint, and a hard zero costs a DiD study its
+main virtue. With <span class="math inline">\(\gamma_i\)</span> free,
+the double difference removes any constant baseline offset. With <span class="math inline">\(\gamma_i\)</span> pinned at zero, the model must
+explain a real offset as sampling noise and ends up averaging the pre-
+and post-period information rather than differencing it, so the offset
+leaks into <span class="math inline">\(\theta_i\)</span>. Shrinking
+toward zero with a small <span class="math inline">\(\kappa\)</span>
 avoids this.</p>
 </div>
 <div class="section level3">
-<h3 id="estimating-kappa">Estimating
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math><a class="anchor" aria-label="anchor" href="#estimating-kappa"></a>
+<h3 id="estimating-kappa">Estimating <span class="math inline">\(\kappa\)</span><a class="anchor" aria-label="anchor" href="#estimating-kappa"></a>
 </h3>
 <p><code>kappa = "estimate"</code> samples it, but by default only when
 at least one randomised study carries <strong>pre-treatment
 data</strong> (a randomised DiD). Post-only randomised studies have an
-unidentified
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>
-and constrain
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
-not at all, so <code><a href="../reference/meta_did.html">meta_did()</a></code> refuses rather than sampling a
-prior-driven parameter that silently sets how much every randomised
-study is down-weighted.</p>
+unidentified <span class="math inline">\(\gamma_i\)</span> and constrain
+<span class="math inline">\(\kappa\)</span> not at all, so
+<code><a href="../reference/meta_did.html">meta_did()</a></code> refuses rather than sampling a prior-driven
+parameter that silently sets how much every randomised study is
+down-weighted.</p>
 <p><code>allow_unidentified_kappa = TRUE</code> lifts that refusal,
 following the same idiom as <code>allow_no_did</code>. Note that
 estimating a parameter and marginalising over it are the same operation
 – there is no separate “marginalise” mode, and the posterior for an
-unanchored
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
-simply reproduces its prior. What changes is the <em>shape</em> of the
-prior on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>γ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\gamma_i</annotation></semantics></math>:
-sampling
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
-makes it a scale mixture of normals, both more peaked at zero and much
-heavier-tailed than any fixed
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>.
-That says “most randomised trials achieved balance, occasionally one
-badly did not”, which a single scale cannot express. It is a modelling
-choice, not an estimate, which is why it must be asked for.</p>
-<p>With no anchor, fix
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>.
-The default of <code>0.5</code> is a reasonable central choice rather
-than a value to trust on its own, so it is worth refitting at a few
-values to see whether any conclusion turns on it – but nothing in the
-package requires this, and for a summary-data meta-analysis a handful of
-refits costs seconds. For a study with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>100</mn></mrow><annotation encoding="application/x-tex">n = 100</annotation></semantics></math>
-per arm and a within-study SD of 25% of baseline,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\kappa = 1</annotation></semantics></math>
-buys an imbalance allowance of roughly 4 percentage points on the
-fractional scale – about a tenth of a typical treatment effect.</p>
+unanchored <span class="math inline">\(\kappa\)</span> simply reproduces
+its prior. What changes is the <em>shape</em> of the prior on <span class="math inline">\(\gamma_i\)</span>: sampling <span class="math inline">\(\kappa\)</span> makes it a scale mixture of
+normals, both more peaked at zero and much heavier-tailed than any fixed
+<span class="math inline">\(\kappa\)</span>. That says “most randomised
+trials achieved balance, occasionally one badly did not”, which a single
+scale cannot express. It is a modelling choice, not an estimate, which
+is why it must be asked for.</p>
+<p>With no anchor, fix <span class="math inline">\(\kappa\)</span>. The
+default of <code>0.5</code> is a reasonable central choice rather than a
+value to trust on its own, so it is worth refitting at a few values to
+see whether any conclusion turns on it – but nothing in the package
+requires this, and for a summary-data meta-analysis a handful of refits
+costs seconds. For a study with <span class="math inline">\(n =
+100\)</span> per arm and a within-study SD of 25% of baseline, <span class="math inline">\(\kappa = 1\)</span> buys an imbalance allowance of
+roughly 4 percentage points on the fractional scale – about a tenth of a
+typical treatment effect.</p>
 </div>
 <div class="section level3">
 <h3 id="cluster-randomisation">Cluster randomisation<a class="anchor" aria-label="anchor" href="#cluster-randomisation"></a>
 </h3>
-<p>For <code>randomisation = "cluster"</code>, the reported
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-counts individuals, so
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>σ</mi><mn>2</mn></msup><mi>/</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">\sigma^2/n</annotation></semantics></math>
-understates an arm mean’s sampling variance by
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">D</mi><mi mathvariant="normal">E</mi><mi mathvariant="normal">F</mi><mi mathvariant="normal">F</mi></mrow><mo>=</mo><mn>1</mn><mo>+</mo><mo stretchy="false" form="prefix">(</mo><mi>m</mi><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><msub><mi>ρ</mi><mrow><mi>I</mi><mi>C</mi><mi>C</mi></mrow></msub></mrow><annotation encoding="application/x-tex">\mathrm{DEFF} = 1 + (m - 1)\rho_{ICC}</annotation></semantics></math>.
-Supplying <code>cluster_size</code> and <code>icc</code> columns
-inflates
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>s</mi><mi>i</mi></msub><annotation encoding="application/x-tex">s_i</annotation></semantics></math>
-by
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msqrt><mrow><mi mathvariant="normal">D</mi><mi mathvariant="normal">E</mi><mi mathvariant="normal">F</mi><mi mathvariant="normal">F</mi></mrow></msqrt><annotation encoding="application/x-tex">\sqrt{\mathrm{DEFF}}</annotation></semantics></math>,
-keeping
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>’s
-meaning constant across designs; otherwise
-<code>cluster_deff_default</code> is used.</p>
+<p>For <code>randomisation = "cluster"</code>, the reported <span class="math inline">\(n\)</span> counts individuals, so <span class="math inline">\(\sigma^2/n\)</span> understates an arm mean’s
+sampling variance by <span class="math inline">\(\mathrm{DEFF} = 1 + (m
+- 1)\rho_{ICC}\)</span>. Supplying <code>cluster_size</code> and
+<code>icc</code> columns inflates <span class="math inline">\(s_i\)</span> by <span class="math inline">\(\sqrt{\mathrm{DEFF}}\)</span>, keeping <span class="math inline">\(\kappa\)</span>’s meaning constant across designs;
+otherwise <code>cluster_deff_default</code> is used.</p>
 <p>This corrects the <strong>baseline contrast only</strong>. The
-post-treatment likelihood still uses
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>σ</mi><mn>2</mn></msup><mi>/</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">\sigma^2/n</annotation></semantics></math>,
-so a cluster-randomised study remains over-precise about its own effect.
-Correcting that would need cluster identifiers and a random effect,
-which this model does not carry.</p>
+post-treatment likelihood still uses <span class="math inline">\(\sigma^2/n\)</span>, so a cluster-randomised study
+remains over-precise about its own effect. Correcting that would need
+cluster identifiers and a random effect, which this model does not
+carry.</p>
 <p>The default settings of <code><a href="../reference/meta_did_general.html">meta_did_general()</a></code> are identical
 to <code><a href="../reference/meta_did.html">meta_did()</a></code>. Setting <code>time_trend</code> and
 <code>baseline_imbalance</code> to <code>"fixed_zero"</code> reproduces
@@ -820,40 +705,30 @@ the behaviour of the deprecated <code><a href="../reference/meta_did_naive.html"
 </h2>
 <p>When study-level covariates are available (e.g., intervention dose,
 year of publication), the treatment effect mean can be modelled as a
-linear function of those covariates. If
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>𝐱</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\mathbf{x}_i</annotation></semantics></math>
-is a
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>-vector
-of covariate values for study
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>,
-the hierarchical prior becomes</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>θ</mi><mi>i</mi></msub><mo>∼</mo><mi>𝒩</mi><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>μ</mi><mi>θ</mi></msub><mo>+</mo><msubsup><mi>𝐱</mi><mi>i</mi><mi>⊤</mi></msubsup><mi>𝛃</mi><mo>,</mo><mspace width="0.278em"></mspace><msubsup><mi>τ</mi><mi>θ</mi><mn>2</mn></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">
+linear function of those covariates. If <span class="math inline">\(\mathbf{x}_i\)</span> is a <span class="math inline">\(K\)</span>-vector of covariate values for study
+<span class="math inline">\(i\)</span>, the hierarchical prior
+becomes</p>
+<p><span class="math display">\[
 \theta_i \sim \mathcal{N}\!\left(
   \mu_\theta + \mathbf{x}_i^\top \boldsymbol{\beta},\;
   \tau_\theta^2
 \right),
-</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝛃</mi><annotation encoding="application/x-tex">\boldsymbol{\beta}</annotation></semantics></math>
-is a vector of meta-regression coefficients estimated jointly with all
-other parameters. When <code>robust_heterogeneity = TRUE</code>, the
-normal is replaced by a
-Student-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>
-as before. The same covariate adjustment applies across all study
-designs (DiD, RCT, and pre-post), with design-specific offsets
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>δ</mi><mtext mathvariant="normal">RCT</mtext></msub><annotation encoding="application/x-tex">\delta_{\text{RCT}}</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>δ</mi><mtext mathvariant="normal">PP</mtext></msub><annotation encoding="application/x-tex">\delta_{\text{PP}}</annotation></semantics></math>)
-added when <code>design_effects = TRUE</code>.</p>
+\]</span></p>
+<p>where <span class="math inline">\(\boldsymbol{\beta}\)</span> is a
+vector of meta-regression coefficients estimated jointly with all other
+parameters. When <code>robust_heterogeneity = TRUE</code>, the normal is
+replaced by a Student-<span class="math inline">\(t\)</span> as before.
+The same covariate adjustment applies across all study designs (DiD,
+RCT, and pre-post), with design-specific offsets (<span class="math inline">\(\delta_{\text{RCT}}\)</span>, <span class="math inline">\(\delta_{\text{PP}}\)</span>) added when
+<code>design_effects = TRUE</code>.</p>
 <div class="section level3">
 <h3 id="covariate-centering">Covariate centering<a class="anchor" aria-label="anchor" href="#covariate-centering"></a>
 </h3>
 <p>By default (<code>center_covariates = TRUE</code>), covariates are
 mean-centered across all studies in the meta-analysis before fitting.
-This has a useful interpretive consequence:
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\mu_\theta</annotation></semantics></math>
-represents the population treatment effect <strong>at the average
-covariate values</strong>, rather than at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐱</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\mathbf{x} = 0</annotation></semantics></math>
+This has a useful interpretive consequence: <span class="math inline">\(\mu_\theta\)</span> represents the population
+treatment effect <strong>at the average covariate values</strong>,
+rather than at <span class="math inline">\(\mathbf{x} = 0\)</span>
 (which may not be a meaningful reference point).</p>
 <p>The centering values are stored in the fitted object
 (<code>fit$cov_centers</code>) and are needed to reconstruct predictions
@@ -870,11 +745,8 @@ on the original covariate scale.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The covariate columns must be present in <code>summary_data</code>
 (and/or <code>individual_data</code>), must be numeric, and must be
-constant within each study. The prior on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝛃</mi><annotation encoding="application/x-tex">\boldsymbol{\beta}</annotation></semantics></math>
-defaults to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>10</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathcal{N}(0, 10)</annotation></semantics></math>
-per coefficient and can be adjusted via
+constant within each study. The prior on <span class="math inline">\(\boldsymbol{\beta}\)</span> defaults to <span class="math inline">\(\mathcal{N}(0, 10)\)</span> per coefficient and
+can be adjusted via
 <code>set_priors(beta_cov = normal(0, sd))</code>.</p>
 <p>For a worked example including simulation and recovery, see
 <code><a href="../articles/covariates.html">vignette("covariates")</a></code>.</p>

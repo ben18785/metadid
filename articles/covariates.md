@@ -14,9 +14,8 @@ We simulate 40 studies where the true treatment effect depends linearly
 on a covariate called `dose`. Higher doses produce a more negative
 treatment effect:
 
-``` math
-\theta_i \sim \mathcal{N}(\mu_\theta + \beta \cdot \text{dose}_i,\; \sigma_\theta^2)
-```
+\\\theta_i \sim \mathcal{N}(\mu\_\theta + \beta \cdot \text{dose}\_i,\\
+\sigma\_\theta^2)\\
 
 ``` r
 
@@ -51,7 +50,7 @@ treatment effect by -0.04.
 ## True dose–effect relationship
 
 Before fitting any model, we can inspect the true simulated treatment
-effects. Each study has a known $`\theta_i`$ stored in the `true_params`
+effects. Each study has a known \\\theta_i\\ stored in the `true_params`
 attribute. Dividing by the study’s baseline level puts these on the
 normalised scale that the model will estimate:
 
@@ -88,10 +87,11 @@ normalises outcomes by the baseline mean (by default), the parameters
 the model estimates are on the normalised scale. With a baseline mean of
 0.45:
 
-- **True normalised slope:**
-  $`\beta / \bar{\alpha} = -0.04 / 0.45 \approx -0.089`$
-- **True normalised intercept at mean dose:**
-  $`(\mu_\theta + \beta \cdot \bar{d}) / \bar{\alpha} = (-0.15 + (-0.04) \times 2.5) / 0.45 \approx -0.556`$
+- **True normalised slope:** \\\beta / \bar{\alpha} = -0.04 / 0.45
+  \approx -0.089\\
+- **True normalised intercept at mean dose:** \\(\mu\_\theta + \beta
+  \cdot \bar{d}) / \bar{\alpha} = (-0.15 + (-0.04) \times 2.5) / 0.45
+  \approx -0.556\\
 
 When `center_covariates = TRUE` (the default), `treatment_effect_mean`
 is the effect evaluated at the mean covariate value, not at dose = 0.
@@ -303,20 +303,22 @@ metadid supports this through the `multiplicative_covariate` argument.
 The covariate is categorical with a reference level: one `multiplier` is
 estimated per non-reference level and applied to the studies at that
 level, while the reference level’s factor is fixed at 1. A two-level
-indicator $`m_i \in \{0, 1\}`$ is the simplest case, with a single
+indicator \\m_i \in \\0, 1\\\\ is the simplest case, with a single
 estimated `multiplier` applied to the studies where it equals 1:
 
-``` math
-\mu_i = \begin{cases} \mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}} & m_i = 0 \\ \mathrm{multiplier} \cdot \bigl(\mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}}\bigr) & m_i = 1. \end{cases}
-```
+\\\mu_i = \begin{cases} \mu\_\theta +
+X\_{\mathrm{cov},i}^{\top}\beta\_{\mathrm{cov}} & m_i = 0 \\
+\mathrm{multiplier} \cdot \bigl(\mu\_\theta +
+X\_{\mathrm{cov},i}^{\top}\beta\_{\mathrm{cov}}\bigr) & m_i = 1.
+\end{cases}\\
 
-Studies with $`m_i = 0`$ identify the linear predictor directly; studies
-with $`m_i = 1`$ see it multiplied by the `multiplier`. The multiplier
+Studies with \\m_i = 0\\ identify the linear predictor directly; studies
+with \\m_i = 1\\ see it multiplied by the `multiplier`. The multiplier
 is strictly positive, with a log-normal `lognormal(0, 0.7)` prior: a
 median of 1 (the no-effect case, where every study contributes to the
 same population mean) and no boundary at zero, so a small attenuating
 multiplier is not pushed up against a hard limit. The prior is placed on
-$`\log(\mathrm{multiplier})`$, so the factor is symmetric in “halving”
+\\\log(\mathrm{multiplier})\\, so the factor is symmetric in “halving”
 versus “doubling”.
 
 ### Example: experimental vs real-world studies
@@ -387,8 +389,8 @@ variation in both directions.
 [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)
 enforces this with two checks:
 
-- **Hard error: constant indicator.** If every study has $`m_i = 0`$ or
-  every study has $`m_i = 1`$, then $`\mu_\theta`$ and the `multiplier`
+- **Hard error: constant indicator.** If every study has \\m_i = 0\\ or
+  every study has \\m_i = 1\\, then \\\mu\_\theta\\ and the `multiplier`
   are jointly unidentified — any pair with the same product gives
   identical likelihood.
   [`meta_did()`](https://ben18785.github.io/metadid/reference/meta_did.md)
@@ -445,10 +447,10 @@ identified.
 A single fit may carry up to **two** multiplicative covariates. Pass a
 one-sided formula naming both columns; each is estimated independently
 and a study’s overall multiplier is the **product** of the two
-per-covariate factors, $`\alpha_{a(i)} \cdot \beta_{b(i)}`$. This suits
-a design where the effect is scaled by two distinct study attributes at
-once — for example how the intervention was delivered, crossed with how
-intensively it was applied.
+per-covariate factors, \\\alpha\_{a(i)} \cdot \beta\_{b(i)}\\. This
+suits a design where the effect is scaled by two distinct study
+attributes at once — for example how the intervention was delivered,
+crossed with how intensively it was applied.
 
 ``` r
 

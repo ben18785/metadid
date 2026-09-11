@@ -6,7 +6,13 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Meta-regression with study-level covariates • metadid</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
+  window.MathJax = {
+    chtml: {
+      fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
+    }
+  };
+</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -16,7 +22,7 @@
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">metadid</a>
 
@@ -72,7 +78,8 @@ meta-regression to recover both the intercept and slope.</p>
 <p>We simulate 40 studies where the true treatment effect depends
 linearly on a covariate called <code>dose</code>. Higher doses produce a
 more negative treatment effect:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>θ</mi><mi>i</mi></msub><mo>∼</mo><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>μ</mi><mi>θ</mi></msub><mo>+</mo><mi>β</mi><mo>⋅</mo><msub><mtext mathvariant="normal">dose</mtext><mi>i</mi></msub><mo>,</mo><mspace width="0.278em"></mspace><msubsup><mi>σ</mi><mi>θ</mi><mn>2</mn></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\theta_i \sim \mathcal{N}(\mu_\theta + \beta \cdot \text{dose}_i,\; \sigma_\theta^2)</annotation></semantics></math></p>
+<p><span class="math display">\[\theta_i \sim \mathcal{N}(\mu_\theta +
+\beta \cdot \text{dose}_i,\; \sigma_\theta^2)\]</span></p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ben18785.github.io/metadid/">metadid</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
@@ -104,11 +111,10 @@ dose shifts the raw treatment effect by -0.04.</p>
 <h2 id="true-doseeffect-relationship">True dose–effect relationship<a class="anchor" aria-label="anchor" href="#true-doseeffect-relationship"></a>
 </h2>
 <p>Before fitting any model, we can inspect the true simulated treatment
-effects. Each study has a known
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>θ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\theta_i</annotation></semantics></math>
-stored in the <code>true_params</code> attribute. Dividing by the
-study’s baseline level puts these on the normalised scale that the model
-will estimate:</p>
+effects. Each study has a known <span class="math inline">\(\theta_i\)</span> stored in the
+<code>true_params</code> attribute. Dividing by the study’s baseline
+level puts these on the normalised scale that the model will
+estimate:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">true_params</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sim</span>, <span class="st">"true_params"</span><span class="op">)</span></span>
 <span></span>
@@ -138,12 +144,12 @@ mean (by default), the parameters the model estimates are on the
 normalised scale. With a baseline mean of 0.45:</p>
 <ul>
 <li>
-<strong>True normalised slope:</strong>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mi>/</mi><mover><mi>α</mi><mo accent="true">‾</mo></mover><mo>=</mo><mi>−</mi><mn>0.04</mn><mi>/</mi><mn>0.45</mn><mo>≈</mo><mi>−</mi><mn>0.089</mn></mrow><annotation encoding="application/x-tex">\beta / \bar{\alpha} = -0.04 / 0.45 \approx -0.089</annotation></semantics></math>
+<strong>True normalised slope:</strong> <span class="math inline">\(\beta / \bar{\alpha} = -0.04 / 0.45 \approx
+-0.089\)</span>
 </li>
 <li>
-<strong>True normalised intercept at mean dose:</strong>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>μ</mi><mi>θ</mi></msub><mo>+</mo><mi>β</mi><mo>⋅</mo><mover><mi>d</mi><mo accent="true">‾</mo></mover><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mover><mi>α</mi><mo accent="true">‾</mo></mover><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mi>−</mi><mn>0.15</mn><mo>+</mo><mo stretchy="false" form="prefix">(</mo><mi>−</mi><mn>0.04</mn><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mn>2.5</mn><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mn>0.45</mn><mo>≈</mo><mi>−</mi><mn>0.556</mn></mrow><annotation encoding="application/x-tex">(\mu_\theta + \beta \cdot \bar{d}) / \bar{\alpha} = (-0.15 + (-0.04) \times 2.5) / 0.45 \approx -0.556</annotation></semantics></math>
+<strong>True normalised intercept at mean dose:</strong> <span class="math inline">\((\mu_\theta + \beta \cdot \bar{d}) / \bar{\alpha}
+= (-0.15 + (-0.04) \times 2.5) / 0.45 \approx -0.556\)</span>
 </li>
 </ul>
 <p>When <code>center_covariates = TRUE</code> (the default),
@@ -339,23 +345,22 @@ jointly with the experimental effect itself.</p>
 categorical with a reference level: one <code>multiplier</code> is
 estimated per non-reference level and applied to the studies at that
 level, while the reference level’s factor is fixed at 1. A two-level
-indicator
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>m</mi><mi>i</mi></msub><mo>∈</mo><mo stretchy="false" form="prefix">{</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">}</mo></mrow><annotation encoding="application/x-tex">m_i \in \{0, 1\}</annotation></semantics></math>
-is the simplest case, with a single estimated <code>multiplier</code>
-applied to the studies where it equals 1:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mi>i</mi></msub><mo>=</mo><mrow><mo stretchy="true" form="prefix">{</mo><mtable><mtr><mtd columnalign="left" style="text-align: left"><msub><mi>μ</mi><mi>θ</mi></msub><mo>+</mo><msubsup><mi>X</mi><mrow><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">v</mi></mrow><mo>,</mo><mi>i</mi></mrow><mi>⊤</mi></msubsup><msub><mi>β</mi><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">v</mi></mrow></msub></mtd><mtd columnalign="left" style="text-align: left"><msub><mi>m</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mtd></mtr><mtr><mtd columnalign="left" style="text-align: left"><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">p</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi></mrow><mo>⋅</mo><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">(</mo><msub><mi>μ</mi><mi>θ</mi></msub><mo>+</mo><msubsup><mi>X</mi><mrow><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">v</mi></mrow><mo>,</mo><mi>i</mi></mrow><mi>⊤</mi></msubsup><msub><mi>β</mi><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">v</mi></mrow></msub><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">)</mo></mtd><mtd columnalign="left" style="text-align: left"><msub><mi>m</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mi>.</mi></mtd></mtr></mtable></mrow></mrow><annotation encoding="application/x-tex">\mu_i = \begin{cases} \mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}} &amp; m_i = 0 \\ \mathrm{multiplier} \cdot \bigl(\mu_\theta + X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}}\bigr) &amp; m_i = 1. \end{cases}</annotation></semantics></math></p>
-<p>Studies with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>m</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">m_i = 0</annotation></semantics></math>
-identify the linear predictor directly; studies with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>m</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">m_i = 1</annotation></semantics></math>
-see it multiplied by the <code>multiplier</code>. The multiplier is
-strictly positive, with a log-normal <code>lognormal(0, 0.7)</code>
-prior: a median of 1 (the no-effect case, where every study contributes
-to the same population mean) and no boundary at zero, so a small
-attenuating multiplier is not pushed up against a hard limit. The prior
-is placed on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">p</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi></mrow><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\log(\mathrm{multiplier})</annotation></semantics></math>,
-so the factor is symmetric in “halving” versus “doubling”.</p>
+indicator <span class="math inline">\(m_i \in \{0, 1\}\)</span> is the
+simplest case, with a single estimated <code>multiplier</code> applied
+to the studies where it equals 1:</p>
+<p><span class="math display">\[\mu_i = \begin{cases} \mu_\theta +
+X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}} &amp; m_i = 0 \\
+\mathrm{multiplier} \cdot \bigl(\mu_\theta +
+X_{\mathrm{cov},i}^{\top}\beta_{\mathrm{cov}}\bigr) &amp; m_i = 1.
+\end{cases}\]</span></p>
+<p>Studies with <span class="math inline">\(m_i = 0\)</span> identify
+the linear predictor directly; studies with <span class="math inline">\(m_i = 1\)</span> see it multiplied by the
+<code>multiplier</code>. The multiplier is strictly positive, with a
+log-normal <code>lognormal(0, 0.7)</code> prior: a median of 1 (the
+no-effect case, where every study contributes to the same population
+mean) and no boundary at zero, so a small attenuating multiplier is not
+pushed up against a hard limit. The prior is placed on <span class="math inline">\(\log(\mathrm{multiplier})\)</span>, so the factor
+is symmetric in “halving” versus “doubling”.</p>
 <div class="section level3">
 <h3 id="example-experimental-vs-real-world-studies">Example: experimental vs real-world studies<a class="anchor" aria-label="anchor" href="#example-experimental-vs-real-world-studies"></a>
 </h3>
@@ -418,14 +423,10 @@ two checks:</p>
 <ul>
 <li>
 <strong>Hard error: constant indicator.</strong> If every study has
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>m</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">m_i = 0</annotation></semantics></math>
-or every study has
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>m</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">m_i = 1</annotation></semantics></math>,
-then
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\mu_\theta</annotation></semantics></math>
-and the <code>multiplier</code> are jointly unidentified — any pair with
-the same product gives identical likelihood. <code><a href="../reference/meta_did.html">meta_did()</a></code>
-stops with an error pointing to the column.</li>
+<span class="math inline">\(m_i = 0\)</span> or every study has <span class="math inline">\(m_i = 1\)</span>, then <span class="math inline">\(\mu_\theta\)</span> and the
+<code>multiplier</code> are jointly unidentified — any pair with the
+same product gives identical likelihood. <code><a href="../reference/meta_did.html">meta_did()</a></code> stops
+with an error pointing to the column.</li>
 <li>
 <strong>Soft warning: collinearity with an additive
 covariate.</strong> If <code>multiplicative_covariate</code> is nearly
@@ -478,9 +479,8 @@ studies at two or more levels for the multipliers to be identified.</p>
 <p>A single fit may carry up to <strong>two</strong> multiplicative
 covariates. Pass a one-sided formula naming both columns; each is
 estimated independently and a study’s overall multiplier is the
-<strong>product</strong> of the two per-covariate factors,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>α</mi><mrow><mi>a</mi><mo stretchy="false" form="prefix">(</mo><mi>i</mi><mo stretchy="false" form="postfix">)</mo></mrow></msub><mo>⋅</mo><msub><mi>β</mi><mrow><mi>b</mi><mo stretchy="false" form="prefix">(</mo><mi>i</mi><mo stretchy="false" form="postfix">)</mo></mrow></msub></mrow><annotation encoding="application/x-tex">\alpha_{a(i)} \cdot \beta_{b(i)}</annotation></semantics></math>.
-This suits a design where the effect is scaled by two distinct study
+<strong>product</strong> of the two per-covariate factors, <span class="math inline">\(\alpha_{a(i)} \cdot \beta_{b(i)}\)</span>. This
+suits a design where the effect is scaled by two distinct study
 attributes at once — for example how the intervention was delivered,
 crossed with how intensively it was applied.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">

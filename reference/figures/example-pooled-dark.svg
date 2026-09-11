@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 250" role="img" aria-label="Pooled winner effect: two frequentist back-transforms and metadid"><style>text{font-family:'Lato','Helvetica Neue',Arial,sans-serif}</style>
+  <line x1="510.0" y1="34" x2="510.0" y2="202" stroke="#252e47" stroke-width="1.5"/>
+  <line x1="720.0" y1="34" x2="720.0" y2="202" stroke="#252e47" stroke-width="1.5"/>
+  <line x1="930.0" y1="34" x2="930.0" y2="202" stroke="#252e47" stroke-width="1.5"/>
+  <line x1="300" y1="34" x2="300" y2="202" stroke="#e6eaf5" stroke-width="1.6"/>
+  <line x1="290" y1="202" x2="940" y2="202" stroke="#252e47" stroke-width="2"/>
+  <text x="288" y="28" text-anchor="end" font-size="13.5" font-style="italic" fill="#98a2b8">Frequentist, back-transformed:</text>
+  <text x="288" y="57" text-anchor="end" font-size="14" fill="#e6eaf5">g × mean baseline CV</text>
+  <line x1="531.4" y1="52" x2="898.1" y2="52" stroke="#E06B6B" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="715.0" cy="52" r="9" fill="#E06B6B" stroke="#0d1117" stroke-width="2.5"/>
+  <text x="912.1" y="58" font-size="17" font-weight="900" fill="#E06B6B">+9.9%</text>
+  <text x="288" y="105" text-anchor="end" font-size="14" fill="#e6eaf5">g × median baseline CV</text>
+  <line x1="512.9" y1="100" x2="849.8" y2="100" stroke="#E06B6B" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="681.4" cy="100" r="9" fill="#E06B6B" stroke="#0d1117" stroke-width="2.5"/>
+  <text x="863.8" y="106" font-size="17" font-weight="900" fill="#E06B6B">+9.1%</text>
+  <text x="288" y="167" text-anchor="end" font-size="14" font-weight="700" fill="#e6eaf5">metadid</text>
+  <line x1="355.4" y1="162" x2="546.1" y2="162" stroke="#6487E6" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="441.5" cy="162" r="9" fill="#6487E6" stroke="#0d1117" stroke-width="2.5"/>
+  <text x="560.1" y="168" font-size="17" font-weight="900" fill="#6487E6">+3.4%</text>
+  <text x="300.0" y="226" text-anchor="middle" font-size="14" fill="#98a2b8">0%</text>
+  <text x="510.0" y="226" text-anchor="middle" font-size="14" fill="#98a2b8">+5%</text>
+  <text x="720.0" y="226" text-anchor="middle" font-size="14" fill="#98a2b8">+10%</text>
+  <text x="930.0" y="226" text-anchor="middle" font-size="14" fill="#98a2b8">+15%</text>
+</svg>
