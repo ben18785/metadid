@@ -12,6 +12,13 @@ jobs:
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      # skip_if_no_stan() in tests/testthat/helper-stan.R calls skip_on_cran(),
+      # which skips unless NOT_CRAN is set. Without this, every Stan-backed test
+      # in test-stan.R and test-recovery.R -- 37 blocks, the package's entire
+      # model-level coverage -- silently skipped here, and CI went green while
+      # exercising none of the model. That is how a fixture missing its `rho`
+      # column survived unnoticed and left test-stan.R 20/21 broken.
+      NOT_CRAN: true
 
     steps:
       - uses: actions/checkout@v4

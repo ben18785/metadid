@@ -41,3 +41,10 @@ array[n_rho_known_did_summary] int<lower=1> idx_rho_known_did_summary;
 array[n_rho_missing_did_summary] int<lower=1> idx_rho_missing_did_summary;
 vector<lower=-1, upper=1>[n_rho_known_did_summary] rho_known_did_summary;
 
+// Baseline-imbalance mode per study (0 fixed zero, 1 non-randomised,
+// 2 randomised -- see shared_data.stan) and s_i, the sampling SD of the
+// observed baseline contrast. For summary data s_i is computed in R from the
+// reported pre-treatment SDs and sample sizes, AFTER any baseline normalisation, so
+// it is on the same scale as gamma. It is only consulted for mode-2 studies.
+array[n_studies_did_summary] int<lower=0, upper=2> gamma_mode_did_summary;
+vector<lower=0>[n_studies_did_summary] gamma_scale_did_summary;

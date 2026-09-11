@@ -27,7 +27,8 @@ null_stan_data_did <- function() {
     x_control_before_did      = numeric(0),
     x_control_after_did       = numeric(0),
     x_treatment_before_did    = numeric(0),
-    x_treatment_after_did     = numeric(0)
+    x_treatment_after_did     = numeric(0),
+    gamma_mode_did            = integer(0)
   )
 }
 
@@ -42,7 +43,8 @@ null_stan_data_rct <- function() {
     study_end_treatment_rct     = integer(0),
     x_control_after_rct         = numeric(0),
     x_treatment_after_rct       = numeric(0),
-    is_time_trend_rct_zero = 0L
+    is_time_trend_rct_zero = 0L,
+    gamma_mode_rct              = integer(0)
   )
 }
 
@@ -77,7 +79,9 @@ null_stan_data_did_summary <- function() {
     n_rho_missing_did_summary              = 0L,
     idx_rho_known_did_summary              = integer(0),
     idx_rho_missing_did_summary            = integer(0),
-    rho_known_did_summary                  = numeric(0)
+    rho_known_did_summary                  = numeric(0),
+    gamma_mode_did_summary                 = integer(0),
+    gamma_scale_did_summary                = numeric(0)
   )
 }
 
@@ -102,7 +106,9 @@ null_stan_data_rct_summary <- function() {
     sample_size_treatment_rct_summary               = integer(0),
     sd_control_after_rct_summary                    = numeric(0),
     sd_treatment_after_rct_summary                  = numeric(0),
-    is_time_trend_rct_summary_zero = 0L
+    is_time_trend_rct_summary_zero = 0L,
+    gamma_mode_rct_summary                          = integer(0),
+    gamma_scale_rct_summary                         = numeric(0)
   )
 }
 
@@ -340,13 +346,92 @@ prepare_individual_pp <- function(df) {
 }
 
 # ---------------------------------------------------------------------------
+# Baseline-imbalance (gamma) helpers
+# ---------------------------------------------------------------------------
+
+# Assignment mechanism per row. An absent column or an NA entry reads as
+# "none" (imbalance estimated), never as randomisation -- randomisation must be
+# claimed explicitly, because assuming it is the failure mode the column exists
+# to prevent.
+.randomisation_vec <- function(data) {
+  if (is.null(data) || nrow(data) == 0) return(character(0))
+  if (!"randomisation" %in% names(data)) return(rep("none", nrow(data)))
+  out <- as.character(data$randomisation)
+  out[is.na(out)] <- "none"
+  out
+}
+
+# Design effect on the baseline contrast. For cluster-randomised studies the
+# reported n counts individuals, so sigma^2/n understates the sampling variance
+# of an arm mean by DEFF = 1 + (m - 1) * ICC. Folding DEFF into gamma_scale
+# means kappa keeps one meaning across designs -- excess imbalance beyond
+# *correct* sampling -- rather than silently absorbing a variance understatement.
+#
+# NOTE this corrects the baseline contrast only. The study's own likelihood
+# still uses sigma^2/n for the post-treatment period, so a cluster-randomised
+# study remains over-precise about its own effect. Fixing that needs cluster
+# identifiers and a random effect, which this model does not carry.
+.deff_vec <- function(data, randomisation, cluster_deff_default) {
+  n <- length(randomisation)
+  if (n == 0) return(numeric(0))
+  deff <- rep(1, n)
+  m    <- if ("cluster_size" %in% names(data)) as.numeric(data$cluster_size) else rep(NA_real_, n)
+  icc  <- if ("icc" %in% names(data))          as.numeric(data$icc)          else rep(NA_real_, n)
+  is_cluster <- randomisation == "cluster"
+  known      <- is_cluster & !is.na(m) & !is.na(icc)
+  deff[known] <- 1 + (m[known] - 1) * icc[known]
+  deff[is_cluster & !known] <- cluster_deff_default
+  deff
+}
+
+# Per-study gamma mode: 0 fixed zero, 1 non-randomised, 2 randomised.
+.gamma_mode_vec <- function(design, randomisation, baseline_imbalance) {
+  n <- length(randomisation)
+  if (n == 0) return(integer(0))
+  switch(
+    baseline_imbalance,
+    by_randomisation = ifelse(randomisation %in% c("individual", "cluster"), 2L, 1L),
+    estimated        = rep(1L, n),
+    # Preserves the documented asymmetry of the old flag: it zeroed imbalance
+    # for RCTs only, DiD always estimating it from its own pre-treatment means.
+    fixed_zero       = if (identical(design, "rct")) rep(0L, n) else rep(1L, n),
+    stop("Unknown baseline_imbalance: ", baseline_imbalance, call. = FALSE)
+  )
+}
+
+# s_i: sampling SD of the observed baseline contrast, for SUMMARY studies only.
+# Computed after normalisation so it is on the same scale as gamma. DiD uses the
+# pre-treatment SDs; post-only RCTs have none, so the post-treatment SDs stand
+# in. Individual-level studies get their s_i inside Stan, where the observation
+# SDs are parameters rather than data.
+.gamma_scale_summary <- function(data, deff, sd_control_col, sd_treatment_col) {
+  if (is.null(data) || nrow(data) == 0) return(numeric(0))
+  sqrt(deff * (data[[sd_treatment_col]]^2 / data$n_treatment +
+               data[[sd_control_col]]^2   / data$n_control))
+}
+
+# One row per study, ordered by study_id -- matching the sort that
+# prepare_individual_*() and .extract_cov_matrix_individual() apply, so
+# per-study vectors line up with the study index Stan sees.
+.study_level_frame <- function(data) {
+  if (is.null(data) || nrow(data) == 0) return(data)
+  data |>
+    dplyr::group_by(.data$study_id) |>
+    dplyr::slice(1) |>
+    dplyr::ungroup() |>
+    dplyr::arrange(.data$study_id)
+}
+
+# ---------------------------------------------------------------------------
 # prepare_stan_data()  -- main dispatcher
 # ---------------------------------------------------------------------------
 
 prepare_stan_data <- function(summary_data, individual_data, model_flags, priors,
                               covariate_names = NULL,
                               multiplicative_covariate = NULL,
-                              center_covariates = TRUE) {
+                              center_covariates = TRUE,
+                              baseline_imbalance = "by_randomisation",
+                              cluster_deff_default = 2) {
 
   K_cov <- length(covariate_names)
 
@@ -422,6 +507,39 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   stan_rct$X_cov_rct <- .extract_cov_matrix_individual(ind_rct_raw, cov_names)
   stan_pp$X_cov_pp   <- .extract_cov_matrix_individual(ind_pp_raw, cov_names)
 
+  # --- Baseline-imbalance mode and scale per study ---
+  # Summary studies carry s_i as data; individual studies build it in Stan from
+  # their sampled observation SDs, so only the mode is passed for those.
+  rand_sum_did <- .randomisation_vec(sum_did)
+  rand_sum_rct <- .randomisation_vec(sum_rct)
+  deff_sum_did <- .deff_vec(sum_did, rand_sum_did, cluster_deff_default)
+  deff_sum_rct <- .deff_vec(sum_rct, rand_sum_rct, cluster_deff_default)
+
+  stan_did_summary$gamma_mode_did_summary <-
+    .gamma_mode_vec("did", rand_sum_did, baseline_imbalance)
+  stan_did_summary$gamma_scale_did_summary <-
+    .gamma_scale_summary(sum_did, deff_sum_did, "sd_pre_control", "sd_pre_treatment")
+
+  stan_rct_summary$gamma_mode_rct_summary <-
+    .gamma_mode_vec("rct", rand_sum_rct, baseline_imbalance)
+  stan_rct_summary$gamma_scale_rct_summary <-
+    .gamma_scale_summary(sum_rct, deff_sum_rct, "sd_post_control", "sd_post_treatment")
+
+  ind_did_studies <- .study_level_frame(ind_did_raw)
+  ind_rct_studies <- .study_level_frame(ind_rct_raw)
+  rand_ind_did <- .randomisation_vec(ind_did_studies)
+  rand_ind_rct <- .randomisation_vec(ind_rct_studies)
+
+  stan_did$gamma_mode_did <- .gamma_mode_vec("did", rand_ind_did, baseline_imbalance)
+  stan_rct$gamma_mode_rct <- .gamma_mode_vec("rct", rand_ind_rct, baseline_imbalance)
+
+  # kappa is identified only by randomised studies carrying PRE-treatment data:
+  # a post-only randomised study has an unidentified gamma_i, so it constrains
+  # the scale of gamma not at all. Reported so meta_did() can refuse to sample
+  # an unanchored kappa.
+  has_kappa_anchor <- any(stan_did_summary$gamma_mode_did_summary == 2L) ||
+                      any(stan_did$gamma_mode_did == 2L)
+
   # --- Multiplicative covariate per-design vectors ---
   mult_cov_names    <- .normalise_mult_covariate(multiplicative_covariate)
   summary_frames    <- list(sum_did, sum_did_change, sum_rct, sum_pp)
@@ -481,6 +599,13 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
   attr(result, "cov_centers") <- cov_centers
   attr(result, "multiplier_levels") <- if (length(levels1) >= 2L) levels1 else NULL
   attr(result, "mult_covariates")   <- if (length(mult_covariates) > 0L) mult_covariates else NULL
+  attr(result, "has_kappa_anchor")  <- has_kappa_anchor
+  attr(result, "n_randomised")      <- sum(
+    stan_did_summary$gamma_mode_did_summary == 2L,
+    stan_rct_summary$gamma_mode_rct_summary == 2L,
+    stan_did$gamma_mode_did == 2L,
+    stan_rct$gamma_mode_rct == 2L
+  )
   result
 }
 

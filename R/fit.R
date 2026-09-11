@@ -79,6 +79,34 @@ print.meta_did_fit <- function(x, prob = 0.9, ...) {
   cat("Studies: DiD =", n_did, "| RCT =", n_rct,
       "| Pre-Post =", n_pp, "| DiD (change only) =", n_change, "\n")
 
+  # Assignment mechanism is a claim the analyst makes, and it changes how every
+  # affected study's baseline imbalance is modelled -- so surface it on every
+  # printout rather than leaving it buried in the call.
+  .rand_counts <- function(d) {
+    if (is.null(d) || nrow(d) == 0 || !"randomisation" %in% names(d)) {
+      return(character(0))
+    }
+    v <- as.character(d$randomisation)
+    v[is.na(v)] <- "none"
+    v
+  }
+  rand <- c(.rand_counts(x$summary_data), .rand_counts(x$individual_data))
+  n_gamma_rand <- x$model_flags$n_gamma_randomised %||% 0L
+  if (length(rand) > 0 && n_gamma_rand > 0) {
+    n_ind <- sum(rand == "individual")
+    n_clu <- sum(rand == "cluster")
+    n_non <- sum(rand == "none")
+    cat("Randomisation: individual =", n_ind, "| cluster =", n_clu,
+        "| none =", n_non, "\n")
+    if (isTRUE(x$model_flags$is_kappa_estimated == 1L)) {
+      k <- mean(x$fit$draws("kappa", format = "matrix"))
+      cat(sprintf("  Randomised-study imbalance: kappa estimated = %.2f\n", k))
+    } else {
+      cat(sprintf("  Randomised-study imbalance: kappa fixed at %.2f\n",
+                  x$model_flags$kappa_fixed))
+    }
+  }
+
   K_cov <- length(x$covariate_names)
 
   if (x$method == "sample") {

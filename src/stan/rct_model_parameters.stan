@@ -13,6 +13,9 @@ vector[n_studies_rct * (1 - is_time_trend_rct_zero)] time_trend_rct_raw;
 // baseline_difference_rct_raw drives per-study imbalance under the unified
 // baseline-difference machinery (DiD identifies it via hierarchical prior).
 vector[n_studies_rct * (1 - is_baseline_normalised)] baseline_control_rct_raw;
-vector[n_studies_rct * is_baseline_difference_estimated] baseline_difference_rct_raw;
+// Always allocated: a study whose gamma_mode is 0 gets gamma == 0 from
+// gamma_from_raw(), so no conditional sizing is needed. Its raw value keeps a
+// std_normal prior and never reaches the likelihood.
+vector[n_studies_rct] baseline_difference_rct_raw;
 vector<lower=0>[n_studies_rct] sigma_control_after_rct;
 vector<lower=0>[n_studies_rct] sigma_treatment_after_rct;

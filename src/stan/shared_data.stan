@@ -37,17 +37,40 @@ real<lower=0> nu_prior_rate;
 real<lower=0> delta_rct_prior_sd;
 real<lower=0> delta_pp_prior_sd;
 
-// When is_baseline_difference_estimated == 1, each DiD and RCT study has its own
-// baseline_difference[i], hierarchically pooled across studies with population
-// (baseline_difference_mean, baseline_difference_sd). DiD studies identify
-// baseline_difference[i] per-study from the pre-treatment vs pre-control means;
-// RCT studies are not per-study identifiable and rely on the hierarchical prior.
-// When 0, all baseline differences are fixed to zero and the treatment-arm
-// baseline equals the control-arm baseline. PP studies are unaffected.
-int<lower=0, upper=1> is_baseline_difference_estimated;
+// Baseline imbalance (gamma). Each DiD and RCT study carries a per-study
+// gamma_mode_*[i] (declared alongside that design's data) selecting how its
+// baseline difference is modelled:
+//   0 = fixed at zero
+//   1 = non-randomised: gamma_i ~ normal(mu_gamma, baseline_difference_sd)
+//   2 = randomised:     gamma_i ~ normal(0, kappa * gamma_scale_i)
+// PP and change-only studies have no gamma (no control arm / it cancels).
+//
+// When is_mu_gamma_estimated == 0 (the default), mu_gamma is pinned at zero:
+// the MAGNITUDE of selection-driven imbalance is pooled across non-randomised
+// studies, but its DIRECTION is not transported between them. Selection
+// direction is a property of each study's targeting rule, not of the outcome,
+// so a literature has no common sign to borrow. Set to 1 only when the studies
+// plausibly share a targeting mechanism.
+int<lower=0, upper=1> is_mu_gamma_estimated;
 real baseline_difference_mean_prior_mean;
 real<lower=0> baseline_difference_mean_prior_sd;
 real<lower=0> baseline_difference_sd_prior_scale;
+
+// kappa: excess-imbalance factor for RANDOMISED studies. The observed baseline
+// contrast of a randomised study has total variance (1 + kappa^2) * s_i^2, so
+// kappa^2 is the variance inflation beyond simple random sampling:
+// kappa^2 = DEFF - 1 = (m - 1) * ICC for cluster randomisation. kappa = 0 is
+// perfect individual randomisation (the realised imbalance is then already
+// carried by the likelihood's sigma^2/n terms and needs no extra parameter).
+//
+// kappa is identified only by randomised studies that carry PRE-treatment data.
+// For post-only randomised studies gamma_i is unidentified and the mechanism
+// acts purely as a sample-size-dependent variance inflation on that study's
+// effect. When nothing anchors kappa it is fixed at kappa_fixed instead of
+// sampled (R refuses to estimate it in that case).
+int<lower=0, upper=1> is_kappa_estimated;
+real<lower=0> kappa_fixed;
+real<lower=0> kappa_prior_scale;
 
 // Prior hyperparameters for study-level observation SDs (shared across all designs)
 real<lower=0> sigma_prior_scale;

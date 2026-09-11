@@ -29,7 +29,10 @@ for (i in 1:size(baseline_control_did_summary_raw))
   baseline_control_did_summary[i] = baseline_control_mean[1] + baseline_control_sd[1] * baseline_control_did_summary_raw[i];
 
 for (i in 1:size(baseline_difference_did_summary_raw))
-  baseline_difference_did_summary[i] = baseline_difference_mean + baseline_difference_sd * baseline_difference_did_summary_raw[i];
+  baseline_difference_did_summary[i] = gamma_from_raw(
+    gamma_mode_did_summary[i], baseline_difference_did_summary_raw[i],
+    baseline_difference_mean, baseline_difference_sd,
+    kappa, gamma_scale_did_summary[i]);
 
 // baseline_treatment_did_summary exists only in unnormalised, non-differenced mode
 // and always uses the hierarchical baseline_difference (DiD identifies it from data).

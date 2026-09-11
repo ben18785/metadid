@@ -712,9 +712,14 @@ test_that("Fit 7: estimated baseline imbalance recovers treatment effect under D
   })
   imbalance_data <- do.call(rbind, sim_rows)
 
+  # mu_gamma = "estimated" is now opt-in: the default pins the population mean
+  # baseline imbalance at zero, so that only its MAGNITUDE is pooled across
+  # non-randomised studies and its DIRECTION is not transported between them.
+  # Recovering a non-zero mu_gamma therefore requires asking for it.
   fit_est <- recovery_fit(
     summary_data       = imbalance_data,
-    baseline_imbalance = "estimated"
+    baseline_imbalance = "estimated",
+    mu_gamma           = "estimated"
   )
 
   # Treatment effect should be recovered (within CI) despite baseline imbalance

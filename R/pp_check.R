@@ -605,10 +605,20 @@ get_missing_rho_draws <- function(draws, design_data, study_idx, param_prefix) {
 get_cell_draws <- function(draws, design, design_idx, group, time, is_normalised) {
   idx <- design_idx
 
+  # Under normalisation the CONTROL baseline is 1 by construction, but the
+  # TREATMENT baseline is 1 + gamma_i -- the arms are only equal when the
+  # imbalance is pinned at zero. Reading it as 1 displaced the treatment-arm
+  # predictive cells by the imbalance. Falls back to 1 when the parameter is
+  # absent (the differenced likelihood, where gamma cancels).
+  .norm_baseline_t <- function(param) {
+    col <- paste0(param, "[", idx, "]")
+    if (col %in% colnames(draws)) 1 + as.numeric(draws[, col]) else rep(1, nrow(draws))
+  }
+
   if (design == "did") {
     baseline_c <- if (is_normalised) rep(1, nrow(draws)) else
       as.numeric(draws[, paste0("baseline_control_did[", idx, "]")])
-    baseline_t <- if (is_normalised) rep(1, nrow(draws)) else
+    baseline_t <- if (is_normalised) .norm_baseline_t("baseline_difference_did") else
       as.numeric(draws[, paste0("baseline_treatment_did[", idx, "]")])
     tt <- as.numeric(draws[, paste0("time_trend_did[", idx, "]")])
     te <- as.numeric(draws[, paste0("treatment_effect_did[", idx, "]")])

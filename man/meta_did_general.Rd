@@ -12,7 +12,10 @@ meta_did_general(
   design_effects = FALSE,
   hierarchical_rho = TRUE,
   correlated_effects = FALSE,
-  baseline_imbalance = c("estimated", "fixed_zero"),
+  baseline_imbalance = c("by_randomisation", "estimated", "fixed_zero"),
+  mu_gamma = c("zero", "estimated"),
+  kappa = 0.5,
+  cluster_deff_default = 2,
   covariates = NULL,
   multiplicative_covariate = NULL,
   center_covariates = TRUE,
@@ -25,6 +28,7 @@ meta_did_general(
   iter_sampling = 1000L,
   seed = NULL,
   allow_no_did = FALSE,
+  allow_unidentified_kappa = FALSE,
   ...
 )
 }
@@ -73,18 +77,75 @@ correlation is parameterised via a Cholesky factor of a 2×2 correlation
 matrix with an LKJ prior (see \code{\link[=set_priors]{set_priors()}}). Cannot be combined with
 \code{robust_heterogeneity = TRUE}. Default \code{FALSE}.}
 
-\item{baseline_imbalance}{How to handle the baseline difference
-\eqn{\gamma_i} between treatment and control groups for \strong{RCT}
-studies. DiD studies always estimate \eqn{\gamma_i} per-study (the
-pre-treatment means identify it from data).
-One of:
+\item{baseline_imbalance}{How the per-study baseline difference
+\eqn{\gamma_i} is modelled: \code{"by_randomisation"} (default),
+\code{"estimated"}, or \code{"fixed_zero"}. Identical in meaning and default to the
+\code{\link[=meta_did]{meta_did()}} argument of the same name -- see there for the full
+description, and for \code{mu_gamma}, \code{kappa} and \code{cluster_deff_default}, which
+this function also accepts.}
+
+\item{mu_gamma}{Whether the population mean baseline imbalance among
+\strong{non-randomised} studies is estimated. One of:
 \describe{
-\item{\code{"estimated"}}{(Default) Estimate per-study \eqn{\gamma_i}
-for RCT, drawing from a hierarchical prior shared with DiD's
-per-study estimates. This is the same behaviour as \code{\link[=meta_did]{meta_did()}}.}
-\item{\code{"fixed_zero"}}{Fix \eqn{\gamma_i = 0} for RCT studies,
-assuming randomisation eliminates baseline imbalances.}
-}}
+\item{\code{"zero"}}{(Default) \eqn{\mu_\gamma = 0}. The \emph{magnitude} of
+selection-driven imbalance is pooled across non-randomised studies,
+but its \emph{direction} is not transported between them.}
+\item{\code{"estimated"}}{\eqn{\mu_\gamma} is estimated, with the prior
+from \code{baseline_difference_mean} in \code{\link[=set_priors]{set_priors()}}.}
+}
+
+The default is deliberate. Whether a treated group starts above or below
+its control is a property of each programme's targeting rule -- some
+interventions go to high-need (high-baseline) populations, others to
+easy-to-reach (low-baseline) ones -- not of the outcome or the
+intervention. Estimating a single \eqn{\mu_\gamma} asserts that a whole
+literature shares a direction of selection, and then applies that
+direction to every post-only study, whose own data cannot contradict it.
+Worse, the resulting bias does not shrink with more data: it \emph{sharpens},
+because \eqn{\mu_\gamma} is estimated more precisely. Set to
+\code{"estimated"} only when the studies plausibly share a targeting
+mechanism -- for example, several evaluations of the same programme.}
+
+\item{kappa}{Excess-imbalance factor for \strong{randomised} studies. Either a
+single non-negative number (default \code{0.5}) or the string \code{"estimate"}.
+
+\eqn{\kappa^2} is the variance inflation of a randomised study's baseline
+contrast beyond simple random sampling, so \eqn{\kappa^2 = }\code{DEFF}\eqn{ - 1}
+and \eqn{\kappa = 0} is perfect randomisation. Note \eqn{\kappa = 0} is
+\emph{not} the same as ignoring finite-sample imbalance: the realised imbalance
+of a randomised allocation is already carried by the likelihood's
+\eqn{\sigma^2/n} terms (and, for DiD, propagated into the post period by
+the pre-post correlation). \eqn{\kappa} governs only the \emph{extra}
+allowance for randomisation not having held exactly -- imperfect
+allocation, attrition, post-randomisation selection.
+
+Because \eqn{s_i} scales as \eqn{1/\sqrt{n_i}}, this automatically
+down-weights small randomised studies more than large ones. For a
+post-only randomised study, where \eqn{\gamma_i} is unidentified, the
+mechanism is equivalent to inflating that study's standard error by
+\eqn{\sqrt{1 + \kappa^2}}.
+
+\code{"estimate"} samples \eqn{\kappa} with the prior from \code{kappa} in
+\code{\link[=set_priors]{set_priors()}}, but by default is only permitted when at least one
+randomised study carries pre-treatment data (a randomised DiD). Post-only
+randomised studies constrain \eqn{\kappa} not at all. With no such anchor,
+either fix \eqn{\kappa} or set \code{allow_unidentified_kappa = TRUE}. The
+default of \code{0.5} is a reasonable central choice rather than a value to
+trust on its own, so it is worth refitting at a few values to see whether
+any conclusion turns on it.}
+
+\item{cluster_deff_default}{Design effect assumed for studies with
+\code{randomisation = "cluster"} that do not supply \code{cluster_size} and \code{icc}
+columns. Default \code{2}, which corresponds to roughly 50 units per cluster at
+an ICC of 0.02. When both columns are supplied, the study's own
+\eqn{1 + (m - 1)\rho_{ICC}} is used instead. The design effect inflates
+\eqn{s_i} so that \eqn{\kappa} keeps one meaning across designs.
+
+This corrects the \emph{baseline contrast} only. A cluster-randomised study's
+likelihood still uses \eqn{\sigma^2/n} for the post-treatment period, so
+it remains over-precise about its own treatment effect. Correcting that
+needs cluster identifiers and a random effect, which this model does not
+carry.}
 
 \item{covariates}{An optional one-sided formula specifying study-level
 covariates for meta-regression on the treatment effect (e.g.,
@@ -188,6 +249,23 @@ stop with an error when no DiD studies are present, because the
 treatment effect is not identified from the data without the
 double-difference structure. Set to \code{TRUE} to override this check
 if you understand the limitation (the posterior will be prior-driven).}
+
+\item{allow_unidentified_kappa}{Logical. If \code{FALSE} (default),
+\code{kappa = "estimate"} errors when no randomised study carries pre-treatment
+data, because \eqn{\kappa} is then not identified by anything. Set to
+\code{TRUE} to sample it anyway (the posterior for \eqn{\kappa} will reproduce
+its prior).
+
+Doing so is a modelling choice rather than an estimate. Sampling
+\eqn{\kappa} instead of fixing it makes the marginal prior on
+\eqn{\gamma_i} a scale mixture of normals rather than a normal --
+simultaneously more peaked at zero and much heavier-tailed than any fixed
+\eqn{\kappa}. That is a better description of "most randomised trials
+achieved balance, occasionally one badly did not" than a single scale can
+give, and it propagates the uncertainty in \eqn{\kappa} into the pooled
+effect rather than conditioning on one value. What it does \emph{not} do is
+learn \eqn{\kappa} from the data, which is why it must be asked for
+explicitly.}
 
 \item{...}{Additional arguments passed to the underlying CmdStanModel
 method: \verb{$sample()} when \code{method = "sample"} (e.g., \code{parallel_chains},

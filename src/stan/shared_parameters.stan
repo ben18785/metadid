@@ -8,12 +8,19 @@ vector<lower=0>[1 - is_baseline_normalised] baseline_control_sd;
 vector[1 - is_baseline_normalised] baseline_treatment_mean;
 vector<lower=0>[1 - is_baseline_normalised] baseline_treatment_sd;
 
-// Population-level baseline imbalance (treatment vs control) on the normalised
-// fractional scale. DiD studies always contribute (per-study identification);
-// RCT studies contribute only when is_baseline_difference_estimated == 1. PP
-// does not contribute (no control arm).
-real baseline_difference_mean;
+// Population-level baseline imbalance for NON-RANDOMISED studies, on the
+// normalised fractional scale. Only the spread is pooled by default; the mean
+// is sampled solely when is_mu_gamma_estimated == 1 (see shared_data.stan).
+// Zero-length when not sampled, following the mu_z / nu_treatment_vec idiom
+// below -- an unconditionally-declared scalar would be prior-free and
+// unconstrained when the flag is 0.
+vector[is_mu_gamma_estimated] mu_gamma_vec;
 real<lower=0> baseline_difference_sd;
+
+// Excess-imbalance factor for RANDOMISED studies. Zero-length (fixed at
+// kappa_fixed, not sampled) when no randomised study carries pre-treatment
+// data to identify it.
+vector<lower=0>[is_kappa_estimated] kappa_vec;
 
 real treatment_effect_mean;
 real<lower=0> treatment_effect_sd;

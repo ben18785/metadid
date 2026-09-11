@@ -72,7 +72,7 @@ test_that("set_priors() returns a did_priors with all parameters", {
     "rho_mean", "rho_sd", "nu",
     "delta_rct", "delta_pp", "sigma",
     "beta_cov", "lkj_eta",
-    "baseline_difference_mean", "baseline_difference_sd",
+    "baseline_difference_mean", "baseline_difference_sd", "kappa",
     "multiplier"
   )
   expect_equal(names(p), expected_names)
@@ -160,7 +160,7 @@ test_that("baseline_difference priors have correct defaults", {
   p <- set_priors()
   expect_equal(p$baseline_difference_mean$dist, "normal")
   expect_equal(p$baseline_difference_mean$mean, 0)
-  expect_equal(p$baseline_difference_mean$sd, 0.5)
+  expect_equal(p$baseline_difference_mean$sd, 0.05)
   expect_equal(p$baseline_difference_sd$dist, "cauchy")
   expect_equal(p$baseline_difference_sd$scale, 0.1)
 })
