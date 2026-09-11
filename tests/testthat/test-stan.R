@@ -45,7 +45,13 @@ did_summary <- function() {
     mean_pre_treatment  = c(0.46, 0.51, 0.49),
     mean_post_treatment = c(0.30, 0.34, 0.32),
     sd_pre_treatment    = c(0.13, 0.12, 0.11),
-    sd_post_treatment   = c(0.10, 0.09, 0.08)
+    sd_post_treatment   = c(0.10, 0.09, 0.08),
+    # Pre-post correlation. Required because meta_did() defaults to
+    # hierarchical_rho = TRUE, which refuses to impute rho when NO study
+    # reports one -- correlations cannot be inferred from nothing. Omitting it
+    # made every test using this fixture fail on the guard rather than on
+    # anything it meant to test.
+    rho                 = c(0.60, 0.55, 0.65)
   )
 }
 

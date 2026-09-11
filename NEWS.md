@@ -95,10 +95,46 @@ it sharpens, because `mu_gamma` becomes more precisely estimated.
   makes `gamma` explicit, which is what made the mismatch visible and
   measurable.
 
-  Correcting it would mean dividing PP effects by `(1 + gamma_i/b_i)`, but
-  `gamma_i` is unidentified for a PP study, so the correction would depend on
-  transporting `gamma` from other designs — the very thing this release argues
-  against. Measure before attempting.
+  Correcting it means rescaling PP effects by `(1 + gamma_i/b_i)`. PP studies
+  carry no `gamma` parameter today, but one could be added exactly as post-only
+  RCTs have one — being unidentified is not the obstacle, or the RCT branch
+  could not work either.
+
+  The obstacle is that the correction is MULTIPLICATIVE, so it depends on
+  `E[gamma]` — the direction, not the spread. Under the default
+  `mu_gamma = "zero"` that expectation is 1, so a hierarchical draw would add
+  variance and remove no bias. Measured, at the same gamma spread:
+
+  | gamma        | pooled effect / truth |
+  |--------------|----------------------:|
+  | one-sided    |                 0.926 |
+  | mean-zero    |                 1.029 |
+
+  Mean-zero gamma produces no attenuation at all — only a small second-order
+  Jensen amplification, `E[1/(1+g)] ~ 1 + Var(g)`. So the PP scale mismatch and
+  the RCT transport bias are the same question from two sides: estimating
+  `mu_gamma` would correct PP but re-import DiD selection onto randomised
+  trials, while pinning it at zero protects the trials and leaves PP attenuated.
+  One scalar cannot serve both.
+
+  **Deliberately not corrected, and the attenuation is a bound rather than an
+  expectation.** The one-sided row above is the WORST case: it requires every
+  study's treated group to be selected in the same direction. The mean-zero row
+  is what a literature with no shared targeting direction looks like, and it
+  shows no attenuation at all. So if you doubt that direction transports between
+  studies — the premise of this whole release — you should also expect the PP
+  mismatch to be small in practice. The two beliefs are the same belief.
+
+  Applying `mu_gamma` to PP would be a further step out than applying it to
+  post-only RCTs, not a safer one. `gamma` is a contrast BETWEEN TWO ARMS; a PP
+  study has one. Transporting it there asserts where a control group would have
+  sat for a control group that was never measured.
+
+  The narrow case where estimating `mu_gamma` is defensible: several evaluations
+  of the SAME programme under the SAME targeting rule, where a shared selection
+  direction is a fact about the design rather than a hope. The principled
+  general alternative — indexing `mu_gamma` on study covariates describing the
+  targeting rule — needs metadata that is not usually available.
 * The cluster design effect corrects the **baseline contrast only**; the
   post-treatment likelihood still uses `sigma^2/n`, so cluster-randomised
   studies remain over-precise about their own effect.
