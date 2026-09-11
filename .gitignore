@@ -2,6 +2,9 @@
 .Rhistory
 .RData
 .Ruserdata
+*.Rproj
+.claude/
+.mcp.json
 
 # Compiled Stan executables (do not commit)
 src/stan/**
@@ -22,3 +25,6 @@ src/stan/**/*.EXE
 # macOS
 .DS_Store
 .positai
+
+# pkgdown site built locally
+/docs/

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 430" role="img" aria-label="Naive estimate versus true effect"><style>text{font-family:'Lato','Helvetica Neue',Arial,sans-serif}</style>
+  <text x="400" y="24" text-anchor="middle" font-size="14" font-style="italic" fill="#98a2b8">intervention</text>
+  <line x1="400" y1="36" x2="400" y2="370" stroke="#98a2b8" stroke-width="1.6" stroke-dasharray="5 6"/>
+  <line x1="88" y1="372" x2="700" y2="372" stroke="#252e47" stroke-width="2"/>
+  <line x1="88" y1="40" x2="88" y2="372" stroke="#252e47" stroke-width="2"/>
+  <text x="110" y="78" font-size="16" font-weight="700" fill="#98a2b8">Control</text>
+  <path d="M110,90 L680,176" stroke="#98a2b8" stroke-width="4" fill="none" opacity=".75"/>
+  <text x="110" y="122" font-size="16" font-weight="700" fill="#6487E6">Treatment</text>
+  <path d="M110,134 L400,186 L680,312" stroke="#6487E6" stroke-width="4.5" fill="none"/>
+  <path d="M400,186 L680,232" stroke="#6487E6" stroke-width="2.5" stroke-dasharray="7 6" fill="none" opacity=".55"/>
+  <g stroke="#98a2b8" stroke-width="1.5" stroke-dasharray="2 5" opacity=".55">
+  <line x1="692" y1="176" x2="906" y2="176"/>
+  <line x1="692" y1="232" x2="776" y2="232"/>
+  <line x1="692" y1="312" x2="906" y2="312"/>
+  </g>
+  <g stroke="#4CB577" stroke-width="3.5">
+  <line x1="770" y1="232" x2="770" y2="312"/>
+  <line x1="758" y1="232" x2="782" y2="232"/>
+  <line x1="758" y1="312" x2="782" y2="312"/>
+  </g>
+  <text x="794" y="278" font-size="16" font-weight="700" fill="#4CB577">True effect</text>
+  <g stroke="#E06B6B" stroke-width="3.5">
+  <line x1="898" y1="176" x2="898" y2="312"/>
+  <line x1="886" y1="176" x2="910" y2="176"/>
+  <line x1="886" y1="312" x2="910" y2="312"/>
+  </g>
+  <text x="922" y="250" font-size="16" font-weight="700" fill="#E06B6B">Naive estimate</text>
+  <text x="46" y="239" font-size="15" fill="#e6eaf5" transform="rotate(-90 46 239)">Outcome</text>
+  <text x="400" y="404" text-anchor="middle" font-size="15" fill="#e6eaf5">Time</text>
+</svg>
