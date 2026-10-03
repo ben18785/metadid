@@ -28,7 +28,25 @@ if(n_studies_did_summary > 0) {
 
   for (i in 1:n_studies_did_summary) {
     
-    if(!is_differenced_likelihood_did_summary) {
+    if (!is_differenced_likelihood_did_summary && is_baseline_normalised) {
+      // Pre-control cell is exactly 1 by construction, so the three remaining
+      // cells enter as ratios sharing it as a denominator.
+      target += did_summary_study_normalised_lpdf_from_data(
+        x_bar_control_after_did_summary[i],
+        x_bar_treatment_before_did_summary[i],
+        x_bar_treatment_after_did_summary[i],
+        baseline_difference_did_summary[i],
+        time_trend_did_summary[i],
+        treatment_effect_did_summary[i],
+        sd_control_before_did_summary[i],
+        sd_control_after_did_summary[i],
+        sd_treatment_before_did_summary[i],
+        sd_treatment_after_did_summary[i],
+        rho_eff_did_summary[i],
+        sample_size_control_did_summary[i],
+        sample_size_treatment_did_summary[i]
+      );
+    } else if(!is_differenced_likelihood_did_summary) {
       target += did_summary_study_lpdf_from_data(
         x_bar_control_before_did_summary[i],
         x_bar_control_after_did_summary[i],

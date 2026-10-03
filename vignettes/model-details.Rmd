@@ -217,9 +217,10 @@ interpretable as a proportional change.
 | **RCT** | Post-treatment control mean | $\alpha_i + \beta_i = 1$ |
 
 For DiD and pre-post studies, normalisation divides by a pre-treatment
-quantity, so the relevant baseline parameter is known to be exactly 1 and is
-fixed rather than estimated. The time trend and treatment effect remain as
-free parameters.
+quantity, so the relevant baseline parameter is fixed at exactly 1 rather than
+estimated. The time trend and treatment effect remain as free parameters. Note
+that the baseline is *estimated* to be 1, not known to be — see
+[The normalising mean is an estimate](#the-normalising-mean-is-an-estimate).
 
 DiD change-only studies report change scores (post minus pre) rather than
 level means, so they lack a study-specific pre-treatment level to normalise
@@ -281,6 +282,44 @@ $\alpha_i + \gamma_i$ are free parameters. How $\gamma_i$ is modelled
 depends on the study's assignment mechanism -- see
 [Baseline imbalance and randomisation](#baseline-imbalance-and-randomisation)
 below.
+
+### The normalising mean is an estimate {#the-normalising-mean-is-an-estimate}
+
+The denominator is an observed arm mean, so it carries sampling error of its
+own. Fixing the corresponding parameter at 1 makes that cell's residual
+identically zero, so it contributes nothing to the likelihood — which would be
+right if the baseline were known, and is not right for an estimate.
+
+Where this matters depends on whether the normalising cell is one of the cells
+being contrasted. For a **post-only** study it is: the statistic is the ratio
+$\bar y_t / \bar y_c$, whose variance by the delta method is
+
+$$
+\mathrm{Var}\!\left(\frac{\bar y_t}{\bar y_c}\right) \approx
+\frac{\sigma_t^2}{n_t} + (1 + \phi_i)^2 \frac{\sigma_c^2}{n_c},
+$$
+
+on the normalised scale. Only the first term used to be included, which
+understated the SD by a factor of 0.78 with equal arms and more when the
+control arm is the smaller one. For a **DiD** study the pinned pre-control cell
+left the control arm's change variance as the conditional
+$\sigma_{ca}^2(1 - \rho^2)$ rather than the paired
+$\sigma_{cb}^2 + \sigma_{ca}^2 - 2\rho\sigma_{cb}\sigma_{ca}$, a factor of
+$(1+\rho)/2$, and dropped the covariance that the shared denominator induces
+between the two arms. Both summary-level likelihoods now use the delta-method
+(co)variance, with its coefficients evaluated at the observed ratios so that
+the variance carries no parameters. The pre-post differenced form is affected
+only at second order in the effect size and is left as it stands; the
+individual-level likelihoods are not yet corrected.
+
+One consequence is worth knowing when baselines vary widely across studies.
+The pooled effect is a precision-weighted average, and normalisation ties each
+study's weight to its own baseline: dividing by $b_i$ makes a study's sampling
+variance scale as $1/b_i^2$, exactly as $\theta_i/b_i$ does. Studies with small
+baselines therefore carry the largest normalised effects and the least weight,
+and the pooled estimate sits between $E[\theta_i/b_i]$ and
+$E[\theta]/E[b]$ rather than exactly on the former. At the baseline dispersion
+typical of applications the two targets differ by well under a percentage point.
 
 ### Interpreting normalised treatment effects
 

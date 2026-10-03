@@ -43,7 +43,9 @@ if(n_studies_rct_summary > 0) {
         x_bar_treatment_after_rct_summary[i],
         apparent_effect_rct_summary[i],
         sd_treatment_after_rct_summary[i],
-        sample_size_treatment_rct_summary[i]
+        sample_size_treatment_rct_summary[i],
+        sd_control_after_rct_summary[i],
+        sample_size_control_rct_summary[i]
       );
 
       // Hierarchical prior on the derived true treatment effect (stays centered)
@@ -62,8 +64,27 @@ if(n_studies_rct_summary > 0) {
       // Jacobian: |d(te)/d(apparent)| = |1 + time_trend|
       target += log(abs(1 + time_trend_rct_summary_eff[i]));
 
+    } else if (is_baseline_normalised) {
+      // Normalised with the time trend fixed at zero: the control mean is still
+      // exactly 1 by construction, so the ratio form above applies, with the
+      // contrast gamma + theta in place of the apparent effect.
+      target += rct_summary_study_normalised_lpdf_from_data(
+        x_bar_treatment_after_rct_summary[i],
+        baseline_difference_rct_summary[i] + treatment_effect_rct_summary[i],
+        sd_treatment_after_rct_summary[i],
+        sample_size_treatment_rct_summary[i],
+        sd_control_after_rct_summary[i],
+        sample_size_control_rct_summary[i]
+      );
+
+      // Hierarchical prior on treatment effect (student-t and correlated stay centered)
+      if (is_student_t_heterogeneity) {
+        target += student_t_lpdf(treatment_effect_rct_summary[i] | nu_treatment_vec[1], mult_rct_summary[i] * (treatment_effect_mean_rct + X_cov_rct_summary[i] * beta_cov), treatment_effect_sd);
+      }
+      // Normal case: handled by treatment_effect_rct_summary_raw ~ std_normal() below
+
     } else {
-      // Unnormalised or time trends forced to zero
+      // Unnormalised: both arm means are informative about free baselines.
       target += rct_summary_study_lpdf_from_data(
         x_bar_control_after_rct_summary[i],
         x_bar_treatment_after_rct_summary[i],
