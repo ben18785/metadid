@@ -41,14 +41,39 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="metadid-development-version">metadid (development version)<a class="anchor" aria-label="anchor" href="#metadid-development-version"></a></h2>
 <div class="section level3">
-<h3 id="randomisation-aware-baseline-imbalance-development-version">Randomisation-aware baseline imbalance<a class="anchor" aria-label="anchor" href="#randomisation-aware-baseline-imbalance-development-version"></a></h3>
-<p>The baseline difference <code>gamma_i</code> is now modelled by a study’s <strong>assignment mechanism</strong> rather than by its design label. This changes default behaviour and will move published numbers where post-only studies are present.</p>
+<h3 id="normalisation-by-an-estimated-baseline-development-version">Normalisation by an estimated baseline<a class="anchor" aria-label="anchor" href="#normalisation-by-an-estimated-baseline-development-version"></a></h3>
+<p>Baseline normalisation divides every cell by an observed mean, which is itself an estimate. The normalised likelihoods treated that denominator as known, so its sampling error never reached the model. The summary-level DiD and post-only likelihoods now carry it via a delta-method variance.</p>
 <div class="section level4">
 <h4 id="why-development-version">Why<a class="anchor" aria-label="anchor" href="#why-development-version"></a></h4>
-<p><code>gamma_i</code> is unidentified for a post-only study: it subtracts directly from that study’s estimated effect, so whatever the model assumes about imbalance propagates straight into the pooled result. Previously every DiD and RCT study shared one <code>N(mu_gamma, tau_gamma)</code> population with <code>mu_gamma</code> estimated. Since DiD is typically used <em>because</em> assignment was not random, that transported a selection-driven imbalance — direction included — from unrandomised studies onto randomised trials. The resulting bias does not shrink as evidence accumulates; it sharpens, because <code>mu_gamma</code> becomes more precisely estimated.</p>
+<p>Pinning the normalising cell at exactly 1 makes its residual identically zero, so it contributes nothing to the likelihood. For a <strong>post-only</strong> study the denominator is also one of the two cells being contrasted, so the loss is first-order: the statistic is the ratio <code>x_t / x_c</code>, whose variance is <code>sigma_t^2/n_t + (1 + phi)^2 sigma_c^2/n_c</code>, and only the first term was used. With equal arms the SD was 0.78 of its correct value, and with a control arm a fifth the size of the treatment arm, 0.48. For a <strong>DiD</strong> study the pinned pre-control cell left the control arm’s change variance as the conditional <code>sigma_ca^2 (1 - rho^2)</code> instead of the paired <code>sigma_cb^2 + sigma_ca^2 - 2 rho sigma_cb sigma_ca</code>, a factor of <code>(1 + rho)/2</code>, and dropped the covariance the shared denominator induces between the arms.</p>
+<p>In simulation the pooled effect stayed calibrated, because the random-effects term absorbed the missing variance. The damage fell elsewhere: study-level 90% intervals for post-only studies covered 61% of the time and came out narrower than those of DiD studies carrying more information, between-study heterogeneity was inflated by 64-130%, DiD trend heterogeneity by about 30%, and post-only studies were over-weighted relative to DiD studies.</p>
 </div>
 <div class="section level4">
 <h4 id="new-development-version">New<a class="anchor" aria-label="anchor" href="#new-development-version"></a></h4>
+<ul><li>
+<code>rct_summary_study_normalised_lpdf_from_data()</code> takes the control arm’s SD and sample size and uses the delta-method SD of the ratio. The branch for normalised data with the time trend fixed at zero uses the same form, with <code>gamma + theta</code> as the contrast.</li>
+<li>
+<code>did_summary_study_normalised_lpdf_from_data()</code> models the three non-pinned cells jointly, with the delta-method covariance of ratios sharing one denominator: a rank-one <code>v_cb * r r'</code> component plus the correlation terms for cells measured on the same people.</li>
+<li>Delta-method coefficients are evaluated at the observed ratios, so the covariance carries no parameters.</li>
+<li>Study-level coverage for post-only studies recovers to 0.89 against a nominal 0.90, the design-weighting distortion disappears, and heterogeneity inflation drops to roughly 20%.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="not-covered-development-version">Not covered<a class="anchor" aria-label="anchor" href="#not-covered-development-version"></a></h4>
+<ul><li>
+<strong>Individual-level data.</strong> There the control observations are modelled with the mean pinned at 1 while their SD is a parameter estimated from the same observations, so a per-observation correction would distort it. A free baseline parameter is the route for that path.</li>
+<li>
+<strong>The estimand under large baseline dispersion.</strong> <code>treatment_effect_mean</code> is a precision-weighted average, and normalisation correlates each study’s weight with its own normalised effect, since both scale as <code>1/b_i</code>. With the variances now stated correctly, the pooled estimate sits between <code>E[theta_i/b_i]</code> and <code>E[theta]/E[b]</code> instead of on the former. At the dispersion typical of applications the two differ by well under a percentage point; it becomes material only when baselines vary widely.</li>
+</ul></div>
+</div>
+<div class="section level3">
+<h3 id="randomisation-aware-baseline-imbalance-development-version">Randomisation-aware baseline imbalance<a class="anchor" aria-label="anchor" href="#randomisation-aware-baseline-imbalance-development-version"></a></h3>
+<p>The baseline difference <code>gamma_i</code> is now modelled by a study’s <strong>assignment mechanism</strong> rather than by its design label. This changes default behaviour and will move published numbers where post-only studies are present.</p>
+<div class="section level4">
+<h4 id="why-development-version-1">Why<a class="anchor" aria-label="anchor" href="#why-development-version-1"></a></h4>
+<p><code>gamma_i</code> is unidentified for a post-only study: it subtracts directly from that study’s estimated effect, so whatever the model assumes about imbalance propagates straight into the pooled result. Previously every DiD and RCT study shared one <code>N(mu_gamma, tau_gamma)</code> population with <code>mu_gamma</code> estimated. Since DiD is typically used <em>because</em> assignment was not random, that transported a selection-driven imbalance — direction included — from unrandomised studies onto randomised trials. The resulting bias does not shrink as evidence accumulates; it sharpens, because <code>mu_gamma</code> becomes more precisely estimated.</p>
+</div>
+<div class="section level4">
+<h4 id="new-development-version-1">New<a class="anchor" aria-label="anchor" href="#new-development-version-1"></a></h4>
 <ul><li>
 <code>summary_data</code> and <code>individual_data</code> accept an optional <code>randomisation</code> column (<code>"individual"</code>, <code>"cluster"</code>, <code>"none"</code>, or <code>NA</code>). It is <strong>never</strong> inferred from <code>design</code>, and <code>NA</code> reads as <code>"none"</code>, so randomisation is always an explicit claim. Optional <code>cluster_size</code> and <code>icc</code> columns supply a per-study design effect.</li>
 <li>

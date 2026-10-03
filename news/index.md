@@ -2,6 +2,69 @@
 
 ## metadid (development version)
 
+### Normalisation by an estimated baseline
+
+Baseline normalisation divides every cell by an observed mean, which is
+itself an estimate. The normalised likelihoods treated that denominator
+as known, so its sampling error never reached the model. The
+summary-level DiD and post-only likelihoods now carry it via a
+delta-method variance.
+
+#### Why
+
+Pinning the normalising cell at exactly 1 makes its residual identically
+zero, so it contributes nothing to the likelihood. For a **post-only**
+study the denominator is also one of the two cells being contrasted, so
+the loss is first-order: the statistic is the ratio `x_t / x_c`, whose
+variance is `sigma_t^2/n_t + (1 + phi)^2 sigma_c^2/n_c`, and only the
+first term was used. With equal arms the SD was 0.78 of its correct
+value, and with a control arm a fifth the size of the treatment arm,
+0.48. For a **DiD** study the pinned pre-control cell left the control
+arm’s change variance as the conditional `sigma_ca^2 (1 - rho^2)`
+instead of the paired
+`sigma_cb^2 + sigma_ca^2 - 2 rho sigma_cb sigma_ca`, a factor of
+`(1 + rho)/2`, and dropped the covariance the shared denominator induces
+between the arms.
+
+In simulation the pooled effect stayed calibrated, because the
+random-effects term absorbed the missing variance. The damage fell
+elsewhere: study-level 90% intervals for post-only studies covered 61%
+of the time and came out narrower than those of DiD studies carrying
+more information, between-study heterogeneity was inflated by 64-130%,
+DiD trend heterogeneity by about 30%, and post-only studies were
+over-weighted relative to DiD studies.
+
+#### New
+
+- `rct_summary_study_normalised_lpdf_from_data()` takes the control
+  arm’s SD and sample size and uses the delta-method SD of the ratio.
+  The branch for normalised data with the time trend fixed at zero uses
+  the same form, with `gamma + theta` as the contrast.
+- `did_summary_study_normalised_lpdf_from_data()` models the three
+  non-pinned cells jointly, with the delta-method covariance of ratios
+  sharing one denominator: a rank-one `v_cb * r r'` component plus the
+  correlation terms for cells measured on the same people.
+- Delta-method coefficients are evaluated at the observed ratios, so the
+  covariance carries no parameters.
+- Study-level coverage for post-only studies recovers to 0.89 against a
+  nominal 0.90, the design-weighting distortion disappears, and
+  heterogeneity inflation drops to roughly 20%.
+
+#### Not covered
+
+- **Individual-level data.** There the control observations are modelled
+  with the mean pinned at 1 while their SD is a parameter estimated from
+  the same observations, so a per-observation correction would distort
+  it. A free baseline parameter is the route for that path.
+- **The estimand under large baseline dispersion.**
+  `treatment_effect_mean` is a precision-weighted average, and
+  normalisation correlates each study’s weight with its own normalised
+  effect, since both scale as `1/b_i`. With the variances now stated
+  correctly, the pooled estimate sits between `E[theta_i/b_i]` and
+  `E[theta]/E[b]` instead of on the former. At the dispersion typical of
+  applications the two differ by well under a percentage point; it
+  becomes material only when baselines vary widely.
+
 ### Randomisation-aware baseline imbalance
 
 The baseline difference `gamma_i` is now modelled by a study’s

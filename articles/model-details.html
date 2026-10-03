@@ -392,9 +392,11 @@ a proportional change.</p>
 </tbody>
 </table>
 <p>For DiD and pre-post studies, normalisation divides by a
-pre-treatment quantity, so the relevant baseline parameter is known to
-be exactly 1 and is fixed rather than estimated. The time trend and
-treatment effect remain as free parameters.</p>
+pre-treatment quantity, so the relevant baseline parameter is fixed at
+exactly 1 rather than estimated. The time trend and treatment effect
+remain as free parameters. Note that the baseline is <em>estimated</em>
+to be 1, not known to be — see <a href="#the-normalising-mean-is-an-estimate">The normalising mean is an
+estimate</a>.</p>
 <p>DiD change-only studies report change scores (post minus pre) rather
 than level means, so they lack a study-specific pre-treatment level to
 normalise by. Instead, normalisation divides the change scores by the
@@ -446,6 +448,46 @@ effect.</p>
 How <span class="math inline">\(\gamma_i\)</span> is modelled depends on
 the study’s assignment mechanism – see <a href="#baseline-imbalance-and-randomisation">Baseline imbalance and
 randomisation</a> below.</p>
+</div>
+<div class="section level3">
+<h3 id="the-normalising-mean-is-an-estimate">The normalising mean is an estimate<a class="anchor" aria-label="anchor" href="#the-normalising-mean-is-an-estimate"></a>
+</h3>
+<p>The denominator is an observed arm mean, so it carries sampling error
+of its own. Fixing the corresponding parameter at 1 makes that cell’s
+residual identically zero, so it contributes nothing to the likelihood —
+which would be right if the baseline were known, and is not right for an
+estimate.</p>
+<p>Where this matters depends on whether the normalising cell is one of
+the cells being contrasted. For a <strong>post-only</strong> study it
+is: the statistic is the ratio <span class="math inline">\(\bar y_t /
+\bar y_c\)</span>, whose variance by the delta method is</p>
+<p><span class="math display">\[
+\mathrm{Var}\!\left(\frac{\bar y_t}{\bar y_c}\right) \approx
+\frac{\sigma_t^2}{n_t} + (1 + \phi_i)^2 \frac{\sigma_c^2}{n_c},
+\]</span></p>
+<p>on the normalised scale. Only the first term used to be included,
+which understated the SD by a factor of 0.78 with equal arms and more
+when the control arm is the smaller one. For a <strong>DiD</strong>
+study the pinned pre-control cell left the control arm’s change variance
+as the conditional <span class="math inline">\(\sigma_{ca}^2(1 -
+\rho^2)\)</span> rather than the paired <span class="math inline">\(\sigma_{cb}^2 + \sigma_{ca}^2 -
+2\rho\sigma_{cb}\sigma_{ca}\)</span>, a factor of <span class="math inline">\((1+\rho)/2\)</span>, and dropped the covariance
+that the shared denominator induces between the two arms. Both
+summary-level likelihoods now use the delta-method (co)variance, with
+its coefficients evaluated at the observed ratios so that the variance
+carries no parameters. The pre-post differenced form is affected only at
+second order in the effect size and is left as it stands; the
+individual-level likelihoods are not yet corrected.</p>
+<p>One consequence is worth knowing when baselines vary widely across
+studies. The pooled effect is a precision-weighted average, and
+normalisation ties each study’s weight to its own baseline: dividing by
+<span class="math inline">\(b_i\)</span> makes a study’s sampling
+variance scale as <span class="math inline">\(1/b_i^2\)</span>, exactly
+as <span class="math inline">\(\theta_i/b_i\)</span> does. Studies with
+small baselines therefore carry the largest normalised effects and the
+least weight, and the pooled estimate sits between <span class="math inline">\(E[\theta_i/b_i]\)</span> and <span class="math inline">\(E[\theta]/E[b]\)</span> rather than exactly on the
+former. At the baseline dispersion typical of applications the two
+targets differ by well under a percentage point.</p>
 </div>
 <div class="section level3">
 <h3 id="interpreting-normalised-treatment-effects">Interpreting normalised treatment effects<a class="anchor" aria-label="anchor" href="#interpreting-normalised-treatment-effects"></a>
