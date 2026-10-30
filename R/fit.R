@@ -15,7 +15,8 @@ new_meta_did_fit <- function(
     covariate_names = NULL,
     multiplicative_covariate = NULL,
     cov_centers = NULL,
-    center_covariates = TRUE
+    center_covariates = TRUE,
+    fit_args = NULL
 ) {
   structure(
     list(
@@ -29,7 +30,10 @@ new_meta_did_fit <- function(
       covariate_names          = covariate_names,
       multiplicative_covariate = multiplicative_covariate,
       cov_centers              = cov_centers,
-      center_covariates        = center_covariates
+      center_covariates        = center_covariates,
+      # The resolved call, so a refit can reproduce this fit exactly. See
+      # sensitivity_trend(). NULL for objects created before this was stored.
+      fit_args                 = fit_args
     ),
     class = "meta_did_fit"
   )

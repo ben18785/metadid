@@ -325,7 +325,17 @@ as_stan_data.did_priors <- function(priors) {
     kappa_prior_scale                   = priors$kappa$sd,
     # effect_multiplier ~ lognormal(meanlog, sdlog), i.e. prior on log scale
     effect_multiplier_prior_meanlog         = priors$multiplier$meanlog,
-    effect_multiplier_prior_sdlog           = priors$multiplier$sdlog
+    effect_multiplier_prior_sdlog           = priors$multiplier$sdlog,
+    # Family switches for the three scale parameters that accept either a
+    # half-Cauchy or a half-normal. set_priors() validated the family and then
+    # nothing carried it to Stan, which hard-coded cauchy -- so normal() was
+    # silently honoured as a Cauchy with the normal's SD as its scale.
+    is_treatment_effect_sd_normal    =
+      as.integer(identical(priors$treatment_effect_sd$dist, "normal")),
+    is_time_trend_sd_normal          =
+      as.integer(identical(priors$time_trend_sd$dist, "normal")),
+    is_baseline_difference_sd_normal =
+      as.integer(identical(priors$baseline_difference_sd$dist, "normal"))
   )
 }
 

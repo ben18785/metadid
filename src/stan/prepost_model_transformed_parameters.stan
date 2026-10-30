@@ -14,7 +14,8 @@ if (!is_student_t_heterogeneity && !is_correlated_effects) {
 
 if (!is_correlated_effects) {
   for (i in 1:size(time_trend_pp_raw))
-    time_trend_pp[i] = time_trend_mean + time_trend_sd * time_trend_pp_raw[i];
+    time_trend_pp[i] = time_trend_mean + pp_trend_shift
+                       + time_trend_sd * time_trend_pp_raw[i];
 } else {
   time_trend_pp = time_trend_pp_raw;
 }

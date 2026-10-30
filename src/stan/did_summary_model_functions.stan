@@ -68,20 +68,12 @@ real did_summary_study_lpdf_from_data(
 // sampled independently. The coefficients m_j are evaluated at the OBSERVED
 // ratios, not at their expectations, so the covariance stays free of the
 // parameters.
-real did_summary_study_normalised_lpdf_from_data(
-  real x_bar_control_after,
-  real x_bar_treatment_before,
-  real x_bar_treatment_after,
-  real baseline_difference,
-  real time_trend,
-  real treatment_effect,
-  real sigma_cb,
-  real sigma_ca,
-  real sigma_tb,
-  real sigma_ta,
-  real rho,
-  int n_control,
-  int n_treatment
+// The delta-method covariance of the three normalised cells, shared by the
+// conditional likelihood and the marginal one below so they cannot drift apart.
+matrix did_summary_normalised_cov(
+  vector m,
+  real sigma_cb, real sigma_ca, real sigma_tb, real sigma_ta,
+  real rho, int n_control, int n_treatment
 ) {
   real v_cb = square(sigma_cb) / n_control;          // the denominator cell
   real v_ca = square(sigma_ca) / n_control;
@@ -89,10 +81,6 @@ real did_summary_study_normalised_lpdf_from_data(
   real v_tb = square(sigma_tb) / n_treatment;
   real v_ta = square(sigma_ta) / n_treatment;
   real c_t  = rho * sigma_tb * sigma_ta / n_treatment;
-
-  vector[3] m = [x_bar_control_after,
-                 x_bar_treatment_before,
-                 x_bar_treatment_after]';
 
   // Indices 1, 2, 3 are the control-post, treatment-pre and treatment-post
   // ratios. Every entry carries a + m_j m_k v_cb term: that is the shared
@@ -109,14 +97,86 @@ real did_summary_study_normalised_lpdf_from_data(
   Sigma[2, 1] = Sigma[1, 2];
   Sigma[3, 1] = Sigma[1, 3];
   Sigma[3, 2] = Sigma[2, 3];
+  return Sigma;
+}
 
-  // Cell means relative to the pinned pre-control baseline of 1: the control
-  // arm moves by the time trend, the treatment arm starts off by the baseline
-  // difference, and its follow-up adds the trend and the treatment effect.
-  vector[3] mu = [1 + time_trend,                                            // control post:    alpha + beta
-                  1 + baseline_difference,                                   // treatment pre:   alpha + gamma
-                  1 + baseline_difference + time_trend + treatment_effect]'; // treatment post:  alpha + gamma + beta + theta
+// The cell-mean map: mu = 1 + M * (beta, gamma, theta). Shared for the same
+// reason as the covariance.
+vector did_summary_normalised_mean(real baseline_difference, real time_trend,
+                                   real treatment_effect) {
+  return [1 + time_trend,                                            // control post:   alpha + beta
+          1 + baseline_difference,                                   // treatment pre:  alpha + gamma
+          1 + baseline_difference + time_trend + treatment_effect]'; // treatment post: alpha + gamma + beta + theta
+}
 
+real did_summary_study_normalised_lpdf_from_data(
+  real x_bar_control_after,
+  real x_bar_treatment_before,
+  real x_bar_treatment_after,
+  real baseline_difference,
+  real time_trend,
+  real treatment_effect,
+  real sigma_cb,
+  real sigma_ca,
+  real sigma_tb,
+  real sigma_ta,
+  real rho,
+  int n_control,
+  int n_treatment
+) {
+  vector[3] m = [x_bar_control_after,
+                 x_bar_treatment_before,
+                 x_bar_treatment_after]';
+  return multi_normal_lpdf(
+    m | did_summary_normalised_mean(baseline_difference, time_trend,
+                                    treatment_effect),
+    did_summary_normalised_cov(m, sigma_cb, sigma_ca, sigma_tb, sigma_ta,
+                               rho, n_control, n_treatment));
+}
+
+// Marginal (integrated) likelihood: the study-level beta, gamma and theta are
+// integrated out against their population priors, rather than conditioned on.
+//
+// This is what makes a per-study PSIS diagnostic meaningful. Conditioning on a
+// study's own latent parameters means leaving that study out removes all the
+// information about them, so the importance ratios are hopelessly heavy-tailed
+// and the Pareto k is high for every study whether or not it is influential --
+// measured at 18 of 20 studies above 0.7 on a well-behaved fit.
+//
+// The integral is exact because the cell means are LINEAR in (beta, gamma,
+// theta): mu = 1 + M * (beta, gamma, theta) with M as below, so
+//   marginal mean = 1 + M * (mu_beta, mu_gamma, mu_theta)
+//   marginal cov  = Sigma + M * diag(tau_beta^2, var_gamma, tau_theta^2) * M'
+// Linearity is also why covariates come free: they shift mu_theta, which is
+// just another entry in the mean vector.
+real did_summary_study_marginal_lpdf_from_data(
+  real x_bar_control_after,
+  real x_bar_treatment_before,
+  real x_bar_treatment_after,
+  real mu_gamma_i, real var_gamma_i,
+  real mu_beta, real tau_beta,
+  real mu_theta_i, real tau_theta,
+  real cov_beta_theta,
+  real sigma_cb, real sigma_ca, real sigma_tb, real sigma_ta,
+  real rho, int n_control, int n_treatment
+) {
+  vector[3] m = [x_bar_control_after,
+                 x_bar_treatment_before,
+                 x_bar_treatment_after]';
+  matrix[3, 3] M = [[1, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1]];
+  // Latent order is (beta, gamma, theta). Correlated effects put a covariance
+  // in the beta/theta corner; it is zero when they are independent.
+  matrix[3, 3] D = diag_matrix([square(tau_beta), var_gamma_i,
+                                square(tau_theta)]');
+  D[1, 3] = cov_beta_theta;
+  D[3, 1] = cov_beta_theta;
+  matrix[3, 3] Sigma =
+    did_summary_normalised_cov(m, sigma_cb, sigma_ca, sigma_tb, sigma_ta,
+                               rho, n_control, n_treatment)
+    + M * D * M';
+  vector[3] mu = did_summary_normalised_mean(mu_gamma_i, mu_beta, mu_theta_i);
   return multi_normal_lpdf(m | mu, Sigma);
 }
 

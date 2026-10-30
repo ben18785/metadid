@@ -431,7 +431,8 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
                               multiplicative_covariate = NULL,
                               center_covariates = TRUE,
                               baseline_imbalance = "by_randomisation",
-                              cluster_deff_default = 2) {
+                              cluster_deff_default = 2,
+                              pp_trend_shift = 0) {
 
   K_cov <- length(covariate_names)
 
@@ -576,7 +577,9 @@ prepare_stan_data <- function(summary_data, individual_data, model_flags, priors
     list(
       K_cov                 = K_cov,
       n_effect_multipliers  = n_mult,
-      n_effect_multipliers2 = n_mult2
+      n_effect_multipliers2 = n_mult2,
+      # Trend-exchangeability sensitivity knob; 0 is the exchangeable default.
+      pp_trend_shift        = as.numeric(pp_trend_shift)
     )
   )
 
