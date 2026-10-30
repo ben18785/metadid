@@ -23,4 +23,6 @@ Useful links:
 
 Authors:
 
+- Ben Lambert <ben.c.lambert@gmail.com>
+
 - Joseph Poore <joseph.poore@biology.ox.ac.uk>

@@ -489,6 +489,40 @@ Diagnose model fit via posterior predictive comparisons.
 - [`pp_check_cdf()`](https://ben18785.github.io/metadid/reference/pp_check_cdf.md)
   : Posterior predictive check: CDF comparison
 
+## Sensitivity analysis
+
+Probe the assumptions that license pooling across designs, which the
+data cannot check: that pre-post studies share a trend distribution with
+DiD studies, and that all designs estimate one effect.
+
+- [`sensitivity_trend()`](https://ben18785.github.io/metadid/reference/sensitivity_trend.md)
+  : Sensitivity of the pooled effect to trend exchangeability
+- [`plot_sensitivity_trend()`](https://ben18785.github.io/metadid/reference/plot_sensitivity_trend.md)
+  : Plot a trend-exchangeability sweep
+- [`omega_pp()`](https://ben18785.github.io/metadid/reference/omega_pp.md)
+  : Pre-post share of the information about the pooled effect
+- [`delta_star()`](https://ben18785.github.io/metadid/reference/delta_star.md)
+  : Breakdown value for trend exchangeability
+- [`design_agreement()`](https://ben18785.github.io/metadid/reference/design_agreement.md)
+  : Test whether the designs agree
+- [`plot_design_agreement()`](https://ben18785.github.io/metadid/reference/plot_design_agreement.md)
+  : Plot design offsets
+
+## Influence diagnostics
+
+Which studies the result rests on, and which would change it. Weight
+governs the pull on the pooled mean; a discordant study acts on the
+between-study SD instead, so the two are reported separately.
+
+- [`information_share()`](https://ben18785.github.io/metadid/reference/information_share.md)
+  : Share of the evidence each study and design contributes
+- [`plot_information_share()`](https://ben18785.github.io/metadid/reference/plot_information_share.md)
+  : Plot the share of the evidence by study
+- [`study_influence()`](https://ben18785.github.io/metadid/reference/study_influence.md)
+  : Per-study influence on the pooled result
+- [`plot_study_influence()`](https://ben18785.github.io/metadid/reference/plot_study_influence.md)
+  : Plot per-study influence against weight
+
 ## Simulation
 
 Simulate data from the hierarchical DiD model.
