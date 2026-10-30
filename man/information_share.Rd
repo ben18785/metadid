@@ -11,26 +11,51 @@ information_share(fit)
 }
 \value{
 A data frame with one row per study: \code{study_id}, \code{design}, \code{se},
-\code{weight} (summing to one), ordered by decreasing weight.
+\code{info_loss} (not summing to one; \code{NA} outside the linear-Gaussian case)
+and \code{weight_naive} (summing to one), ordered by decreasing \code{info_loss}.
 }
 \description{
-Inverse-variance weights on the random-effects scale,
-\eqn{w_i \propto 1/(s_i^2 + \tau_\theta^2)}, normalised to sum to one. The
-answer to "which studies is this result actually resting on?", which a table
-of estimates never shows.
+Which studies the pooled effect is actually resting on, which a table of
+estimates never shows. Two columns, answering two different questions:
+\itemize{
+\item \code{info_loss} is the fraction of the precision of \eqn{\mu_\theta} lost by
+dropping that study, from the information matrix over
+\eqn{(\mu_\beta, \mu_\gamma, \mu_\theta)} under the fitted hierarchy.
+\strong{It does not sum to one.}
+\item \code{weight_naive} is the inverse-variance weight,
+\eqn{w_i \propto 1/(s_i^2 + \tau_\theta^2)}, which is what a
+conventional meta-analysis of the same point estimates would use. It does
+sum to one.
+}
 }
 \details{
-\eqn{s_i} is the design-appropriate sampling SD of that study's effect
-estimate: the double-difference SE for DiD, the change-score SE for pre-post,
-the arm-contrast SE for post-only. \eqn{\tau_\theta} is taken at its
-posterior median.
+\code{info_loss} sums to one only when no design enables another -- a DiD-only
+fit, where it reduces to a partition of the evidence (verified in
+\code{test-sensitivity.R}). In a mixed analysis it sums to \strong{more} than one,
+because dropping a DiD study also costs the pre-post studies the trend
+information they borrow from it. That excess is the point: on a 10/10/10
+mixed fit the losses were 0.73 for the DiD arm, 0.19 for pre-post and 0.09
+for post-only, summing to 1.01 -- the DiD studies are close to
+indispensable, and not because they carry most of the weight on the mean.
 
-This is an approximation in one respect worth knowing: it ignores the
-coupling through the nuisance parameters, so a post-only study's weight is
-slightly overstated relative to a DiD study's, since part of its information
-is spent on \eqn{\gamma}. \code{\link[=omega_pp]{omega_pp()}} computes the exact two-design version.
-Summary-level data only.
+For a design-level \emph{share}, which does partition, use \code{\link[=omega_pp]{omega_pp()}}. The two
+are not interchangeable: on that same fit it puts the pre-post share at
+0.414 against a naive 0.410. Note also that the obvious fix to the naive
+weight -- adding \eqn{\tau_\beta^2} or \eqn{\tau_\gamma^2} to those
+designs' denominators -- \strong{over}-corrects, giving 0.367, because those
+designs help to estimate the nuisance means rather than only consuming them.
+
+Both columns concern the \strong{mean}. Neither says anything about a study's
+effect on the between-study SD, and a study carrying the smallest weight in
+an analysis can still double the width of the pooled interval -- see
+\code{\link[=study_influence]{study_influence()}}.
+
+\eqn{s_i} is the design-appropriate sampling SD: the double-difference SE for
+DiD, the change-score SE for pre-post, the ratio SE for post-only. Variance
+components are taken at their posterior medians. \code{info_loss} needs the
+linear-Gaussian case (summary data, baseline normalisation) and is \code{NA}
+outside it.
 }
 \seealso{
-\code{\link[=plot_information_share]{plot_information_share()}}, \code{\link[=omega_pp]{omega_pp()}}
+\code{\link[=plot_information_share]{plot_information_share()}}, \code{\link[=omega_pp]{omega_pp()}}, \code{\link[=study_influence]{study_influence()}}
 }

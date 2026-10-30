@@ -158,30 +158,200 @@ plot_design_agreement <- function(agreement) {
   out
 }
 
+# ---------------------------------------------------------------------------
+# Exact per-study information about the pooled effect
+# ---------------------------------------------------------------------------
+
+# Each summary study is, after integrating out its own theta/beta/gamma, a
+# Gaussian observation whose mean is linear in the POPULATION parameters
+# (mu_beta, mu_gamma, mu_theta) and whose covariance includes both its sampling
+# error and the latent variances it had to borrow. Writing A_i for that design
+# matrix and V_i for the covariance, total information is
+#
+#   I = sum_i A_i' V_i^-1 A_i
+#
+# and the precision about mu_theta is 1 / (I^-1)[theta, theta]. A study's
+# contribution is the drop in that precision when it is removed, which is the
+# per-study analogue of omega_pp() and cannot be negative: removing a study
+# cannot sharpen the posterior.
+#
+# This is the weighting the fitted hierarchy actually implies. A naive
+# inverse-variance weight ignores that a pre-post study must borrow the trend
+# and a post-only study the imbalance -- but note that simply ADDING those
+# variances over-corrects, because those designs also help to estimate the
+# nuisance means rather than only consuming them. Only the information
+# calculation gets it right.
+#
+# Returns NULL when the fit is outside the linear-Gaussian case (unnormalised
+# baselines, individual-level studies), so the caller can fall back.
+.precision_loss_per_study <- function(fit) {
+  sdata <- fit$summary_data
+  flags <- fit$model_flags
+  if (is.null(sdata) || nrow(sdata) == 0) return(NULL)
+  if (!is.null(fit$individual_data) && nrow(fit$individual_data) > 0) return(NULL)
+  if (!isTRUE(flags$is_baseline_normalised == 1)) return(NULL)
+
+  md <- function(v, default = NA_real_) {
+    d <- try(fit$fit$draws(v, format = "draws_matrix"), silent = TRUE)
+    if (inherits(d, "try-error") || length(d) == 0) return(default)
+    stats::median(as.numeric(d))
+  }
+  tau_th <- md("treatment_effect_sd")
+  tau_b  <- md("time_trend_sd")
+  tau_g  <- md("baseline_difference_sd")
+  mu_th  <- md("treatment_effect_mean")
+  mu_b   <- md("time_trend_mean")
+  mu_g   <- md("baseline_difference_mean", 0)
+  kappa  <- md("kappa", 0.5)
+  if (anyNA(c(tau_th, tau_b, tau_g, mu_th, mu_b))) return(NULL)
+
+  # gamma's population for each study, mirroring gamma_from_raw(): a randomised
+  # study is zero-centred at kappa * s_i, an unrandomised one has the fitted
+  # population, and a pinned one contributes nothing.
+  rand <- if ("randomisation" %in% names(sdata)) {
+    r <- as.character(sdata$randomisation); r[is.na(r)] <- "none"; r
+  } else rep("none", nrow(sdata))
+  randomised <- rand %in% c("individual", "cluster")
+
+  pieces <- vector("list", nrow(sdata))
+  for (i in seq_len(nrow(sdata))) {
+    r <- sdata[i, ]
+    rho <- .rho_for_studies(fit, r)
+    design <- as.character(r$design)
+    # s_gamma on the normalised scale, as .gamma_scale_summary() builds it.
+    s_g <- switch(design,
+      did = sqrt(r$sd_pre_treatment^2 / r$n_treatment +
+                 r$sd_pre_control^2 / r$n_control),
+      rct = sqrt(r$sd_post_treatment^2 / r$n_treatment +
+                 r$sd_post_control^2 / r$n_control),
+      NA_real_)
+    var_g <- if (is.na(s_g)) 0 else if (randomised[i]) (kappa * s_g)^2 else tau_g^2
+    mu_gi <- if (!is.na(s_g) && randomised[i]) 0 else mu_g
+
+    if (design == "did") {
+      m <- c(r$mean_post_control, r$mean_pre_treatment, r$mean_post_treatment)
+      v_cb <- r$sd_pre_control^2 / r$n_control
+      v_ca <- r$sd_post_control^2 / r$n_control
+      c_c  <- rho * r$sd_pre_control * r$sd_post_control / r$n_control
+      v_tb <- r$sd_pre_treatment^2 / r$n_treatment
+      v_ta <- r$sd_post_treatment^2 / r$n_treatment
+      c_t  <- rho * r$sd_pre_treatment * r$sd_post_treatment / r$n_treatment
+      S <- matrix(0, 3, 3)
+      S[1, 1] <- v_ca - 2 * m[1] * c_c + m[1]^2 * v_cb
+      S[2, 2] <- v_tb + m[2]^2 * v_cb
+      S[3, 3] <- v_ta + m[3]^2 * v_cb
+      S[1, 2] <- S[2, 1] <- -m[2] * c_c + m[1] * m[2] * v_cb
+      S[1, 3] <- S[3, 1] <- -m[3] * c_c + m[1] * m[3] * v_cb
+      S[2, 3] <- S[3, 2] <- c_t + m[2] * m[3] * v_cb
+      # Order of the latent and population parameters: (beta, gamma, theta).
+      A <- matrix(c(1, 0, 0, 0, 1, 0, 1, 1, 1), nrow = 3, byrow = TRUE)
+      V <- S + A %*% diag(c(tau_b^2, var_g, tau_th^2)) %*% t(A)
+      pieces[[i]] <- list(A = A, V = V)
+
+    } else if (design == "did_change") {
+      v <- r$sd_change_control^2 / r$n_control +
+           r$sd_change_treatment^2 / r$n_treatment
+      pieces[[i]] <- list(A = matrix(c(0, 0, 1), nrow = 1),
+                          V = matrix(v + tau_th^2, 1, 1))
+
+    } else if (design == "rct") {
+      se2 <- r$sd_post_treatment^2 / r$n_treatment +
+             r$mean_post_treatment^2 * r$sd_post_control^2 / r$n_control
+      if (isTRUE(flags$is_time_trend_rct_zero == 1) ||
+          isTRUE(flags$is_time_trend_rct_summary_zero == 1)) {
+        pieces[[i]] <- list(A = matrix(c(0, 1, 1), nrow = 1),
+                            V = matrix(se2 + var_g + tau_th^2, 1, 1))
+      } else {
+        # Apparent effect (theta + gamma)/(1 + beta): linearised, as the
+        # marginal likelihood does.
+        den <- 1 + mu_b
+        num <- mu_th + mu_gi
+        A <- matrix(c(-num / den^2, 1 / den, 1 / den), nrow = 1)
+        V <- matrix(se2 + (tau_th^2 + var_g) / den^2 +
+                      num^2 / den^4 * tau_b^2, 1, 1)
+        pieces[[i]] <- list(A = A, V = V)
+      }
+
+    } else if (design == "pp") {
+      v <- (r$sd_pre_treatment^2 + r$sd_post_treatment^2 -
+            2 * rho * r$sd_pre_treatment * r$sd_post_treatment) / r$n_treatment
+      zero_trend <- isTRUE(flags$is_time_trend_pp_zero == 1) ||
+                    isTRUE(flags$is_time_trend_pp_summary_zero == 1)
+      A <- if (zero_trend) matrix(c(0, 0, 1), nrow = 1) else matrix(c(1, 0, 1), nrow = 1)
+      V <- matrix(v + tau_th^2 + if (zero_trend) 0 else tau_b^2, 1, 1)
+      pieces[[i]] <- list(A = A, V = V)
+
+    } else {
+      return(NULL)
+    }
+  }
+
+  contrib <- function(p) t(p$A) %*% solve(p$V) %*% p$A
+  I_all <- Reduce(`+`, lapply(pieces, contrib))
+  prec <- function(I) {
+    inv <- try(solve(I), silent = TRUE)
+    if (inherits(inv, "try-error")) return(NA_real_)
+    1 / inv[3, 3]
+  }
+  p_all <- prec(I_all)
+  drops <- vapply(pieces, function(p) p_all - prec(I_all - contrib(p)), numeric(1))
+  if (anyNA(drops) || p_all <= 0) return(NULL)
+  # The FRACTION of precision lost, deliberately not normalised. These sum to
+  # one only when no design enables another -- a DiD-only fit, say. In a mixed
+  # analysis they sum to more, because dropping a DiD study also costs the
+  # pre-post studies the trend information they borrow, and that excess is
+  # worth seeing rather than dividing away.
+  drops / p_all
+}
+
 #' Share of the evidence each study and design contributes
 #'
 #' @description
-#' Inverse-variance weights on the random-effects scale,
-#' \eqn{w_i \propto 1/(s_i^2 + \tau_\theta^2)}, normalised to sum to one. The
-#' answer to "which studies is this result actually resting on?", which a table
-#' of estimates never shows.
+#' Which studies the pooled effect is actually resting on, which a table of
+#' estimates never shows. Two columns, answering two different questions:
+#'
+#' * `info_loss` is the fraction of the precision of \eqn{\mu_\theta} lost by
+#'   dropping that study, from the information matrix over
+#'   \eqn{(\mu_\beta, \mu_\gamma, \mu_\theta)} under the fitted hierarchy.
+#'   **It does not sum to one.**
+#' * `weight_naive` is the inverse-variance weight,
+#'   \eqn{w_i \propto 1/(s_i^2 + \tau_\theta^2)}, which is what a
+#'   conventional meta-analysis of the same point estimates would use. It does
+#'   sum to one.
 #'
 #' @details
-#' \eqn{s_i} is the design-appropriate sampling SD of that study's effect
-#' estimate: the double-difference SE for DiD, the change-score SE for pre-post,
-#' the arm-contrast SE for post-only. \eqn{\tau_\theta} is taken at its
-#' posterior median.
+#' `info_loss` sums to one only when no design enables another -- a DiD-only
+#' fit, where it reduces to a partition of the evidence (verified in
+#' `test-sensitivity.R`). In a mixed analysis it sums to **more** than one,
+#' because dropping a DiD study also costs the pre-post studies the trend
+#' information they borrow from it. That excess is the point: on a 10/10/10
+#' mixed fit the losses were 0.73 for the DiD arm, 0.19 for pre-post and 0.09
+#' for post-only, summing to 1.01 -- the DiD studies are close to
+#' indispensable, and not because they carry most of the weight on the mean.
 #'
-#' This is an approximation in one respect worth knowing: it ignores the
-#' coupling through the nuisance parameters, so a post-only study's weight is
-#' slightly overstated relative to a DiD study's, since part of its information
-#' is spent on \eqn{\gamma}. [omega_pp()] computes the exact two-design version.
-#' Summary-level data only.
+#' For a design-level *share*, which does partition, use [omega_pp()]. The two
+#' are not interchangeable: on that same fit it puts the pre-post share at
+#' 0.414 against a naive 0.410. Note also that the obvious fix to the naive
+#' weight -- adding \eqn{\tau_\beta^2} or \eqn{\tau_\gamma^2} to those
+#' designs' denominators -- **over**-corrects, giving 0.367, because those
+#' designs help to estimate the nuisance means rather than only consuming them.
+#'
+#' Both columns concern the **mean**. Neither says anything about a study's
+#' effect on the between-study SD, and a study carrying the smallest weight in
+#' an analysis can still double the width of the pooled interval -- see
+#' [study_influence()].
+#'
+#' \eqn{s_i} is the design-appropriate sampling SD: the double-difference SE for
+#' DiD, the change-score SE for pre-post, the ratio SE for post-only. Variance
+#' components are taken at their posterior medians. `info_loss` needs the
+#' linear-Gaussian case (summary data, baseline normalisation) and is `NA`
+#' outside it.
 #'
 #' @param fit A [meta_did()] fit with summary-level studies.
 #' @return A data frame with one row per study: `study_id`, `design`, `se`,
-#'   `weight` (summing to one), ordered by decreasing weight.
-#' @seealso [plot_information_share()], [omega_pp()]
+#'   `info_loss` (not summing to one; `NA` outside the linear-Gaussian case)
+#'   and `weight_naive` (summing to one), ordered by decreasing `info_loss`.
+#' @seealso [plot_information_share()], [omega_pp()], [study_influence()]
 #' @export
 information_share <- function(fit) {
   stopifnot(inherits(fit, "meta_did_fit"))
@@ -221,12 +391,16 @@ information_share <- function(fit) {
   }
   w <- 1 / (se^2 + tau^2)
   out <- data.frame(
-    study_id = sdata$study_id,
-    design   = sdata$design,
-    se       = se,
-    weight   = w / sum(w, na.rm = TRUE)
+    study_id     = sdata$study_id,
+    design       = sdata$design,
+    se           = se,
+    weight_naive = w / sum(w, na.rm = TRUE)
   )
-  out[order(-out$weight), , drop = FALSE]
+  out$info_loss <- .precision_loss_per_study(fit)   # NULL -> column dropped
+  if (is.null(out$info_loss)) out$info_loss <- NA_real_
+  out <- out[, c("study_id", "design", "se", "info_loss", "weight_naive")]
+  key <- if (all(is.na(out$info_loss))) out$weight_naive else out$info_loss
+  out[order(-key), , drop = FALSE]
 }
 
 #' Plot the share of the evidence by study
@@ -236,20 +410,28 @@ information_share <- function(fit) {
 #' @return A ggplot2 object.
 #' @seealso [information_share()]
 #' @export
-plot_information_share <- function(fit, top = 20L) {
+plot_information_share <- function(fit, top = 20L,
+                                   column = c("info_loss", "weight_naive")) {
+  column <- match.arg(column)
   d <- if (inherits(fit, "meta_did_fit")) information_share(fit) else fit
+  if (column == "info_loss" && all(is.na(d$info_loss))) column <- "weight_naive"
+  d$value <- d[[column]]
+  d <- d[order(-d$value), , drop = FALSE]
   if (!is.null(top) && nrow(d) > top) {
-    rest <- data.frame(study_id = sprintf("(%d others)", nrow(d) - top),
-                       design = NA_character_, se = NA_real_,
-                       weight = sum(d$weight[-seq_len(top)]))
+    rest <- d[1, ]
+    rest[] <- NA
+    rest$study_id <- sprintf("(%d others)", nrow(d) - top)
+    rest$value <- sum(d$value[-seq_len(top)])
     d <- rbind(d[seq_len(top), ], rest)
   }
   d$study_id <- factor(d$study_id, levels = rev(d$study_id))
-  ggplot2::ggplot(d, ggplot2::aes(x = .data$weight, y = .data$study_id,
+  lab <- if (column == "info_loss") {
+    "Precision about the pooled effect lost by dropping the study"
+  } else "Inverse-variance weight on the pooled mean"
+  ggplot2::ggplot(d, ggplot2::aes(x = .data$value, y = .data$study_id,
                                   fill = .data$design)) +
     ggplot2::geom_col() +
-    ggplot2::labs(x = "Share of the evidence on the pooled effect",
-                  y = NULL, fill = "Design") +
+    ggplot2::labs(x = lab, y = NULL, fill = "Design") +
     ggplot2::theme_minimal()
 }
 
@@ -268,7 +450,9 @@ plot_information_share <- function(fit, top = 20L) {
 #' Two things are reported, and they are not the same:
 #'
 #' * `weight` is that study's inverse-variance share, from
-#'   [information_share()]. It governs the pull on the pooled **mean**.
+#'   [information_share()]. It governs the pull on the pooled **mean**, and
+#'   `info_loss` beside it is how much precision the fit loses without the
+#'   study.
 #' * `khat` is the Pareto diagnostic from PSIS. It is formally a statement about
 #'   whether the importance-sampling approximation is reliable, but it is
 #'   elevated precisely when the leave-this-out posterior is far from the full
@@ -297,9 +481,11 @@ plot_information_share <- function(fit, top = 20L) {
 #'   asked.
 #' @param k_threshold Pareto k above which a study is flagged.
 #' @param quiet Suppress the message naming how many refits will run.
-#' @return A data frame with one row per study: `study_id`, `design`, `weight`,
-#'   `elpd_i`, `khat`, `flagged`, and --- when refits ran --- `d_effect_mean`,
-#'   `d_effect_sd` and `d_ci_width`, the changes from removing that study.
+#' @return A data frame with one row per study: `study_id`, `design`, `weight`
+#'   (the inverse-variance weight on the mean), `info_loss` (the precision about
+#'   the pooled effect lost by dropping the study), `elpd_i`, `khat`, `flagged`,
+#'   and --- when refits ran --- `d_effect_mean`, `d_effect_sd` and
+#'   `d_ci_width`, the changes from removing that study.
 #' @seealso [information_share()], [sensitivity_trend()]
 #' @export
 study_influence <- function(fit, refit = c("none", "flagged", "all"),
@@ -343,7 +529,8 @@ study_influence <- function(fit, refit = c("none", "flagged", "all"),
   out <- data.frame(
     study_id = sdata$study_id,
     design   = sdata$design,
-    weight   = shares$weight[match(sdata$study_id, shares$study_id)],
+    weight   = shares$weight_naive[match(sdata$study_id, shares$study_id)],
+    info_loss = shares$info_loss[match(sdata$study_id, shares$study_id)],
     elpd_i   = l$pointwise[, "elpd_loo"],
     khat     = l$diagnostics$pareto_k
   )
@@ -422,7 +609,7 @@ plot_study_influence <- function(influence, k_threshold = 0.7) {
                                           colour = .data$design)) +
     ggplot2::geom_hline(yintercept = k_threshold, linetype = "dashed") +
     ggplot2::geom_point(size = 2.5) +
-    ggplot2::labs(x = "Share of the evidence on the pooled mean",
+    ggplot2::labs(x = "Inverse-variance weight on the pooled mean",
                   y = "Pareto k (leave-one-study-out)", colour = "Design") +
     ggplot2::theme_minimal()
 }
