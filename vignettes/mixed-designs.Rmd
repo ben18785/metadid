@@ -193,8 +193,6 @@ pp_check_effects(fit_mixed)
 
 ## Checking the assumptions the data cannot
 
-*The printed results in this section are produced by `vignettes/_regenerate-outputs.R`, which runs every fit shown and prints the blocks to paste. Run it after changing anything here rather than editing the numbers by hand.*
-
 Posterior predictive checks ask whether the model explains the data it was given. They cannot ask whether the *pooling* is justified, because the assumptions that license it — that pre-post studies share a trend distribution with DiD studies, that all designs estimate one effect — are not identified by the data. Three diagnostics address them directly.
 
 ### Which studies is the result resting on?
@@ -221,7 +219,6 @@ which at $\rho = 0.5$ is smaller than a DiD study's double difference across
 two arms --- so the design observing *less* of the latent process can carry more
 weight per study, because what it does observe it observes precisely.
 
-
 ```{r info-share-plot, eval = FALSE}
 plot_information_share(fit_mixed)
 ```
@@ -244,7 +241,6 @@ agree$offsets
 #> rct    rct -0.03173571 -0.07905057 0.0151316666        10
 #> pp      pp -0.04539894 -0.09220292 0.0002122077        10
 ```
-
 
 ```{r design-agreement-plot, eval = FALSE}
 plot_design_agreement(agree)
@@ -278,7 +274,6 @@ Watch the `divergences` column as well as the estimate. It climbs as $\Delta$
 moves the pre-post trends away from the DiD studies' --- the data are fighting
 the assumption, and the geometry gets harder. A sweep that diverges heavily at
 one end is itself telling you something.
-
 
 ```{r sensitivity-plot, eval = FALSE}
 plot_sensitivity_trend(sweep)
@@ -397,7 +392,6 @@ powerscale_sensitivity(
 #>  baseline_difference_sd 0.015      0.244         -
 ```
 
-
 Read the two columns together:
 
 - **Low prior, high likelihood** — the data are doing the work. What you want, and what every row here shows: prior sensitivity is 0.015 at worst.
@@ -444,7 +438,6 @@ rbind(
 #> default -0.3413227 -0.3649053 -0.3173717
 #> wide    -0.3414702 -0.3647145 -0.3187871
 ```
-
 
 With thirty studies the pooled effect is identified by the data and this comparison should barely move. The same exercise on a five-study analysis can move it considerably, which is worth knowing before publishing one.
 
