@@ -215,11 +215,6 @@ pp_check_effects(fit_mixed)
 
 ## Checking the assumptions the data cannot
 
-*The printed results in this section are produced by
-`vignettes/_regenerate-outputs.R`, which runs every fit shown and prints
-the blocks to paste. Run it after changing anything here rather than
-editing the numbers by hand.*
-
 Posterior predictive checks ask whether the model explains the data it
 was given. They cannot ask whether the *pooling* is justified, because
 the assumptions that license it — that pre-post studies share a trend
@@ -240,25 +235,49 @@ draws it:
 information_share(fit_mixed) |> head(5)
 ```
 
-    #>    study_id design         se     weight
-    #> 29 study_29     pp 0.02458929 0.04404526
-    #> 30 study_30     pp 0.02517211 0.04360394
-    #> 26 study_26     pp 0.02658745 0.04252759
-    #> 25 study_25     pp 0.02719201 0.04206673
-    #> 27 study_27     pp 0.02813506 0.04134767
+    #>   study_id design         se  info_loss weight_naive
+    #> 7  study_6    did 0.03839247 0.09373889   0.03379294
+    #> 4  study_3    did 0.03802285 0.09223553   0.03405045
+    #> 6  study_5    did 0.04115769 0.07898719   0.03191331
+    #> 5  study_4    did 0.04043148 0.07892863   0.03239871
+    #> 8  study_7    did 0.04646796 0.07293426   0.02855373
 
-The five largest shares all belong to **pre-post** studies, which is not
-the obvious answer. Their change-score variance is \\\sigma^2\_{pre} +
-\sigma^2\_{post} - 2\rho\sigma\_{pre}\sigma\_{post}\\ over \\n\\, which
-at \\\rho = 0.5\\ is smaller than a DiD study’s double difference across
-two arms — so the design observing *less* of the latent process can
-carry more weight per study, because what it does observe it observes
-precisely.
+The two columns disagree, and the disagreement is the interesting part.
+
+`weight_naive` is the inverse-variance weight a conventional
+meta-analysis of these point estimates would use. By that measure the
+largest contributors are **pre-post** studies, because their
+change-score variance \\(\sigma^2\_{pre} + \sigma^2\_{post} -
+2\rho\sigma\_{pre}\sigma\_{post})/n\\ is smaller at \\\rho = 0.5\\ than
+a DiD study’s double difference across two arms.
+
+`info_loss` asks a different question — how much precision about the
+pooled effect the fit loses if that study is dropped — and reverses the
+order entirely. Aggregated by design on this fit:
+
+| design         | `info_loss` | `weight_naive` |
+|----------------|-------------|----------------|
+| DiD (10)       | 0.73        | 0.31           |
+| pre-post (10)  | 0.19        | 0.41           |
+| post-only (10) | 0.09        | 0.28           |
+
+A DiD study is worth more than its weight on the mean suggests, because
+it also supplies the trend information that the pre-post studies borrow
+in order to contribute at all. Drop it and you damage them too.
+
+Note the `info_loss` column sums to 1.01, not 1. It is not a share: once
+one design enables another, leave-one-out losses overlap, and that
+overlap is precisely what the naive weight cannot see. For a
+design-level share that does partition, use
+[`omega_pp()`](https://ben18785.github.io/metadid/reference/omega_pp.md).
 
 ``` r
 
-plot_information_share(fit_mixed)
+plot_information_share(fit_mixed)                      # info_loss, by default
+plot_information_share(fit_mixed, column = "weight_naive")
 ```
+
+![](../reference/figures/vignette-info-share.png)
 
 A design contributing far more than its study count suggests the pooled
 number is really that design’s answer.
@@ -293,6 +312,8 @@ agree$offsets
 
 plot_design_agreement(agree)
 ```
+
+![](../reference/figures/vignette-design-agreement.png)
 
 Both offsets straddle zero, so the designs are compatible — but only
 just, and that is worth dwelling on. These data were simulated from a
@@ -341,6 +362,8 @@ that diverges heavily at one end is itself telling you something.
 
 plot_sensitivity_trend(sweep)
 ```
+
+![](../reference/figures/vignette-sensitivity-trend.png)
 
 The response is close to linear, with slope \\-\omega_P\\ where
 \\\omega_P\\ is the share of the information about the effect that comes
@@ -416,21 +439,22 @@ fit_odd <- meta_did(summary_data = bind_rows(base, odd), seed = 5)
 inf <- study_influence(fit_odd, refit = "flagged")
 ```
 
-    #>    study_id design     weight    elpd_i    khat flagged d_effect_mean
-    #> 13  odd_one    did 0.06900657 -4.096179 1.31939    TRUE     0.0507775
-    #>    d_effect_sd d_ci_width
-    #> 13   0.1188744  0.1065678
+    #>    study_id design     weight  info_loss    elpd_i    khat flagged
+    #> 13  odd_one    did 0.06900657 0.07147269 -4.096179 1.31939    TRUE
+    #>    d_effect_mean d_effect_sd d_ci_width
+    #> 13     0.0507775   0.1188744  0.1065678
     #>
     #>  (the twelve others: weight 0.0773 to 0.0778, khat 0.01 to 0.41)
 
 Read the columns against each other, because they disagree:
 
-- **`weight` is the lowest in the analysis** (0.069 against 0.077). A
-  weight table would not have found this study. The reason is circular
-  and worth understanding: the outlier inflates \\\tau\_\theta\\, and
-  once \\\tau^2\\ dominates every \\s_i^2\\ the weights \\1/(s_i^2 +
-  \tau^2)\\ go nearly uniform. A discordant study destroys the precision
-  advantage that would have made it look important.
+- **`weight` is the lowest in the analysis** (0.069 against 0.077). An
+  inverse-variance weight table would not have found this study. The
+  reason is circular and worth understanding: the outlier inflates
+  \\\tau\_\theta\\, and once \\\tau^2\\ dominates every \\s_i^2\\ the
+  weights \\1/(s_i^2 + \tau^2)\\ go nearly uniform. A discordant study
+  destroys the precision advantage that would have made it look
+  important.
 - **`elpd_i` separates it cleanly** at −4.10 against +2.4 to +4.4. This
   is how badly the rest of the evidence predicts it, and it is the most
   informative column here.
@@ -449,6 +473,8 @@ ask.
 
 plot_study_influence(inf)
 ```
+
+![](../reference/figures/vignette-study-influence.png)
 
 A study in the top-left — high \\k\\, low weight — is exactly the case
 above: it is not pulling the mean, it is inflating the spread.

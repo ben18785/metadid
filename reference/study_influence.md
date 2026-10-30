@@ -42,9 +42,11 @@ study_influence(
 
 ## Value
 
-A data frame with one row per study: `study_id`, `design`, `weight`,
-`elpd_i`, `khat`, `flagged`, and — when refits ran — `d_effect_mean`,
-`d_effect_sd` and `d_ci_width`, the changes from removing that study.
+A data frame with one row per study: `study_id`, `design`, `weight` (the
+inverse-variance weight on the mean), `info_loss` (the precision about
+the pooled effect lost by dropping the study), `elpd_i`, `khat`,
+`flagged`, and — when refits ran — `d_effect_mean`, `d_effect_sd` and
+`d_ci_width`, the changes from removing that study.
 
 ## Details
 
@@ -52,7 +54,8 @@ Two things are reported, and they are not the same:
 
 - `weight` is that study's inverse-variance share, from
   [`information_share()`](https://ben18785.github.io/metadid/reference/information_share.md).
-  It governs the pull on the pooled **mean**.
+  It governs the pull on the pooled **mean**, and `info_loss` beside it
+  is how much precision the fit loses without the study.
 
 - `khat` is the Pareto diagnostic from PSIS. It is formally a statement
   about whether the importance-sampling approximation is reliable, but

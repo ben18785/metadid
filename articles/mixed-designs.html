@@ -259,10 +259,6 @@ identifying individual studies that the model struggles to explain.</p>
 <div class="section level2">
 <h2 id="checking-the-assumptions-the-data-cannot">Checking the assumptions the data cannot<a class="anchor" aria-label="anchor" href="#checking-the-assumptions-the-data-cannot"></a>
 </h2>
-<p><em>The printed results in this section are produced by
-<code>vignettes/_regenerate-outputs.R</code>, which runs every fit shown
-and prints the blocks to paste. Run it after changing anything here
-rather than editing the numbers by hand.</em></p>
 <p>Posterior predictive checks ask whether the model explains the data
 it was given. They cannot ask whether the <em>pooling</em> is justified,
 because the assumptions that license it — that pre-post studies share a
@@ -278,21 +274,59 @@ handful of large or precise studies can dominate it.
 <code><a href="../reference/plot_information_share.html">plot_information_share()</a></code> draws it:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/information_share.html">information_share</a></span><span class="op">(</span><span class="va">fit_mixed</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;    study_id design         se     weight</span></span>
-<span><span class="co">#&gt; 29 study_29     pp 0.02458929 0.04404526</span></span>
-<span><span class="co">#&gt; 30 study_30     pp 0.02517211 0.04360394</span></span>
-<span><span class="co">#&gt; 26 study_26     pp 0.02658745 0.04252759</span></span>
-<span><span class="co">#&gt; 25 study_25     pp 0.02719201 0.04206673</span></span>
-<span><span class="co">#&gt; 27 study_27     pp 0.02813506 0.04134767</span></span></code></pre>
-<p>The five largest shares all belong to <strong>pre-post</strong>
-studies, which is not the obvious answer. Their change-score variance is
-<span class="math inline">\(\sigma^2_{pre} + \sigma^2_{post} -
-2\rho\sigma_{pre}\sigma_{post}\)</span> over <span class="math inline">\(n\)</span>, which at <span class="math inline">\(\rho = 0.5\)</span> is smaller than a DiD study’s
-double difference across two arms — so the design observing
-<em>less</em> of the latent process can carry more weight per study,
-because what it does observe it observes precisely.</p>
+<pre><code><span><span class="co">#&gt;   study_id design         se  info_loss weight_naive</span></span>
+<span><span class="co">#&gt; 7  study_6    did 0.03839247 0.09373889   0.03379294</span></span>
+<span><span class="co">#&gt; 4  study_3    did 0.03802285 0.09223553   0.03405045</span></span>
+<span><span class="co">#&gt; 6  study_5    did 0.04115769 0.07898719   0.03191331</span></span>
+<span><span class="co">#&gt; 5  study_4    did 0.04043148 0.07892863   0.03239871</span></span>
+<span><span class="co">#&gt; 8  study_7    did 0.04646796 0.07293426   0.02855373</span></span></code></pre>
+<p>The two columns disagree, and the disagreement is the interesting
+part.</p>
+<p><code>weight_naive</code> is the inverse-variance weight a
+conventional meta-analysis of these point estimates would use. By that
+measure the largest contributors are <strong>pre-post</strong> studies,
+because their change-score variance <span class="math inline">\((\sigma^2_{pre} + \sigma^2_{post} -
+2\rho\sigma_{pre}\sigma_{post})/n\)</span> is smaller at <span class="math inline">\(\rho = 0.5\)</span> than a DiD study’s double
+difference across two arms.</p>
+<p><code>info_loss</code> asks a different question — how much precision
+about the pooled effect the fit loses if that study is dropped — and
+reverses the order entirely. Aggregated by design on this fit:</p>
+<table class="table">
+<thead><tr class="header">
+<th>design</th>
+<th><code>info_loss</code></th>
+<th><code>weight_naive</code></th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>DiD (10)</td>
+<td>0.73</td>
+<td>0.31</td>
+</tr>
+<tr class="even">
+<td>pre-post (10)</td>
+<td>0.19</td>
+<td>0.41</td>
+</tr>
+<tr class="odd">
+<td>post-only (10)</td>
+<td>0.09</td>
+<td>0.28</td>
+</tr>
+</tbody>
+</table>
+<p>A DiD study is worth more than its weight on the mean suggests,
+because it also supplies the trend information that the pre-post studies
+borrow in order to contribute at all. Drop it and you damage them
+too.</p>
+<p>Note the <code>info_loss</code> column sums to 1.01, not 1. It is not
+a share: once one design enables another, leave-one-out losses overlap,
+and that overlap is precisely what the naive weight cannot see. For a
+design-level share that does partition, use <code><a href="../reference/omega_pp.html">omega_pp()</a></code>.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_information_share.html">plot_information_share</a></span><span class="op">(</span><span class="va">fit_mixed</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_information_share.html">plot_information_share</a></span><span class="op">(</span><span class="va">fit_mixed</span><span class="op">)</span>                      <span class="co"># info_loss, by default</span></span>
+<span><span class="fu"><a href="../reference/plot_information_share.html">plot_information_share</a></span><span class="op">(</span><span class="va">fit_mixed</span>, column <span class="op">=</span> <span class="st">"weight_naive"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="../reference/figures/vignette-info-share.png"></p>
 <p>A design contributing far more than its study count suggests the
 pooled number is really that design’s answer.</p>
 <p>Two caveats, and the second matters more than it looks. The weights
@@ -319,6 +353,7 @@ not.</p>
 <span><span class="co">#&gt; pp      pp -0.04539894 -0.09220292 0.0002122077        10</span></span></code></pre>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_design_agreement.html">plot_design_agreement</a></span><span class="op">(</span><span class="va">agree</span><span class="op">)</span></span></code></pre></div>
+<p><img src="../reference/figures/vignette-design-agreement.png"></p>
 <p>Both offsets straddle zero, so the designs are compatible — but only
 just, and that is worth dwelling on. These data were simulated from a
 <em>single</em> latent process, so the true offsets are zero, and yet
@@ -358,6 +393,7 @@ assumption, and the geometry gets harder. A sweep that diverges heavily
 at one end is itself telling you something.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_sensitivity_trend.html">plot_sensitivity_trend</a></span><span class="op">(</span><span class="va">sweep</span><span class="op">)</span></span></code></pre></div>
+<p><img src="../reference/figures/vignette-sensitivity-trend.png"></p>
 <p>The response is close to linear, with slope <span class="math inline">\(-\omega_P\)</span> where <span class="math inline">\(\omega_P\)</span> is the share of the information
 about the effect that comes from the pre-post studies. Two readings
 matter:</p>
@@ -416,19 +452,20 @@ arm against the others’ hundred:</p>
 <span><span class="va">fit_odd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/meta_did.html">meta_did</a></span><span class="op">(</span>summary_data <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="va">base</span>, <span class="va">odd</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/study_influence.html">study_influence</a></span><span class="op">(</span><span class="va">fit_odd</span>, refit <span class="op">=</span> <span class="st">"flagged"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;    study_id design     weight    elpd_i    khat flagged d_effect_mean</span></span>
-<span><span class="co">#&gt; 13  odd_one    did 0.06900657 -4.096179 1.31939    TRUE     0.0507775</span></span>
-<span><span class="co">#&gt;    d_effect_sd d_ci_width</span></span>
-<span><span class="co">#&gt; 13   0.1188744  0.1065678</span></span>
+<pre><code><span><span class="co">#&gt;    study_id design     weight  info_loss    elpd_i    khat flagged</span></span>
+<span><span class="co">#&gt; 13  odd_one    did 0.06900657 0.07147269 -4.096179 1.31939    TRUE</span></span>
+<span><span class="co">#&gt;    d_effect_mean d_effect_sd d_ci_width</span></span>
+<span><span class="co">#&gt; 13     0.0507775   0.1188744  0.1065678</span></span>
 <span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt;  (the twelve others: weight 0.0773 to 0.0778, khat 0.01 to 0.41)</span></span></code></pre>
 <p>Read the columns against each other, because they disagree:</p>
 <ul>
 <li>
 <strong><code>weight</code> is the lowest in the analysis</strong>
-(0.069 against 0.077). A weight table would not have found this study.
-The reason is circular and worth understanding: the outlier inflates
-<span class="math inline">\(\tau_\theta\)</span>, and once <span class="math inline">\(\tau^2\)</span> dominates every <span class="math inline">\(s_i^2\)</span> the weights <span class="math inline">\(1/(s_i^2 + \tau^2)\)</span> go nearly uniform. A
+(0.069 against 0.077). An inverse-variance weight table would not have
+found this study. The reason is circular and worth understanding: the
+outlier inflates <span class="math inline">\(\tau_\theta\)</span>, and
+once <span class="math inline">\(\tau^2\)</span> dominates every <span class="math inline">\(s_i^2\)</span> the weights <span class="math inline">\(1/(s_i^2 + \tau^2)\)</span> go nearly uniform. A
 discordant study destroys the precision advantage that would have made
 it look important.</li>
 <li>
@@ -450,6 +487,7 @@ fitting at all. With individual-level data a refit is expensive, so
 nothing runs unless you ask.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_study_influence.html">plot_study_influence</a></span><span class="op">(</span><span class="va">inf</span><span class="op">)</span></span></code></pre></div>
+<p><img src="../reference/figures/vignette-study-influence.png"></p>
 <p>A study in the top-left — high <span class="math inline">\(k\)</span>, low weight — is exactly the case
 above: it is not pulling the mean, it is inflating the spread.</p>
 <div class="section level3">

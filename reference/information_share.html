@@ -5,13 +5,29 @@
       fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
     }
   };
-</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Share of the evidence each study and design contributes — information_share"><meta name="description" content="Inverse-variance weights on the random-effects scale,
-\(w_i \propto 1/(s_i^2 + \tau_\theta^2)\), normalised to sum to one. The
-answer to &quot;which studies is this result actually resting on?&quot;, which a table
-of estimates never shows."><meta property="og:description" content="Inverse-variance weights on the random-effects scale,
-\(w_i \propto 1/(s_i^2 + \tau_\theta^2)\), normalised to sum to one. The
-answer to &quot;which studies is this result actually resting on?&quot;, which a table
-of estimates never shows."></head><body>
+</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Share of the evidence each study and design contributes — information_share"><meta name="description" content="Which studies the pooled effect is actually resting on, which a table of
+estimates never shows. Two columns, answering two different questions:
+info_loss is the fraction of the precision of \(\mu_\theta\) lost by
+dropping that study, from the information matrix over
+\((\mu_\beta, \mu_\gamma, \mu_\theta)\) under the fitted hierarchy.
+It does not sum to one.
+weight_naive is the inverse-variance weight,
+\(w_i \propto 1/(s_i^2 + \tau_\theta^2)\), which is what a
+conventional meta-analysis of the same point estimates would use. It does
+sum to one.
+
+"><meta property="og:description" content="Which studies the pooled effect is actually resting on, which a table of
+estimates never shows. Two columns, answering two different questions:
+info_loss is the fraction of the precision of \(\mu_\theta\) lost by
+dropping that study, from the information matrix over
+\((\mu_\beta, \mu_\gamma, \mu_\theta)\) under the fitted hierarchy.
+It does not sum to one.
+weight_naive is the inverse-variance weight,
+\(w_i \propto 1/(s_i^2 + \tau_\theta^2)\), which is what a
+conventional meta-analysis of the same point estimates would use. It does
+sum to one.
+
+"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -46,11 +62,16 @@ of estimates never shows."></head><body>
     </div>
 
     <div class="ref-description section level2">
-    <p>Inverse-variance weights on the random-effects scale,
-\(w_i \propto 1/(s_i^2 + \tau_\theta^2)\), normalised to sum to one. The
-answer to "which studies is this result actually resting on?", which a table
-of estimates never shows.</p>
-    </div>
+    <p>Which studies the pooled effect is actually resting on, which a table of
+estimates never shows. Two columns, answering two different questions:</p><ul><li><p><code>info_loss</code> is the fraction of the precision of \(\mu_\theta\) lost by
+dropping that study, from the information matrix over
+\((\mu_\beta, \mu_\gamma, \mu_\theta)\) under the fitted hierarchy.
+<strong>It does not sum to one.</strong></p></li>
+<li><p><code>weight_naive</code> is the inverse-variance weight,
+\(w_i \propto 1/(s_i^2 + \tau_\theta^2)\), which is what a
+conventional meta-analysis of the same point estimates would use. It does
+sum to one.</p></li>
+</ul></div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
@@ -68,23 +89,38 @@ of estimates never shows.</p>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A data frame with one row per study: <code>study_id</code>, <code>design</code>, <code>se</code>,
-<code>weight</code> (summing to one), ordered by decreasing weight.</p>
+<code>info_loss</code> (not summing to one; <code>NA</code> outside the linear-Gaussian case)
+and <code>weight_naive</code> (summing to one), ordered by decreasing <code>info_loss</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>\(s_i\) is the design-appropriate sampling SD of that study's effect
-estimate: the double-difference SE for DiD, the change-score SE for pre-post,
-the arm-contrast SE for post-only. \(\tau_\theta\) is taken at its
-posterior median.</p>
-<p>This is an approximation in one respect worth knowing: it ignores the
-coupling through the nuisance parameters, so a post-only study's weight is
-slightly overstated relative to a DiD study's, since part of its information
-is spent on \(\gamma\). <code><a href="omega_pp.html">omega_pp()</a></code> computes the exact two-design version.
-Summary-level data only.</p>
+    <p><code>info_loss</code> sums to one only when no design enables another – a DiD-only
+fit, where it reduces to a partition of the evidence (verified in
+<code>test-sensitivity.R</code>). In a mixed analysis it sums to <strong>more</strong> than one,
+because dropping a DiD study also costs the pre-post studies the trend
+information they borrow from it. That excess is the point: on a 10/10/10
+mixed fit the losses were 0.73 for the DiD arm, 0.19 for pre-post and 0.09
+for post-only, summing to 1.01 – the DiD studies are close to
+indispensable, and not because they carry most of the weight on the mean.</p>
+<p>For a design-level <em>share</em>, which does partition, use <code><a href="omega_pp.html">omega_pp()</a></code>. The two
+are not interchangeable: on that same fit it puts the pre-post share at
+0.414 against a naive 0.410. Note also that the obvious fix to the naive
+weight – adding \(\tau_\beta^2\) or \(\tau_\gamma^2\) to those
+designs' denominators – <strong>over</strong>-corrects, giving 0.367, because those
+designs help to estimate the nuisance means rather than only consuming them.</p>
+<p>Both columns concern the <strong>mean</strong>. Neither says anything about a study's
+effect on the between-study SD, and a study carrying the smallest weight in
+an analysis can still double the width of the pooled interval – see
+<code><a href="study_influence.html">study_influence()</a></code>.</p>
+<p>\(s_i\) is the design-appropriate sampling SD: the double-difference SE for
+DiD, the change-score SE for pre-post, the ratio SE for post-only. Variance
+components are taken at their posterior medians. <code>info_loss</code> needs the
+linear-Gaussian case (summary data, baseline normalisation) and is <code>NA</code>
+outside it.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="plot_information_share.html">plot_information_share()</a></code>, <code><a href="omega_pp.html">omega_pp()</a></code></p></div>
+    <div class="dont-index"><p><code><a href="plot_information_share.html">plot_information_share()</a></code>, <code><a href="omega_pp.html">omega_pp()</a></code>, <code><a href="study_influence.html">study_influence()</a></code></p></div>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -5,7 +5,7 @@ Plot the share of the evidence by study
 ## Usage
 
 ``` r
-plot_information_share(fit, top = 20L)
+plot_information_share(fit, top = 20L, column = c("info_loss", "weight_naive"))
 ```
 
 ## Arguments

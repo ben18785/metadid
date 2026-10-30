@@ -85,14 +85,18 @@ asked.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A data frame with one row per study: <code>study_id</code>, <code>design</code>, <code>weight</code>,
-<code>elpd_i</code>, <code>khat</code>, <code>flagged</code>, and — when refits ran — <code>d_effect_mean</code>,
-<code>d_effect_sd</code> and <code>d_ci_width</code>, the changes from removing that study.</p>
+    <p>A data frame with one row per study: <code>study_id</code>, <code>design</code>, <code>weight</code>
+(the inverse-variance weight on the mean), <code>info_loss</code> (the precision about
+the pooled effect lost by dropping the study), <code>elpd_i</code>, <code>khat</code>, <code>flagged</code>,
+and — when refits ran — <code>d_effect_mean</code>, <code>d_effect_sd</code> and
+<code>d_ci_width</code>, the changes from removing that study.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Two things are reported, and they are not the same:</p><ul><li><p><code>weight</code> is that study's inverse-variance share, from
-<code><a href="information_share.html">information_share()</a></code>. It governs the pull on the pooled <strong>mean</strong>.</p></li>
+<code><a href="information_share.html">information_share()</a></code>. It governs the pull on the pooled <strong>mean</strong>, and
+<code>info_loss</code> beside it is how much precision the fit loses without the
+study.</p></li>
 <li><p><code>khat</code> is the Pareto diagnostic from PSIS. It is formally a statement about
 whether the importance-sampling approximation is reliable, but it is
 elevated precisely when the leave-this-out posterior is far from the full
