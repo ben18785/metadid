@@ -57,9 +57,13 @@ model {
 generated quantities {
   // Predictive draw for a new study at the covariate reference point
   // (covariate mean when centered, zero when not; ignores covariate variation).
+  real treatment_effect_sim;
   if(is_student_t_heterogeneity == 0) {
-    real treatment_effect_sim = normal_rng(treatment_effect_mean, treatment_effect_sd);
+    treatment_effect_sim = normal_rng(treatment_effect_mean, treatment_effect_sd);
   } else {
-    real treatment_effect_sim = student_t_rng(nu_treatment_vec[1], treatment_effect_mean, treatment_effect_sd);
+    treatment_effect_sim = student_t_rng(nu_treatment_vec[1], treatment_effect_mean, treatment_effect_sd);
   }
+
+  // lprior and log_lik, for priorsense and loo.
+  #include "shared_generated_quantities.stan"
 }

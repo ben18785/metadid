@@ -29,6 +29,7 @@ meta_did_general(
   seed = NULL,
   allow_no_did = FALSE,
   allow_unidentified_kappa = FALSE,
+  pp_trend_shift = 0,
   ...
 )
 }
@@ -266,6 +267,17 @@ give, and it propagates the uncertainty in \eqn{\kappa} into the pooled
 effect rather than conditioning on one value. What it does \emph{not} do is
 learn \eqn{\kappa} from the data, which is why it must be asked for
 explicitly.}
+
+\item{pp_trend_shift}{Sensitivity knob on trend exchangeability. The model
+assumes pre-post studies draw their time trends from the same population
+as DiD studies. Setting this to \eqn{\Delta} instead asserts
+\eqn{\beta_j \sim N(\mu_\beta + \Delta, \tau_\beta^2)} for pre-post
+studies only, leaving DiD studies alone. Default \code{0} (exchangeable), which
+reproduces the unshifted fit exactly. Refitting across a grid traces how
+far the pooled effect moves when the assumption fails; use
+\code{\link[=sensitivity_trend]{sensitivity_trend()}} rather than calling this directly. The shift applies
+to the trend \emph{mean}, not to the data, and is inert when
+\code{time_trend = "fixed_zero"}.}
 
 \item{...}{Additional arguments passed to the underlying CmdStanModel
 method: \verb{$sample()} when \code{method = "sample"} (e.g., \code{parallel_chains},

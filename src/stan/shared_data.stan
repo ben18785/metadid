@@ -72,6 +72,13 @@ int<lower=0, upper=1> is_kappa_estimated;
 real<lower=0> kappa_fixed;
 real<lower=0> kappa_prior_scale;
 
+// Family switches for the three scale parameters that set_priors() lets a user
+// specify as either half-Cauchy (0) or half-normal (1). The scale argument is
+// read from the same *_prior_scale value either way.
+int<lower=0, upper=1> is_treatment_effect_sd_normal;
+int<lower=0, upper=1> is_time_trend_sd_normal;
+int<lower=0, upper=1> is_baseline_difference_sd_normal;
+
 // Prior hyperparameters for study-level observation SDs (shared across all designs)
 real<lower=0> sigma_prior_scale;
 
@@ -101,6 +108,19 @@ int<lower=0, upper=1> is_student_t_heterogeneity;
 // DiD (the reference). Offsets are estimated with normal(0, 10) priors.
 // When 0, the offsets are not sampled and all designs share treatment_effect_mean.
 int<lower=0, upper=1> is_design_effect;
+
+// Sensitivity knob for trend exchangeability. The model assumes pre-post
+// studies draw their trends from the same population as DiD studies. Setting
+// pp_trend_shift = Delta instead asserts beta_j ~ normal(mu_beta + Delta,
+// tau_beta) for pre-post studies only, so refitting across a grid of Delta
+// traces how far the pooled effect moves when that assumption fails. Zero is
+// the exchangeable default and reproduces the unshifted fit exactly.
+//
+// The shift is applied to the pre-post trend MEAN, not to the data, so the
+// observations stay untouched and the hierarchy keeps its shape. It is inert
+// when the pre-post trend is pinned at zero (time_trend = "fixed_zero"),
+// since the trend then never enters the likelihood.
+real pp_trend_shift;
 
 // When is_correlated_effects == 1, study-level treatment effects and time
 // trends are drawn jointly from a bivariate normal with a shared correlation

@@ -79,7 +79,7 @@ if(n_studies_pp_summary > 0) {
     for (i in 1:n_studies_pp_summary) {
       target += multi_normal_cholesky_lpdf(
         [treatment_effect_pp_summary[i], time_trend_pp_summary[i]]' |
-        [mult_pp_summary[i] * (treatment_effect_mean_pp + X_cov_pp_summary[i] * beta_cov), time_trend_mean]',
+        [mult_pp_summary[i] * (treatment_effect_mean_pp + X_cov_pp_summary[i] * beta_cov), time_trend_mean + pp_trend_shift]',
         L_Sigma_pp_summary
       );
     }

@@ -328,6 +328,16 @@ meta_did <- function(
 #'       reparameterised time trend correction is bypassed.}
 #'   }
 #' @inheritParams meta_did
+#' @param pp_trend_shift Sensitivity knob on trend exchangeability. The model
+#'   assumes pre-post studies draw their time trends from the same population
+#'   as DiD studies. Setting this to \eqn{\Delta} instead asserts
+#'   \eqn{\beta_j \sim N(\mu_\beta + \Delta, \tau_\beta^2)} for pre-post
+#'   studies only, leaving DiD studies alone. Default `0` (exchangeable), which
+#'   reproduces the unshifted fit exactly. Refitting across a grid traces how
+#'   far the pooled effect moves when the assumption fails; use
+#'   [sensitivity_trend()] rather than calling this directly. The shift applies
+#'   to the trend *mean*, not to the data, and is inert when
+#'   `time_trend = "fixed_zero"`.
 #' @param baseline_imbalance How the per-study baseline difference
 #'   \eqn{\gamma_i} is modelled: `"by_randomisation"` (default),
 #'   `"estimated"`, or `"fixed_zero"`. Identical in meaning and default to the
@@ -403,6 +413,7 @@ meta_did_general <- function(
     seed                     = NULL,
     allow_no_did             = FALSE,
     allow_unidentified_kappa = FALSE,
+    pp_trend_shift           = 0,
     ...
 ) {
   time_trend         <- match.arg(time_trend)
@@ -447,6 +458,7 @@ meta_did_general <- function(
     seed                     = seed,
     allow_no_did             = allow_no_did,
     allow_unidentified_kappa = allow_unidentified_kappa,
+    pp_trend_shift           = pp_trend_shift,
     stan_data_overrides      = if (length(overrides) > 0) overrides else NULL,
     ...
   )
@@ -556,12 +568,24 @@ meta_did_naive <- function(
     seed                     = NULL,
     allow_no_did             = FALSE,
     allow_unidentified_kappa = FALSE,
+    pp_trend_shift           = 0,
     stan_data_overrides      = NULL,
     ...
 ) {
   method             <- match.arg(method)
   baseline_imbalance <- match.arg(baseline_imbalance)
   mu_gamma           <- match.arg(mu_gamma)
+
+  if (!is.numeric(pp_trend_shift) || length(pp_trend_shift) != 1L ||
+      is.na(pp_trend_shift)) {
+    stop("'pp_trend_shift' must be a single number.", call. = FALSE)
+  }
+
+  # Everything needed to reproduce this fit, captured BEFORE normalisation
+  # mutates the data. sensitivity_trend() refits from these, varying only
+  # pp_trend_shift, so a sensitivity sweep cannot silently differ from the
+  # original fit in a sampler setting or a modelling switch.
+  fit_args <- c(mget(setdiff(names(formals()), "...")), list(...))
 
   # --- Input checks ---
   if (is.null(summary_data) && is.null(individual_data)) {
@@ -728,7 +752,8 @@ meta_did_naive <- function(
                                   multiplicative_covariate = multiplicative_covariate,
                                   center_covariates = center_covariates,
                                   baseline_imbalance = baseline_imbalance,
-                                  cluster_deff_default = cluster_deff_default)
+                                  cluster_deff_default = cluster_deff_default,
+                                  pp_trend_shift = pp_trend_shift)
 
   # --- kappa identification check ---
   # kappa is the scale of the baseline imbalance permitted to randomised
@@ -859,7 +884,8 @@ meta_did_naive <- function(
     covariate_names          = covariate_names,
     multiplicative_covariate = multiplicative_covariate_info,
     cov_centers              = cov_centers,
-    center_covariates        = center_covariates
+    center_covariates        = center_covariates,
+    fit_args                 = fit_args
   )
 }
 

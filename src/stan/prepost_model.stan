@@ -76,7 +76,7 @@ if(n_studies_pp > 0) {
     for (i in 1:n_studies_pp) {
       target += multi_normal_cholesky_lpdf(
         [treatment_effect_pp[i], time_trend_pp[i]]' |
-        [mult_pp[i] * (treatment_effect_mean_pp + X_cov_pp[i] * beta_cov), time_trend_mean]',
+        [mult_pp[i] * (treatment_effect_mean_pp + X_cov_pp[i] * beta_cov), time_trend_mean + pp_trend_shift]',
         L_Sigma_pp
       );
     }

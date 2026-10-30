@@ -1,6 +1,10 @@
 
 time_trend_mean ~ normal(time_trend_mean_prior_mean, time_trend_mean_prior_sd);
-time_trend_sd ~ cauchy(0, time_trend_sd_prior_scale);
+if (is_time_trend_sd_normal) {
+  time_trend_sd ~ normal(0, time_trend_sd_prior_scale);
+} else {
+  time_trend_sd ~ cauchy(0, time_trend_sd_prior_scale);
+}
 if (!is_baseline_normalised) {
   baseline_control_mean[1] ~ normal(0, 10);
   baseline_control_sd[1] ~ cauchy(0, 5);
@@ -8,7 +12,11 @@ if (!is_baseline_normalised) {
   baseline_treatment_sd[1] ~ cauchy(0, 5);
 }
 treatment_effect_mean ~ normal(treatment_effect_mean_prior_mean, treatment_effect_mean_prior_sd);
-treatment_effect_sd ~ cauchy(0, treatment_effect_sd_prior_scale);
+if (is_treatment_effect_sd_normal) {
+  treatment_effect_sd ~ normal(0, treatment_effect_sd_prior_scale);
+} else {
+  treatment_effect_sd ~ cauchy(0, treatment_effect_sd_prior_scale);
+}
 
 if (is_correlation_coefficient_hierarchical) {
   mu_z[1] ~ normal(mu_z_prior_mean, mu_z_prior_sd);
@@ -28,7 +36,11 @@ if (is_mu_gamma_estimated) {
   mu_gamma_vec[1] ~ normal(baseline_difference_mean_prior_mean,
                            baseline_difference_mean_prior_sd);
 }
-baseline_difference_sd ~ cauchy(0, baseline_difference_sd_prior_scale);
+if (is_baseline_difference_sd_normal) {
+  baseline_difference_sd ~ normal(0, baseline_difference_sd_prior_scale);
+} else {
+  baseline_difference_sd ~ cauchy(0, baseline_difference_sd_prior_scale);
+}
 
 // Half-normal via the <lower=0> declaration on kappa_vec.
 if (is_kappa_estimated) {
