@@ -44,6 +44,17 @@ mixed <- bind_rows(
 
 fit_mixed <- meta_did(summary_data = mixed, seed = SEED)
 
+FIGDIR <- "man/figures"
+dir.create(FIGDIR, showWarnings = FALSE, recursive = TRUE)
+
+# The vignette's chunks are eval = FALSE, so its figures have to be written to
+# man/figures and referenced, exactly as the older sections already do.
+fig <- function(name, plot, width = 7, height = 4.5) {
+  path <- file.path(FIGDIR, paste0("vignette-", name, ".png"))
+  ggplot2::ggsave(path, plot, width = width, height = height, dpi = 150)
+  cat("\n[figure written: ", path, "]\n", sep = "")
+}
+
 block <- function(title, expr) {
   cat("\n### ", title, "\n\n```\n", sep = "")
   out <- utils::capture.output(print(expr))
@@ -61,12 +72,17 @@ block("print(fit_mixed)", fit_mixed)
 block("information_share(fit_mixed) |> head(5)",
       information_share(fit_mixed) |> head(5))
 
+fig("info-share", plot_information_share(fit_mixed))
+
 agree <- design_agreement(fit_mixed, quiet = TRUE)
 block("agree$offsets", agree$offsets)
+fig("design-agreement", plot_design_agreement(agree), height = 2.6)
 
 sweep <- sensitivity_trend(fit_mixed, delta = seq(-0.06, 0.06, by = 0.03),
                            quiet = TRUE)
 block("sweep$grid", sweep$grid)
+
+fig("sensitivity-trend", plot_sensitivity_trend(sweep))
 
 block("the three breakdown summaries", data.frame(
   omega_empirical = sweep$omega_empirical,
@@ -119,6 +135,7 @@ if (requireNamespace("loo", quietly = TRUE)) {
   inf <- study_influence(fit_odd, refit = "flagged")
   block("study_influence(fit_odd, refit = 'flagged') -- planted study",
         inf[inf$study_id == "odd_one", ])
+  fig("study-influence", plot_study_influence(inf))
   clean <- inf[inf$study_id != "odd_one", ]
   cat(sprintf("\n#>  (the twelve others: weight %.4f to %.4f, khat %.2f to %.2f)\n",
               min(clean$weight), max(clean$weight),

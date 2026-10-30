@@ -4,7 +4,7 @@
 \alias{plot_information_share}
 \title{Plot the share of the evidence by study}
 \usage{
-plot_information_share(fit, top = 20L)
+plot_information_share(fit, top = 20L, column = c("info_loss", "weight_naive"))
 }
 \arguments{
 \item{fit}{A \code{\link[=meta_did]{meta_did()}} fit, or the data frame from \code{\link[=information_share]{information_share()}}.}

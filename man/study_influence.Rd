@@ -25,9 +25,11 @@ asked.}
 \item{quiet}{Suppress the message naming how many refits will run.}
 }
 \value{
-A data frame with one row per study: \code{study_id}, \code{design}, \code{weight},
-\code{elpd_i}, \code{khat}, \code{flagged}, and --- when refits ran --- \code{d_effect_mean},
-\code{d_effect_sd} and \code{d_ci_width}, the changes from removing that study.
+A data frame with one row per study: \code{study_id}, \code{design}, \code{weight}
+(the inverse-variance weight on the mean), \code{info_loss} (the precision about
+the pooled effect lost by dropping the study), \code{elpd_i}, \code{khat}, \code{flagged},
+and --- when refits ran --- \code{d_effect_mean}, \code{d_effect_sd} and
+\code{d_ci_width}, the changes from removing that study.
 }
 \description{
 Leave-one-study-out influence, via Pareto-smoothed importance sampling on the
@@ -38,7 +40,9 @@ approximate. Answers "would this result survive without study \emph{i}?".
 Two things are reported, and they are not the same:
 \itemize{
 \item \code{weight} is that study's inverse-variance share, from
-\code{\link[=information_share]{information_share()}}. It governs the pull on the pooled \strong{mean}.
+\code{\link[=information_share]{information_share()}}. It governs the pull on the pooled \strong{mean}, and
+\code{info_loss} beside it is how much precision the fit loses without the
+study.
 \item \code{khat} is the Pareto diagnostic from PSIS. It is formally a statement about
 whether the importance-sampling approximation is reliable, but it is
 elevated precisely when the leave-this-out posterior is far from the full
