@@ -45,6 +45,30 @@ reference:
       - pp_check_effects
       - pp_check_cdf
 
+  - title: Sensitivity analysis
+    desc: >
+      Probe the assumptions that license pooling across designs, which the data
+      cannot check: that pre-post studies share a trend distribution with DiD
+      studies, and that all designs estimate one effect.
+    contents:
+      - sensitivity_trend
+      - plot_sensitivity_trend
+      - omega_pp
+      - delta_star
+      - design_agreement
+      - plot_design_agreement
+
+  - title: Influence diagnostics
+    desc: >
+      Which studies the result rests on, and which would change it. Weight
+      governs the pull on the pooled mean; a discordant study acts on the
+      between-study SD instead, so the two are reported separately.
+    contents:
+      - information_share
+      - plot_information_share
+      - study_influence
+      - plot_study_influence
+
   - title: Simulation
     desc: Simulate data from the hierarchical DiD model.
     contents:
