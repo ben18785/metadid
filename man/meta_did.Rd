@@ -42,8 +42,10 @@ observation. Must include columns \code{study_id}, \code{design}, \code{group},
 No \code{study_id} may appear in both \code{summary_data} and \code{individual_data}.}
 
 \item{normalise_by_baseline}{Logical. If \code{TRUE} (default), all means and
-SDs are divided by each study's pre-treatment control mean (or the
-grand mean for change-only studies), placing outcomes on a common
+SDs are divided by each study's pre-treatment control mean (for
+change-only studies, their own \code{mean_pre_control} when supplied, otherwise
+the grand mean of the DiD studies' pre-treatment control means), placing
+outcomes on a common
 fractional scale. The reported \code{treatment_effect_mean} is then the
 population mean of the per-study proportional effects,
 \eqn{E[\theta_i / b_i]} (a percentage-scale effect, each study expressed

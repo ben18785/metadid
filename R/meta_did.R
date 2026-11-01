@@ -19,8 +19,10 @@
 #'   `time`, and `value`. Valid designs: `"did"`, `"rct"`, `"pp"`.
 #'   No `study_id` may appear in both `summary_data` and `individual_data`.
 #' @param normalise_by_baseline Logical. If `TRUE` (default), all means and
-#'   SDs are divided by each study's pre-treatment control mean (or the
-#'   grand mean for change-only studies), placing outcomes on a common
+#'   SDs are divided by each study's pre-treatment control mean (for
+#'   change-only studies, their own `mean_pre_control` when supplied, otherwise
+#'   the grand mean of the DiD studies' pre-treatment control means), placing
+#'   outcomes on a common
 #'   fractional scale. The reported `treatment_effect_mean` is then the
 #'   population mean of the per-study proportional effects,
 #'   \eqn{E[\theta_i / b_i]} (a percentage-scale effect, each study expressed
@@ -936,18 +938,25 @@ normalise_summary <- function(summary_data, individual_data) {
       factors$pp <- stats::setNames(norm, summary_data$study_id[pp_rows])
     }
 
-    # did_change: normalise by grand mean of mean_pre_control across did studies
+    # did_change: normalise by the study's own mean_pre_control when supplied,
+    # otherwise by the grand mean of mean_pre_control across did studies
     did_change_rows <- summary_data$design == "did_change"
     if (any(did_change_rows)) {
       grand_mean <- mean(factors$did, na.rm = TRUE)
       if (is.nan(grand_mean)) grand_mean <- 1
+      own <- if ("mean_pre_control" %in% names(summary_data)) {
+        summary_data$mean_pre_control[did_change_rows]
+      } else {
+        rep(NA_real_, sum(did_change_rows))
+      }
+      norm <- ifelse(!is.na(own) & own > 0, own, grand_mean)
       mean_cols <- grep("^mean_change", names(summary_data), value = TRUE)
       sd_cols   <- grep("^sd_change",  names(summary_data), value = TRUE)
       summary_data[did_change_rows, mean_cols] <-
-        summary_data[did_change_rows, mean_cols, drop = FALSE] / grand_mean
+        sweep(summary_data[did_change_rows, mean_cols, drop = FALSE], 1, norm, "/")
       summary_data[did_change_rows, sd_cols] <-
-        summary_data[did_change_rows, sd_cols, drop = FALSE] / grand_mean
-      factors$did_change <- grand_mean
+        sweep(summary_data[did_change_rows, sd_cols,   drop = FALSE], 1, norm, "/")
+      factors$did_change <- stats::setNames(norm, summary_data$study_id[did_change_rows])
     }
   }
 
