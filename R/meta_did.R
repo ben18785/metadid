@@ -939,7 +939,8 @@ normalise_summary <- function(summary_data, individual_data) {
     # did_change: normalise by grand mean of mean_pre_control across did studies
     did_change_rows <- summary_data$design == "did_change"
     if (any(did_change_rows)) {
-      grand_mean <- mean(factors$did, na.rm = TRUE)
+      # With no DiD studies factors$did is NULL, and mean(NULL) is NA, not NaN
+      grand_mean <- mean(as.numeric(factors$did), na.rm = TRUE)
       if (is.nan(grand_mean)) grand_mean <- 1
       mean_cols <- grep("^mean_change", names(summary_data), value = TRUE)
       sd_cols   <- grep("^sd_change",  names(summary_data), value = TRUE)
