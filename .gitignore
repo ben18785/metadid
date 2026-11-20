@@ -2,7 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-*.Rproj
 .claude/
 .mcp.json
 
