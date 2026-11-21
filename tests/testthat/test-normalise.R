@@ -60,6 +60,27 @@ test_that("normalise_summary() divides PP by mean_pre_treatment", {
   expect_equal(result$factors$pp, c(P1 = 200))
 })
 
+test_that("normalise_summary() leaves did_change unscaled when there are no DiD studies", {
+  chg_df <- data.frame(
+    study_id              = "C1",
+    design                = "did_change",
+    n_control             = 40L,
+    n_treatment           = 45L,
+    mean_change_control   = -10,
+    sd_change_control     = 15,
+    mean_change_treatment = -30,
+    sd_change_treatment   = 18
+  )
+  expect_no_warning(result <- normalise_summary(chg_df, NULL))
+
+  chg_row <- result$summary_data
+  expect_equal(chg_row$mean_change_control,   -10)
+  expect_equal(chg_row$mean_change_treatment, -30)
+  expect_equal(chg_row$sd_change_control,      15)
+  expect_equal(chg_row$sd_change_treatment,    18)
+  expect_equal(unname(result$factors$did_change), 1)
+})
+
 test_that("normalise_summary() divides did_change by grand mean of DiD pre-control", {
   # DiD study with mean_pre_control = 100, plus a did_change study
   did_df <- data.frame(
