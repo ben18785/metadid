@@ -7,7 +7,9 @@
 int<lower=0, upper=1> is_baseline_normalised;
 
 // When is_correlation_coefficient_hierarchical == 1, model rho hierarchically:
-//   z_i ~ normal(mu_z, sqrt(tau_z^2 + 1/(n_i - 3)))
+//   z_i ~ normal(mu_z, sqrt(tau_z^2 + 1/max(n_i - 3, 1)))
+// (1/(n_i - 3) is infinite at n_i = 3 and negative below it, so it is floored
+// at 1: a study of 4 or fewer carries the sampling variance of one of 4.)
 //   rho_i = tanh(z_i)
 // Studies with known rho contribute as data; missing rho studies are inferred.
 // Individual-level models (did, prepost) also participate in the hierarchy.

@@ -267,6 +267,20 @@ test_that("PP summary + normalise_by_baseline = FALSE runs without error", {
   )
 })
 
+test_that("a pre-post study with 3 participants does not stop the fit", {
+  skip_if_no_stan()
+  # The Fisher-z prior on rho has sampling variance 1 / (n - 3), infinite at
+  # n = 3; with it floored at 1 a small pre-post study no longer blocks every
+  # initialisation.
+  small_pp <- pp_summary()
+  small_pp$n_treatment[1] <- 3L
+  mixed <- dplyr::bind_rows(did_summary(), small_pp)
+  # A failed initialisation comes back as a warning, not an error, so check
+  # that the fit actually has draws.
+  fit <- quick_fit(summary_data = mixed)
+  expect_true(all(is.finite(summary(fit)$mean)))
+})
+
 test_that("PP individual + normalise_by_baseline = FALSE runs without error", {
   skip_if_no_stan()
   expect_no_error(
