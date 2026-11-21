@@ -95,7 +95,7 @@ test_that("normalise_summary() divides did_change by grand mean of DiD pre-contr
   expect_equal(chg_row$mean_change_treatment, -30 / 100)
   expect_equal(chg_row$sd_change_control,      15 / 100)
   expect_equal(chg_row$sd_change_treatment,    18 / 100)
-  expect_equal(result$factors$did_change, 100)
+  expect_equal(result$factors$did_change, c(C1 = 100))
 })
 
 test_that("normalise_summary() uses grand mean across multiple DiD studies for did_change", {
@@ -130,7 +130,45 @@ test_that("normalise_summary() uses grand mean across multiple DiD studies for d
   chg_row <- result$summary_data[result$summary_data$design == "did_change", ]
   expect_equal(chg_row$mean_change_control,   -5 / 100)
   expect_equal(chg_row$mean_change_treatment, -20 / 100)
-  expect_equal(result$factors$did_change, 100)
+  expect_equal(result$factors$did_change, c(C1 = 100))
+})
+
+test_that("normalise_summary() uses a did_change study's own mean_pre_control when supplied", {
+  did_df <- data.frame(
+    study_id            = "S1",
+    design              = "did",
+    n_control           = 50L,
+    mean_pre_control    = 100,
+    mean_post_control   = 90,
+    sd_pre_control      = 20,
+    sd_post_control     = 18,
+    n_treatment         = 55L,
+    mean_pre_treatment  = 105,
+    mean_post_treatment = 80,
+    sd_pre_treatment    = 22,
+    sd_post_treatment   = 15
+  )
+  chg_df <- data.frame(
+    study_id              = c("C1", "C2"),
+    design                = "did_change",
+    n_control             = c(40L, 30L),
+    n_treatment           = c(45L, 35L),
+    mean_pre_control      = c(2, NA),
+    mean_change_control   = c(-0.2, -10),
+    sd_change_control     = c(0.4, 15),
+    mean_change_treatment = c(-0.6, -30),
+    sd_change_treatment   = c(0.5, 18)
+  )
+  df <- dplyr::bind_rows(did_df, chg_df)
+  result <- normalise_summary(df, NULL)
+
+  # C1 reports its own baseline (2) and is divided by it; C2 does not and falls
+  # back on the DiD grand mean (100)
+  chg <- result$summary_data[result$summary_data$design == "did_change", ]
+  expect_equal(chg$mean_change_control,   c(-0.2 / 2, -10 / 100))
+  expect_equal(chg$mean_change_treatment, c(-0.6 / 2, -30 / 100))
+  expect_equal(chg$sd_change_control,     c(0.4 / 2,  15 / 100))
+  expect_equal(result$factors$did_change, c(C1 = 2, C2 = 100))
 })
 
 test_that("normalise_summary() returns NULL factors for NULL data", {
